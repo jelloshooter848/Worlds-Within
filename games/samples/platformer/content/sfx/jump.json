@@ -1,1 +1,1 @@
-{ "id": "jump", "bpm": 240, "pulse": "v10 @2 l32 o4 c e g > c e" }
+{ "id": "jump", "bpm": 240, "pulse": "v10 @2 l32 o4 p12 c8 q4 > c32" }

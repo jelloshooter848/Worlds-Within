@@ -3,7 +3,7 @@ import type { Container } from 'pixi.js';
 import { Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { blended, clipped, glowing, transformed, translucent } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
-import { glowHalo, HALO_SIZE, PixiRenderer } from './renderer';
+import { glowHalo, GRADIENT_SIZE, HALO_SIZE, PixiRenderer, radialTexture } from './renderer';
 
 // pixi.js imports and builds display objects in Node with no DOM adapter: nothing here renders.
 
@@ -380,5 +380,69 @@ describe('PixiRenderer culling (T13b-7)', () => {
     expect(c?.children).toHaveLength(1);
     r.rect(-400, -400, 4, 4, '#fff');
     expect(r.stage.children).toHaveLength(1);
+  });
+});
+
+describe('PixiRenderer radial gradients (Engine 0.16 part D, D1: lighting)', () => {
+  const stops = [
+    { at: 0, alpha: 0.8 },
+    { at: 1, alpha: 0 },
+  ];
+
+  it('draws one sprite over the circle, tinted, its peak as alpha, in the mode asked', () => {
+    const r = renderer();
+    r.gradient({ x: 50, y: 40, radius: 10, color: '#f8b800', stops, mode: 'add' });
+    r.gradient({ x: 50, y: 40, radius: 10, color: '#000000', stops, mode: 'erase' });
+    const [add, erase] = only(r.stage.children, Sprite);
+    expect(add!.texture).toBe(radialTexture(stops));
+    expect([add!.x, add!.y, add!.width, add!.height]).toEqual([40, 30, 20, 20]);
+    expect(add!.tint).toBe(0xf8b800);
+    expect(add!.alpha).toBeCloseTo(0.8);
+    expect(add!.blendMode).toBe('add');
+    expect(erase!.blendMode).toBe('erase');
+  });
+
+  it('shares one texture between lights of one shape at other strengths', () => {
+    const half = stops.map((s) => ({ ...s, alpha: s.alpha / 2 }));
+    expect(radialTexture(half)).toBe(radialTexture(stops));
+    expect(
+      radialTexture([
+        { at: 0, alpha: 1 },
+        { at: 0.5, alpha: 1 },
+        { at: 1, alpha: 0 },
+      ]),
+    ).not.toBe(radialTexture(stops));
+    expect(radialTexture(stops).width).toBe(GRADIENT_SIZE);
+  });
+
+  it('clips to a box inside the picture, never for one covering it, and skips one off the picture', () => {
+    const r = renderer();
+    const v = [
+      { at: 0, alpha: 0 },
+      { at: 1, alpha: 0.5 },
+    ];
+    r.gradient({
+      x: 128,
+      y: 120,
+      radius: 177,
+      color: '#000',
+      stops: v,
+      mode: 'normal',
+      box: { x: 0, y: 0, w: 256, h: 240 },
+    });
+    expect(only(r.stage.children, Sprite)).toHaveLength(1);
+    r.gradient({
+      x: 20,
+      y: 20,
+      radius: 20,
+      color: '#000',
+      stops: v,
+      mode: 'normal',
+      box: { x: 10, y: 10, w: 5, h: 5 },
+    });
+    expect(r.stage.children.at(-1)!.mask).not.toBeNull();
+    const before = r.stage.children.length;
+    r.gradient({ x: -100, y: 20, radius: 20, color: '#000', stops: v, mode: 'add' });
+    expect(r.stage.children).toHaveLength(before);
   });
 });

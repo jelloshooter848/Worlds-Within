@@ -79,6 +79,7 @@ export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOpti
     // The shell's menus (Engine 0.16 T9) draw on the scenes' renderer, over the picture.
     uiPainter: () => new CanvasUiPainter(renderer, opts.sheet, opts.fonts),
     effectSettings: (settings) => presenter.effectSettings(settings),
+    showHud: (shown) => presenter.showHud(shown),
     toScreen: (clientX, clientY) => viewport.toScreen(clientX, clientY),
     toClient: (x, y) => viewport.toClient(x, y),
   };

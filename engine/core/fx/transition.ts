@@ -102,7 +102,12 @@ export type TransitionSpec = z.output<typeof transitionSpecSchema>;
 export type IrisAt = NonNullable<Extract<TransitionSpec, { kind: 'iris' }>['at']>;
 
 export const transitionsSchema = z.strictObject({
-  level: transitionSpecSchema.exactOptional().describe('played when the map id changes (the next level)'),
+  level: z
+    .union([transitionSpecSchema, z.literal(false)])
+    .exactOptional()
+    .describe(
+      'played when the map id changes (the next level); `false` plays none there, not even `default` (a kit that slides between rooms itself; Engine 0.16 part C T10)',
+    ),
   scene: transitionSpecSchema.exactOptional().describe('played when a scene is pushed or popped (a round)'),
   mission: transitionSpecSchema
     .exactOptional()
@@ -123,13 +128,15 @@ export const transitionsSchema = z.strictObject({
 
 export type TransitionsSpec = z.output<typeof transitionsSchema>;
 
-/** The spec a slot plays: the slot's, else (`mission`) `scene`'s, else `default`, else none. */
+/** The spec a slot plays: the slot's, else (`mission`) `scene`'s, else `default`, else none (`level: false`: none). */
 export function transitionFor(
   specs: DeepReadonly<TransitionsSpec> | undefined,
   slot: TransitionSlot,
 ): DeepReadonly<TransitionSpec> | null {
   if (specs === undefined) return null;
-  return specs[slot] ?? (slot === 'mission' ? specs.scene : undefined) ?? specs.default ?? null;
+  const own = specs[slot];
+  if (own === false) return null;
+  return own ?? (slot === 'mission' ? specs.scene : undefined) ?? specs.default ?? null;
 }
 
 /**

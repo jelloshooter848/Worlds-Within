@@ -1,0 +1,230 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 3
+  },
+  "ticks": 1570,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 176,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 177,
+        "hold": ["right"]
+      },
+      {
+        "frame": 189,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 190,
+        "hold": ["right"]
+      },
+      {
+        "frame": 215,
+        "hold": []
+      },
+      {
+        "frame": 579,
+        "hold": ["right"]
+      },
+      {
+        "frame": 652,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 653,
+        "hold": ["right"]
+      },
+      {
+        "frame": 665,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 666,
+        "hold": ["right"]
+      },
+      {
+        "frame": 692,
+        "hold": []
+      },
+      {
+        "frame": 1218,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1291,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1292,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1304,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1305,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1331,
+        "hold": []
+      },
+      {
+        "frame": 1558,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "boss"
+    },
+    {
+      "tick": 347,
+      "path": "player.hp",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 579,
+      "path": "lives",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 579,
+      "path": "player.x",
+      "op": "eq",
+      "value": 51200
+    },
+    {
+      "tick": 579,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 12,
+        "row": 7
+      }
+    },
+    {
+      "tick": 680,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 1218,
+      "path": "lives",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1218,
+      "path": "player.x",
+      "op": "eq",
+      "value": 51200
+    },
+    {
+      "tick": 1319,
+      "path": "actors.0.boss.phase",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1497,
+      "path": "outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 1498,
+      "path": "outcome",
+      "op": "eq",
+      "value": "failed"
+    },
+    {
+      "tick": 1498,
+      "path": "lives",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 1557,
+      "path": "outcome",
+      "op": "eq",
+      "value": "failed"
+    },
+    {
+      "tick": 1558,
+      "path": "outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 1558,
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 1558,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 1558,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 1558,
+      "path": "actors.0.boss.phase",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "invariants": [
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "path": "level",
+      "op": "eq",
+      "value": "boss"
+    }
+  ],
+  "guards": [
+    "gravity",
+    "walk",
+    "friction",
+    "air-control",
+    "jump",
+    "solid-tiles",
+    "checkpoints",
+    "actors-wake",
+    "stomp-bounce",
+    "enemy-touch-hurts",
+    "invulnerability",
+    "boss-pattern",
+    "boss-phases",
+    "boss-stomp-hits",
+    "boss-projectiles"
+  ]
+}

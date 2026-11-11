@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { mustLoad } from '@engine/core/content/game-content';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { statusMatches, type MixStatus } from '@engine/core/audio/mix';
+import { mixWhenHolds, type MixStatus } from '@engine/core/audio/mix';
 import { contentDecor, skinSet, type PresentMap } from '@engine/core/present';
 import { contentFonts, SkinHud } from '@engine/core/ui';
 import { loadMiniSiege, siegeMap } from './content';
@@ -131,9 +131,11 @@ describe('the 3D page’s HUD and music (Engine 0.16 F7)', () => {
       'key.captain.fate': 'active',
       'key.watchtower.progress': 0,
     });
-    for (const item of skin.hud ?? [])
-      if (item.when !== undefined && !item.when.status.startsWith('key.') && item.when.status !== 'selected')
-        expect(s, item.when.status).toHaveProperty([item.when.status]);
+    for (const item of skin.hud ?? []) {
+      const key = typeof item.when === 'string' ? item.when : item.when?.status;
+      if (key !== undefined && !key.startsWith('key.') && key !== 'selected')
+        expect(s, key).toHaveProperty([key]);
+    }
   });
 
   it('shows the title, the clock and the objectives; the watchtower only where there is one', () => {
@@ -152,7 +154,7 @@ describe('the 3D page’s HUD and music (Engine 0.16 F7)', () => {
     const music = skin.music?.['siege'];
     expect(music?.layers).toEqual({ calm: 'siege', danger: 'siege-danger', round: 'siege-round' });
     const mix = (s: Record<string, unknown>) =>
-      music!.mix!.find((r) => r.when === undefined || statusMatches(r.when, s as MixStatus))!.layers;
+      music!.mix!.find((r) => r.when === undefined || mixWhenHolds(r.when, s as MixStatus))!.layers;
     expect(mix(status('village'))).toEqual({ calm: 1, danger: 0, round: 0 });
     const game = createGame(content, 11);
     while (game.sim.tick < 40) game.step(NO_INPUT);

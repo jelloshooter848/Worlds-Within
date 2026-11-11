@@ -1,0 +1,9 @@
+{
+  "id": "crypt-danger",
+  "bpm": 112,
+  "loop": true,
+  "pulse1": "v3 @0 q5 l16 o4 L [d r d r > d < r d r d r d r > d < r c+ r]13",
+  "pulse2": "v2 @2 q3 l16 o5 L [r1 r2 a r a r g+ r a r]6 r1",
+  "triangle": "L [r1]13",
+  "noise": "v3 l16 L [k h h h s h h k k h h h s h s s]13"
+}

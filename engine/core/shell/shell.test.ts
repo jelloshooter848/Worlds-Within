@@ -18,6 +18,7 @@ import {
 import {
   AUDIO_UNLOCK_EVENTS,
   bootBrowserGame,
+  dialogsFromQuery,
   manualFromQuery,
   pageBackend,
   recordFromQuery,
@@ -33,6 +34,7 @@ import { HostScene } from './host-scene';
 import { UiScene } from './ui-scene';
 import { VOLUME_CONTROL_ID } from './volume-control';
 import { DEFAULT_VOLUMES, readVolumes, volumesKey } from '../save/settings';
+import { buildFont, KEY_NAME_GLYPHS, menusSchema } from '../ui';
 
 describe('backend choice', () => {
   it('opens in 3D only with ?backend=three, Canvas2D otherwise', () => {
@@ -1164,5 +1166,191 @@ describe('screen transitions in the loop (Engine 0.16 T5)', () => {
     expect(covered).toBe(1);
     expect(booted!.transition({ kind: 'fade', ticks: 3 }, () => covered++)).toBe(true);
     expect(covered).toBe(1);
+  });
+});
+
+describe('bootBrowserGame: no HUD under the title (Engine 0.16 part C T1)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('tells the display to hide the HUD while the title shows, and to draw it in play and pause', async () => {
+    const { byId } = fakeBootPage();
+    // The menus' own pointer listens on the canvas.
+    Object.assign(byId.get('screen')!, { style: {}, removeEventListener() {} });
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    const win = globalThis.window as unknown as DebugWindow & { location: { search: string } };
+    win.location.search = '?debug=step&title=show';
+    const hud: boolean[] = [];
+    const font = buildFont('t', {
+      cell: { w: 3, h: 5 },
+      baseline: 4,
+      glyphs: Object.fromEntries(
+        [
+          ...new Set(
+            `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>/':*!${KEY_NAME_GLYPHS}`,
+          ),
+        ].map((c) => [c, { rows: ['###', '###', '###', '###', '...'] }]),
+      ),
+    });
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      menus: {
+        spec: menusSchema.parse({
+          font: 't',
+          title: { name: 'Hop', items: ['start', 'settings'] },
+          pause: { items: ['resume', 'title'] },
+        }),
+        fonts: (id) => (id === 't' ? font : null),
+        sheets: () => null,
+      },
+      displays: {
+        canvas2d: () => ({
+          ...display(),
+          uiPainter: () => ({ fill() {}, image() {}, glyph() {} }),
+          showHud: (shown: boolean) => void hud.push(shown),
+        }),
+      },
+      scene: () => ({ update() {}, render() {} }),
+    });
+    const menus = booted!.menus!;
+    expect(menus.state).toBe('title');
+    win.__ww!.step(2);
+    expect(hud.at(-1)).toBe(false); // the picture under the title has no HUD
+    menus.start(); // no transition specs: the title closes at once
+    win.__ww!.step(2);
+    expect([menus.state, hud.at(-1)]).toEqual(['play', true]);
+    menus.pause();
+    win.__ww!.step(1);
+    expect([menus.state, hud.at(-1)]).toEqual(['pause', true]);
+  });
+});
+
+describe('bootBrowserGame: dialogs and the end screen from data (Engine 0.16 part C T7)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const font = buildFont('t', {
+    cell: { w: 3, h: 5 },
+    baseline: 4,
+    glyphs: Object.fromEntries(
+      [
+        ...new Set(
+          `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>/':*!-${KEY_NAME_GLYPHS}`,
+        ),
+      ].map((c) => [c, { rows: ['###', '###', '###', '###', '...'] }]),
+    ),
+  });
+  const spec = menusSchema.parse({
+    font: 't',
+    title: { name: 'Crypt', items: ['start'] },
+    pause: { items: ['resume', 'title'] },
+    end: { heading: 'The end', lines: [{ label: 'Time', status: 'time', format: 'time' }] },
+    dialogs: { intro: { speaker: 'Knight', pages: ['Into the crypt'] }, out: { pages: ['Daylight'] } },
+    triggers: { intro: 'intro', end: [{ when: { status: 'exited', eq: true }, dialog: 'out' }] },
+  });
+
+  async function boot(search: string) {
+    const { byId, fire } = fakeBootPage();
+    Object.assign(byId.get('screen')!, { style: {}, removeEventListener() {} });
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    const win = globalThis.window as unknown as DebugWindow & { location: { search: string } };
+    win.location.search = search;
+    let ticks = 0;
+    let frame = 0;
+    let endings: boolean | null = null;
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      menus: { spec, fonts: (id) => (id === 't' ? font : null), sheets: () => null },
+      displays: {
+        canvas2d: () => ({ ...display(), uiPainter: () => ({ fill() {}, image() {}, glyph() {} }) }),
+      },
+      scene: (_stack, shown, page) => {
+        endings = page.endings;
+        return {
+          update: () => void ticks++,
+          render() {
+            shown.presenter.present({
+              frame: frame++,
+              size: { width: 256, height: 240 },
+              entities: [],
+              events: [],
+              status: { exited: ticks >= 5, time: ticks },
+            });
+          },
+          headless: () => ({ step() {}, snapshot: () => ({ ticks }) }),
+        };
+      },
+    });
+    /** Z (jump: confirm) pressed for one step and released for one. */
+    const confirm = () => {
+      fire('keydown');
+      win.__ww!.step(1);
+      fire('keyup');
+      win.__ww!.step(1);
+    };
+    return { win, menus: booted!.menus!, ticks: () => ticks, endings: () => endings, confirm };
+  }
+
+  it('shows the intro after Start with the ticks held, then the ending dialog and the end screen', async () => {
+    const { win, menus, ticks, endings, confirm } = await boot('?debug=step&title=show');
+    expect(endings()).toBe(true);
+    menus.start(); // no transition specs: the title closes at once and the intro opens
+    expect([menus.state, menus.dialog?.id]).toEqual(['dialog', 'intro']);
+    win.__ww!.step(10);
+    expect(win.__ww!.menus()!.dialog).toMatchObject({ id: 'intro', page: 0, pages: 1, typed: false });
+    expect(document.body.dataset['menu']).toBe('dialog');
+    const before = win.__ww!.hash();
+    win.__ww!.step(10);
+    expect([ticks(), win.__ww!.hash()]).toEqual([0, before]); // held under the dialog
+    confirm(); // skip: the page whole
+    expect(win.__ww!.menus()!.dialog).toMatchObject({ typed: true, text: 'Into the crypt' });
+    confirm(); // done: play
+    expect(menus.state).toBe('play');
+    expect(ticks()).toBe(1);
+    win.__ww!.step(6); // the frame drawn after these steps says exited...
+    win.__ww!.step(1); // ...so the ending's dialog opens on the next, before the game steps
+    expect(menus.dialog?.id).toBe('out');
+    const held = ticks();
+    win.__ww!.step(10);
+    expect(ticks()).toBe(held);
+    confirm(); // skip
+    confirm(); // the box closes: the end screen
+    expect([menus.state, win.__ww!.menus()!.screen, win.__ww!.menus()!.focused]).toEqual([
+      'end',
+      'end',
+      'title',
+    ]);
+    expect(ticks()).toBe(held);
+  });
+
+  it('skips the dialogs and the ending with ?debug=step alone, so the ticks run straight on', async () => {
+    const { win, menus, ticks, endings } = await boot('?debug=step');
+    expect(endings()).toBe(false);
+    expect(menus.state).toBe('play');
+    win.__ww!.step(20);
+    expect(ticks()).toBe(20);
+    expect(menus.state).toBe('play');
+  });
+
+  it('?dialogs=show shows them in manual-loop mode without the title; the ending holds the game', async () => {
+    const { win, menus, ticks } = await boot('?debug=step&dialogs=show');
+    expect(menus.state).toBe('play');
+    win.__ww!.step(8);
+    win.__ww!.step(1); // the frame drawn after those steps said exited: the ending opens now
+    expect(menus.dialog?.id).toBe('out');
+    const held = ticks();
+    expect(held).toBe(8);
+    win.__ww!.step(20);
+    expect(ticks()).toBe(held);
+  });
+
+  it('reads the query', () => {
+    expect(dialogsFromQuery('')).toBe(true);
+    expect(dialogsFromQuery('?debug=step')).toBe(false);
+    expect(dialogsFromQuery('?record')).toBe(false);
+    expect(dialogsFromQuery('?debug=step&title=show')).toBe(true);
+    expect(dialogsFromQuery('?debug=step&dialogs=show')).toBe(true);
+    expect(dialogsFromQuery('?title=show&dialogs=skip')).toBe(false);
+    expect(dialogsFromQuery('?title=skip')).toBe(false);
   });
 });

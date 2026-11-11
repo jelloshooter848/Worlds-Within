@@ -2,9 +2,12 @@ import { z } from 'zod';
 import type { KindIssue } from '../content/kinds';
 import type { FieldPath } from '../content/validate';
 import { Actions, type Action } from '../input/actions';
+import { mixWhenSchema } from '../audio/mix';
 import { missingGlyphs, type FontFile, type FontLookup } from './font';
-import type { UiFrameSize } from './look';
+import { panelExtra, uiLook, type UiFrameSize } from './look';
 import { layoutText } from './text';
+import { DialogBox } from './dialog';
+import { UI_DIALOG_MARGIN } from './screen';
 import {
   uiStyleSchema,
   type UiMenuItemSpec,
@@ -204,6 +207,69 @@ const statLineSchema = z.strictObject({
     .describe('`number` (default) or `time` (ticks at 60 a second, as `m:ss`)'),
 });
 
+/**
+ * A dialog box the shell shows from `menus.dialogs` (Engine 0.16 part C T7): the UI kit's
+ * `DialogBox` over the game, at the bottom of the picture.
+ */
+const dialogSchema = z.strictObject({
+  speaker: z.string().min(1).exactOptional().describe("the speaker's name, on a tab over the box"),
+  portrait: z
+    .strictObject({
+      sheet: z.string().min(1).describe("a sprite file of the game or a skin's PNG image sheet"),
+      frame: z.string().min(1).describe('a frame of that sheet'),
+      palette: z.string().min(1).exactOptional().describe('a palette file to recolour it with'),
+    })
+    .exactOptional()
+    .describe('a sprite frame shown in a frame at the left of the text'),
+  pages: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe('the text, page by page; a page too long for the box breaks into more at whole lines'),
+  rate: z
+    .number()
+    .int()
+    .min(0)
+    .max(30)
+    .exactOptional()
+    .describe("display frames per character (the menus style's `rate`, else 2); 0 shows a page at once"),
+  lines: z
+    .number()
+    .int()
+    .min(2)
+    .max(8)
+    .exactOptional()
+    .describe('lines of text the box holds (3; taller when the portrait needs it)'),
+});
+
+/** An end trigger: the status test that says the game is over, its dialog and the end screen's heading. */
+const endTriggerSchema = z.strictObject({
+  when: mixWhenSchema.describe(
+    "the test on a presented frame's status (`{ status, eq?, ne?, lt?, lte?, gt?, gte? }` or a list that must all hold), e.g. the top-down kit's `exited`",
+  ),
+  dialog: z
+    .string()
+    .min(1)
+    .exactOptional()
+    .describe('a `dialogs` id shown first (none: straight to the end screen)'),
+  heading: z
+    .string()
+    .min(1)
+    .exactOptional()
+    .describe("the end screen's heading for this end (else `end.heading`)"),
+  credits: z
+    .string()
+    .min(1)
+    .exactOptional()
+    .describe("the end screen's credits line for this end (else `end.credits`)"),
+  music: z
+    .string()
+    .min(1)
+    .exactOptional()
+    .describe(
+      'a song (or layered music entry) played when this end opens its dialog or end screen (else `end.music`; Engine 0.16 part C T9)',
+    ),
+});
+
 /** The lines the level-clear and end screens show when they give none. */
 export const DEFAULT_STAT_LINES: readonly StatLine[] = [
   { label: 'Coins', status: 'coins' },
@@ -337,18 +403,59 @@ export const menusSchema = z
         items: itemList(END_ITEMS, 'end')
           .exactOptional()
           .describe(`its menu: ${END_ITEMS.join(', ')} (default title)`),
+        music: z
+          .string()
+          .min(1)
+          .exactOptional()
+          .describe(
+            "a song (or layered music entry) played when the end screen opens, such as a short jingle; the game's music comes back when a level is chosen",
+          ),
       })
       .exactOptional()
-      .describe('the end screen (Engine 0.16 part B), shown once the last level is cleared'),
+      .describe(
+        "the end screen (Engine 0.16 part B), shown once the last level is cleared or (part C) an `end` trigger's test holds",
+      ),
+    dialogs: z
+      .record(
+        z
+          .string()
+          .regex(/^[a-z0-9][a-z0-9-]*$/, { message: 'a dialog id is lower-case letters, digits and -' }),
+        dialogSchema,
+      )
+      .exactOptional()
+      .describe(
+        'dialog boxes by id (Engine 0.16 part C): a speaker, a portrait, pages typed out; `triggers` say when they show',
+      ),
+    triggers: z
+      .strictObject({
+        intro: z
+          .string()
+          .min(1)
+          .exactOptional()
+          .describe('a dialog shown after Start (or Continue), before play: the game is held under it'),
+        end: z
+          .array(endTriggerSchema)
+          .min(1)
+          .exactOptional()
+          .describe(
+            "the game's ends: the first whose `when` holds on a presented frame's status shows its dialog, then the end screen",
+          ),
+      })
+      .exactOptional()
+      .describe(
+        'when the shell shows `dialogs` (Engine 0.16 part C): the intro after Start and the dialogs at the game end, before `end`',
+      ),
   })
   .describe(
-    'the title screen, pause menu, settings and controls screens (Engine 0.16 T9), and the level select, level-clear banner and end screen (Engine 0.16 part B)',
+    'the title screen, pause menu, settings and controls screens (Engine 0.16 T9), the level select, level-clear banner and end screen (Engine 0.16 part B), and dialogs with their triggers (part C)',
   );
 
 export type MenusSpec = z.output<typeof menusSchema>;
 export type MenusStyle = z.output<typeof menusStyleSchema>;
 export type MenuControl = z.output<typeof controlSchema>;
 export type StatLine = z.output<typeof statLineSchema>;
+export type MenuDialog = z.output<typeof dialogSchema>;
+export type EndTrigger = z.output<typeof endTriggerSchema>;
 
 /** The settings items a game shows: its list, else all but `colour`. */
 export function settingsItems(menus: MenusSpec): readonly SettingsItem[] {
@@ -426,6 +533,17 @@ function textHeight(fonts: FontLookup, font: string, text: string, width?: numbe
   const f = fonts(font);
   if (f === null) return 0;
   return layoutText(f, text, width !== undefined ? { width } : {}).height;
+}
+
+/**
+ * A framed screen's width: `width`, widened (up to the picture less 8 px) so the heading in the
+ * title font fits inside the panel with 16 px each side (Engine 0.16 part B, T11: a long end
+ * heading ran over the panel's frame).
+ */
+function headedWidth(menus: MenusSpec, ctx: MenuBuildContext, title: string, width: number): number {
+  const f = ctx.fonts(heading(menus).font);
+  const headW = f === null ? 0 : layoutText(f, title).width + 32;
+  return Math.min(ctx.screen.width - 8, Math.max(width, headW));
 }
 
 function rowHeight(fonts: FontLookup, font: string): number {
@@ -840,11 +958,12 @@ export function levelsScreen(
   items.push({ id: 'back', label: menuLabel(menus, 'back') });
   const font = ctx.fonts(menus.font);
   const widest = font === null ? 0 : Math.max(...items.map((i) => layoutText(font, i.label).width));
-  const width = Math.min(ctx.screen.width - 8, Math.max(140, widest + 48));
+  const title = menus.levels?.heading ?? MENU_HEADINGS.levels;
+  const width = headedWidth(menus, ctx, title, Math.min(ctx.screen.width - 8, Math.max(140, widest + 48)));
   const widgets = framedScreen(
     menus,
     ctx,
-    menus.levels?.heading ?? MENU_HEADINGS.levels,
+    title,
     menuHeight(ctx, menus, items.length),
     width,
     (top) => [{ id: 'main', type: 'menu', anchor: 'top', y: top, w: width - 20, panel: false, items }],
@@ -862,11 +981,12 @@ export function levelsScreen(
 export function clearScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatValues): UiScreenFile {
   const lines = menus.clear?.lines ?? DEFAULT_STAT_LINES;
   const rh = rowHeight(ctx.fonts, menus.font) + 1;
-  const width = Math.min(ctx.screen.width - 8, 160);
+  const title = menus.clear?.heading ?? MENU_HEADINGS.clear;
+  const width = headedWidth(menus, ctx, title, Math.min(ctx.screen.width - 8, 160));
   const widgets = framedScreen(
     menus,
     ctx,
-    menus.clear?.heading ?? MENU_HEADINGS.clear,
+    title,
     Math.max(0, lines.length * rh - 1),
     width,
     (top) => statRows(menus, ctx, lines, status, top, width),
@@ -879,12 +999,22 @@ export function clearScreen(menus: MenusSpec, ctx: MenuBuildContext, status: Sta
  * The end screen: the heading, the credits line, the stat lines (the page sums them over the
  * levels cleared) and its menu (default Back to title), over the game dimmed.
  */
-export function endScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatValues): UiScreenFile {
-  const end = menus.end ?? {};
+export function endScreen(
+  menus: MenusSpec,
+  ctx: MenuBuildContext,
+  status: StatValues,
+  ending?: Pick<EndTrigger, 'heading' | 'credits'>,
+): UiScreenFile {
+  const end = {
+    ...menus.end,
+    ...(ending?.heading !== undefined && { heading: ending.heading }),
+    ...(ending?.credits !== undefined && { credits: ending.credits }),
+  };
   const lines = end.lines ?? DEFAULT_STAT_LINES;
   const items = (end.items ?? ['title']) as EndItem[];
   const rh = rowHeight(ctx.fonts, menus.font) + 1;
-  const width = Math.min(ctx.screen.width - 8, 200);
+  const title = end.heading ?? MENU_HEADINGS.end;
+  const width = headedWidth(menus, ctx, title, Math.min(ctx.screen.width - 8, 200));
   const creditsH =
     end.credits === undefined ? 0 : textHeight(ctx.fonts, menus.font, end.credits, width - 24) + 8;
   const statsH = lines.length * rh;
@@ -892,7 +1022,7 @@ export function endScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatV
   const widgets = framedScreen(
     menus,
     ctx,
-    end.heading ?? MENU_HEADINGS.end,
+    title,
     bodyH,
     width,
     (top) => [
@@ -925,6 +1055,49 @@ export function endScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatV
   if (hint !== '') widgets.push(hintStrip(menus, ctx, 1), hintWidget(menus, hint));
   return { style: menusUiStyle(menus), focus: 'main', widgets };
 }
+
+/** Px between a shell dialog box and the bottom of the picture. */
+export const DIALOG_BOTTOM = 6;
+
+/**
+ * A shell dialog as a UI screen (Engine 0.16 part C T7): `menus.dialogs.<id>` as the UI kit's
+ * dialog widget (id `dialog`) across the bottom of the picture in the menus' style, `lines` of
+ * text high (3), or taller so the portrait's frame fits it at 1x. No dim: the game shows above it.
+ * Throws on an unknown id (validate reports it first).
+ */
+export function dialogScreen(menus: MenusSpec, ctx: MenuBuildContext, id: string): UiScreenFile {
+  const d = menus.dialogs?.[id];
+  if (d === undefined) throw new Error(`menus: no dialog "${id}"`);
+  const style = menusUiStyle(menus);
+  const look = uiLook(style, ctx.fonts, ctx.frameSize);
+  let h = DialogBox.defaultHeight(look, d.lines ?? 3);
+  if (d.portrait !== undefined) {
+    const size = ctx.frameSize(d.portrait.sheet, d.portrait.palette, d.portrait.frame);
+    // The portrait's frame is a square the inner box's height; the sprite needs 4 px of it spare.
+    if (size !== null) h = Math.max(h, Math.max(size.w, size.h) + 4 + panelExtra(look).h);
+  }
+  return {
+    style,
+    focus: DIALOG_WIDGET,
+    widgets: [
+      {
+        id: DIALOG_WIDGET,
+        type: 'dialog',
+        anchor: 'bottom',
+        y: DIALOG_BOTTOM,
+        w: ctx.screen.width - 2 * UI_DIALOG_MARGIN,
+        h,
+        pages: d.pages,
+        ...(d.speaker !== undefined && { speaker: d.speaker }),
+        ...(d.portrait !== undefined && { portrait: d.portrait }),
+        ...(d.rate !== undefined && { rate: d.rate }),
+      },
+    ],
+  };
+}
+
+/** The widget id of a shell dialog's box in `dialogScreen`. */
+export const DIALOG_WIDGET = 'dialog';
 
 /** Every text the menus draw in a font, with its `game.json` field (for `missing_glyph`). */
 function menuTexts(menus: MenusSpec): { path: FieldPath; text: string; font: string }[] {
@@ -984,6 +1157,14 @@ function menuTexts(menus: MenusSpec): { path: FieldPath; text: string; font: str
       label(menus.end?.items ? ['end', 'items', i] : ['end'], id),
     );
   }
+  for (const [id, d] of Object.entries(menus.dialogs ?? {})) {
+    if (d.speaker !== undefined) add(['dialogs', id, 'speaker'], d.speaker);
+    d.pages.forEach((page, i) => add(['dialogs', id, 'pages', i], page));
+  }
+  (menus.triggers?.end ?? []).forEach((t, i) => {
+    if (t.heading !== undefined) add(['triggers', 'end', i, 'heading'], t.heading, head);
+    if (t.credits !== undefined) add(['triggers', 'end', i, 'credits'], t.credits);
+  });
   add(['font'], 'chooseselectbackchange');
   return out;
 }
@@ -1038,8 +1219,42 @@ export function checkMenus(menus: MenusSpec, refs: MenusRefs): Omit<KindIssue, '
   if (menus.style?.panel !== undefined) frameAt(['style', 'panel'], menus.style.panel);
   if (menus.title.music !== undefined && !refs.sounds.has(menus.title.music))
     missing(['title', 'music'], 'song', menus.title.music);
+  if (menus.end?.music !== undefined && !refs.sounds.has(menus.end.music))
+    missing(['end', 'music'], 'song', menus.end.music);
+  (menus.triggers?.end ?? []).forEach((t, i) => {
+    if (t.music !== undefined && !refs.sounds.has(t.music))
+      missing(['triggers', 'end', i, 'music'], 'song', t.music);
+  });
   for (const [key, id] of Object.entries(menus.style?.sounds ?? {}))
     if (id !== undefined && !refs.sounds.has(id)) missing(['style', 'sounds', key], 'sfx or song', id);
+  for (const [id, d] of Object.entries(menus.dialogs ?? {}))
+    if (d.portrait !== undefined) frameAt(['dialogs', id, 'portrait'], d.portrait);
+  const dialogAt = (path: FieldPath, id: string) => {
+    if (menus.dialogs?.[id] === undefined)
+      out.push({
+        path,
+        code: 'missing_ref',
+        message: `no dialog "${id}" in menus.dialogs${
+          menus.dialogs === undefined ? '' : ` (there are: ${Object.keys(menus.dialogs).join(', ')})`
+        }`,
+      });
+  };
+  if (menus.triggers?.intro !== undefined) dialogAt(['triggers', 'intro'], menus.triggers.intro);
+  (menus.triggers?.end ?? []).forEach((t, i) => {
+    if (t.dialog !== undefined) dialogAt(['triggers', 'end', i, 'dialog'], t.dialog);
+    if (menus.end === undefined && (t.heading !== undefined || t.credits !== undefined))
+      out.push({
+        path: ['triggers', 'end', i],
+        code: 'missing_field',
+        message: 'an end trigger with a `heading` or `credits` needs the `end` screen',
+      });
+    else if (menus.end === undefined && t.dialog === undefined)
+      out.push({
+        path: ['triggers', 'end', i],
+        code: 'missing_field',
+        message: 'an end trigger shows its `dialog`, the `end` screen or both: give one',
+      });
+  });
   const wantsControls = [...menus.title.items, ...menus.pause.items].includes('controls');
   if (wantsControls && menus.controls === undefined)
     out.push({

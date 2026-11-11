@@ -29,7 +29,8 @@ ne | lt | lte | gt | gte }, layers: { <layer>: 0..1 }, fade? }] }`. `AudioManage
   (`Sequencer.playLayers`; each layer on its own voices and gain, `Apu.layer(i)`), so a note on
   tick n of any layer sounds on the same sample, loop after loop. `LayerMix` evaluates the rules
   each tick on the last presented frame's status (the first rule that holds wins; a rule without
-  `when` always holds; a layer no rule named plays at 1) and crossfades straight over the rule's
+  `when` always holds; from Engine 0.16 part B `when` may be a list of tests that must all hold,
+  `mixWhenHolds`, so one song can hold a layer per level and its danger; a layer no rule named plays at 1) and crossfades straight over the rule's
   `fade` (else the entry's, else `DEFAULT_MIX_FADE`, 30 ticks); the first update snaps.
   `setLayerGains` ramps each layer's gain over one 60 Hz frame. `validate` (`checkSkinRefs`): a
   layer naming no song is `missing_ref` at `music.<id>.layers.<layer>`, a rule's layer the entry
@@ -188,7 +189,7 @@ through any `Presenter` (the Three.js backend) instead of drawing it with `rende
 one or the other, never both (each keeps its own stream of frames). Like `render`, it must not
 change the game. The optional `background` (a CSS hex colour) is the colour a presenter of
 `frame()` clears to (`screenshot --backend three`) when it is not the skin's: left out, the skin's
-`background` is used, else black (Engine 0.15, gap G36; no game sets it now). The optional `status()` (Engine 0.16 part B) is the status of the last frame `render` drew or `frame()` gave (null before any), for the screenshot page's stat overlays; `frameView` keeps it when its drawer returns its frame (a `FramePicture` does). `frameView({ game,
+`background` is used, else black (Engine 0.15, gap G36; no game sets it now). The optional `status()` (Engine 0.16 part B) is the status of the last frame `render` drew or `frame()` gave (null before any), for the screenshot page's stat overlays; `frameView` keeps it when its drawer returns its frame (a `FramePicture` does). The optional `showHud(shown)` (Engine 0.16 part C T1) draws the skin's HUD or not from the next `render` (the screenshot page's `title` and `levels` overlays); `frameView` hands it to its drawer's `presenter` (a `FramePicture`'s) through `Presenter.showHud`. `frameView({ game,
 screen, frames, picture, background? })` (Engine 0.7, gap G26) is the one helper there: a
 `ViewGame` over a headless game that shows `world` and its last step's `events` (a kit's level
 sequence), keeping the events between draws in a `PendingEvents` (dropped on a new world), with
@@ -563,7 +564,10 @@ drive `RtsCamera` (`present/rts-camera.ts`).
 `gfx/renderer.ts` is the drawing interface: the `Renderer` interface, `Rotation`, and the
 helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`; from Engine 0.16 T3 the
 optional `blend(mode, draw)` (`BlendMode`: `normal` | `add`) and `glow(color, radius, draw)` with
-their helpers `blended` and `glowing` (a renderer without them draws plainly). Backends implement it; core
+their helpers `blended` and `glowing` (a renderer without them draws plainly); from Engine 0.16
+part C T4 the optional `gradient(fill)` (`RadialFill` `{ x, y, radius, color, stops, mode: normal
+| add | erase, box? }`, `RadialMode`) and its helper `radialFilled` (a renderer without it draws
+nothing), what a 2D skin's lighting is drawn with. Backends implement it; core
 never knows which one is drawing.
 
 ## Imports

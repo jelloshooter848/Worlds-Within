@@ -4,8 +4,18 @@
   "profile": "hoppers-way",
   "scroll": "right",
   "spawns": {
-    "w": { "actor": "walker", "facing": "left" },
-    "l": { "actor": "ledge-walker", "facing": "left" }
+    "w": {
+      "actor": "walker",
+      "facing": "left"
+    },
+    "l": {
+      "actor": "ledge-walker",
+      "facing": "left"
+    },
+    "v": {
+      "actor": "walker",
+      "facing": "right"
+    }
   },
   "blocks": ["life", "coin"]
 }

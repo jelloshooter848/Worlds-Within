@@ -128,6 +128,11 @@ export { anchorBox, UI_DIALOG_MARGIN, UI_PANEL_DEFAULT, UiScreen, type UiScreenO
 export {
   CLEARED_MARK,
   clearScreen,
+  DIALOG_BOTTOM,
+  DIALOG_WIDGET,
+  dialogScreen,
+  type EndTrigger,
+  type MenuDialog,
   DEFAULT_STAT_LINES,
   END_ITEMS,
   endScreen,

@@ -94,4 +94,20 @@ describe('frameView', () => {
     view.frame!();
     expect(view.status!()).toEqual({ n: 6 });
   });
+
+  it("hands showHud to the drawer's presenter before each draw (Engine 0.16 part C T1)", () => {
+    const shown: boolean[] = [];
+    const view = frameView({
+      game: testGame(),
+      screen: { width: 8, height: 8 },
+      frames: { next: frameOf },
+      picture: () => ({ presenter: { present() {}, showHud: (s: boolean) => shown.push(s) }, draw() {} }),
+    });
+    view.render({} as Renderer);
+    view.showHud!(false);
+    view.render({} as Renderer);
+    view.showHud!(true);
+    view.render({} as Renderer);
+    expect(shown).toEqual([true, false, true]);
+  });
 });

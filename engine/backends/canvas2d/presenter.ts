@@ -17,7 +17,8 @@ function isRenderer(target: Renderer | Ctx): target is Renderer {
  * The Canvas2D backend's `Presenter`: the core `SkinnedPresenter` (`@engine/core/draw`, the skinned
  * presenter walk the 2D backends share from Engine 0.16 T13b) on a `CanvasRenderer` (or any
  * `Renderer` given), with offscreen canvases as its default `mapSurface` (the cached map) and
- * `glyphSurface` (UI font strips); none in Node, where the map's tiles and glyphs' ink runs are
+ * `glyphSurface` (UI font strips) and `lightSurface` (the skin's lighting's light map, Engine 0.16
+ * part C T4); none in Node, where the map's tiles and glyphs' ink runs are
  * drawn every frame. Every option and method is the core presenter's.
  */
 export class SkinnedCanvasPresenter extends SkinnedPresenter {
@@ -31,6 +32,7 @@ export class SkinnedCanvasPresenter extends SkinnedPresenter {
       ...opts,
       mapSurface: opts.mapSurface ?? canvasSurface,
       glyphSurface: opts.glyphSurface ?? canvasSurface,
+      lightSurface: opts.lightSurface ?? canvasSurface,
     });
   }
 }

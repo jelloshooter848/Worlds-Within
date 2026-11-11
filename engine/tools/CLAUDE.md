@@ -1091,11 +1091,18 @@ games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three --al
   `pngOf`): each pixel an exact N x N block, so a 320x180 game at 6 is exactly 1920x1080 and
   `width`/`height` are the scaled size. `--overlay` takes one overlay in `sheet`'s grammar
   (`parseOverlay`: `title`, `pause`, `settings`, `controls`, `levels`, `clear`, `end`,
-  `ui=<file>[.<widget>]`, a transition slot or kind, each with `*<n>`), checked with
+  `ui=<file>[.<widget>]`, from Engine 0.16 part C `dialog:<id>` (a `menus.dialogs` box as the
+  shell shows it, `dialogScreen`, stepped until its first page is typed out unless `*<n>`), a
+  transition slot or kind, each with `*<n>`), checked with
   `checkOverlay` before Chromium starts (usage error, exit 2, when the game cannot show it) and
   drawn through the same job as `sheet` (`shotSetup` with a one-tile `ShotJob.tiles`); `overlay`
-  in the result is its label (null without one). The `clear` and `end` screens show the status of
-  the frame drawn at the tick (`ViewGame.status()`, which `frameView` keeps; in 3D the frame's).
+  in the result is its label (null without one). Under `title` and `levels` (Engine 0.16 part C
+  T1) the picture is drawn without its HUD, as the shell draws it (2D: the view's
+  `ViewGame.showHud(false)` and the tick drawn again for those tiles; 3D: `ThreePresenter.showHud`);
+  `settings` and `controls` keep it (they also open from the pause menu). The `clear` and `end` screens show the status of
+  the frame drawn at the tick (`ViewGame.status()`, which `frameView` keeps; in 3D the frame's);
+  `end` takes the heading and credits of the first `menus.triggers.end` entry whose test holds on
+  that status (Engine 0.16 part C), as the shell would.
   `pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear
 --out x.png --json` writes the level-clear banner at 1536x1440.
 - Chromium: `pnpm exec playwright install --with-deps chromium` (CI does this). Without it the
@@ -1124,7 +1131,9 @@ Engine 0.16 T14: `pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks
   default volumes and settings), and from Engine 0.16 part B `levels` (the level select over the
   game's levels, `sheetLevels`: its campaign's level entries, else its `level` files, named by
   their headers' `name`; nothing cleared yet), `clear` and `end` (the level-clear banner and the
-  end screen, `menus.clear` / `menus.end`, with the tick's frame status as their stats), `ui=<file>` (a `ui` content file's screen as it opens) or
+  end screen, `menus.clear` / `menus.end`, with the tick's frame status as their stats), `dialog:<id>`
+  (Engine 0.16 part C: a `menus.dialogs` box, its first page typed out unless `*<frames>`; an id
+  the game lacks is a usage error naming the ids it has), `ui=<file>` (a `ui` content file's screen as it opens) or
   `ui=<file>.<widget>` (every widget closed, that one opened), each stepped `*<frames>` display
   frames with no input first (30 for menus, 120 for ui: focus tweens settle, a dialog types), or a
   transition: a slot of `game.json`'s `transitions` (`level`, `scene`, `mission`, `respawn`, `default`) or a

@@ -1,0 +1,594 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 3650,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 52,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 66,
+        "hold": ["right"]
+      },
+      {
+        "frame": 114,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 130,
+        "hold": ["right"]
+      },
+      {
+        "frame": 146,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 160,
+        "hold": ["right"]
+      },
+      {
+        "frame": 200,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 204,
+        "hold": ["right"]
+      },
+      {
+        "frame": 270,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 290,
+        "hold": ["right"]
+      },
+      {
+        "frame": 376,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 400,
+        "hold": ["right"]
+      },
+      {
+        "frame": 490,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 510,
+        "hold": ["right"]
+      },
+      {
+        "frame": 604,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 632,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 662,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 707,
+        "hold": []
+      },
+      {
+        "frame": 767,
+        "hold": ["right"]
+      },
+      {
+        "frame": 811,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 825,
+        "hold": ["right"]
+      },
+      {
+        "frame": 867,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 883,
+        "hold": ["right"]
+      },
+      {
+        "frame": 925,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 947,
+        "hold": ["right"]
+      },
+      {
+        "frame": 972,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 992,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1025,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1029,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1101,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1115,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1245,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1263,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1305,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1315,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1351,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1371,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1388,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1396,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1418,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1436,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1498,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1502,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1569,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1589,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1726,
+        "hold": []
+      },
+      {
+        "frame": 1786,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1826,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1836,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1874,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1894,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1955,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1975,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1987,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2003,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2019,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2039,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2102,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2116,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2128,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2132,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2189,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2209,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2256,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2276,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2327,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2351,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2570,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2590,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2599,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2619,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2636,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2656,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2711,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2715,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2796,
+        "hold": []
+      },
+      {
+        "frame": 2856,
+        "hold": []
+      },
+      {
+        "frame": 2857,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3142,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 3160,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3179,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3193,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3243,
+        "hold": []
+      },
+      {
+        "frame": 3283,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 3301,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3314,
+        "hold": []
+      },
+      {
+        "frame": 3319,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3369,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3388,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3406,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3417,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3420,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3422,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3423,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3424,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3425,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3426,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3427,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3428,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3429,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3430,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3431,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3432,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3433,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3458,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 3476,
+        "hold": ["left"]
+      },
+      {
+        "frame": 3483,
+        "hold": []
+      },
+      {
+        "frame": 3493,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3495,
+        "hold": []
+      },
+      {
+        "frame": 3645,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "stage",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-1"
+    },
+    {
+      "tick": 707,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 707,
+      "path": "coins",
+      "op": "eq",
+      "value": 12
+    },
+    {
+      "tick": 767,
+      "path": "stage",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 767,
+      "path": "level",
+      "op": "eq",
+      "value": "level-2"
+    },
+    {
+      "tick": 1726,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 1726,
+      "path": "coins",
+      "op": "eq",
+      "value": 16
+    },
+    {
+      "tick": 1786,
+      "path": "stage",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 1786,
+      "path": "level",
+      "op": "eq",
+      "value": "level-3"
+    },
+    {
+      "tick": 2796,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 2796,
+      "path": "coins",
+      "op": "eq",
+      "value": 22
+    },
+    {
+      "tick": 2856,
+      "path": "stage",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 2856,
+      "path": "level",
+      "op": "eq",
+      "value": "boss"
+    },
+    {
+      "tick": 3644,
+      "path": "outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 3645,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 3650,
+      "path": "stage",
+      "op": "eq",
+      "value": 3
+    }
+  ],
+  "invariants": [
+    {
+      "path": "outcome",
+      "op": "ne",
+      "value": "failed"
+    },
+    {
+      "path": "lives",
+      "op": "gte",
+      "value": 3
+    }
+  ],
+  "hashEvery": 120,
+  "guards": [
+    "gravity",
+    "fall-cap",
+    "walk",
+    "run-speed",
+    "air-control",
+    "jump",
+    "coyote-time",
+    "jump-by-speed",
+    "variable-jump",
+    "solid-tiles",
+    "one-way-platforms",
+    "coins-collect",
+    "bump-blocks",
+    "goal-clears-level",
+    "actors-wake",
+    "stomping",
+    "stomp-bounce",
+    "boss-pattern",
+    "boss-phases",
+    "boss-stomp-hits",
+    "boss-defeat-clears",
+    "boss-projectiles"
+  ]
+}

@@ -5,6 +5,8 @@ import type { SceneStack } from '../scene';
 import {
   clearScreen,
   controlsScreen,
+  DIALOG_WIDGET,
+  dialogScreen,
   DEFAULT_STAT_LINES,
   endScreen,
   levelItemStage,
@@ -16,6 +18,8 @@ import {
   type FontLookup,
   type LevelChoice,
   type StatValues,
+  type DialogBox,
+  type EndTrigger,
   type UiDraw,
   type MenuBuildContext,
   type MenuSettingsValues,
@@ -26,6 +30,7 @@ import {
   type UiPoint,
   type UiScreenFile,
 } from '../ui';
+import { mixWhenHolds } from '../audio/mix';
 import { UiScene } from './ui-scene';
 
 /**
@@ -48,10 +53,19 @@ import { UiScene } from './ui-scene';
  * pushed once a frame says the last level is cleared, holding the game, with the stats summed over
  * the levels cleared since the game started). {@link GameMenus.frameStatus} reads every presented
  * frame's status; nothing it does reaches the game.
+ *
+ * Engine 0.16 part C (T7): dialog boxes from `menus.dialogs`, shown by `menus.triggers`. The
+ * `intro` dialog shows once Start (or Continue) has closed the title, before play; an `end`
+ * trigger whose `when` holds on a presented frame's status (once per game) shows its dialog and
+ * then the end screen (`menus.end`, with the trigger's heading and credits, and that frame's
+ * status as its stats). A dialog is a `UiScene` on the stack like a menu, so the game's ticks are
+ * held while it shows; confirm or a tap types the page out, then turns it, then closes the box.
+ * With `dialogs: false` (the boot's `?debug=step`, `?record`) neither trigger fires, so runs and
+ * replays play exactly as without them.
  */
 
 /** What the menus show now: the title (or a screen opened from it), the pause menu, the end screen, or nothing. */
-export type MenusState = 'title' | 'pause' | 'end' | 'play';
+export type MenusState = 'title' | 'pause' | 'end' | 'dialog' | 'play';
 
 /** The page side of the settings screen: the values it opens with and where changes go. */
 export interface MenuSettingsHost {
@@ -96,9 +110,14 @@ export interface GameMenusOptions {
   startAt?(stage: number): void;
   /** A frame said a level was cleared (its id): the page keeps the progress. */
   onCleared?(level: string): void;
+  /**
+   * Whether the `triggers` show their dialogs and the game's ends open the end screen (default
+   * true; the boot passes `dialogsFromQuery`: off in manual-loop mode and when recording).
+   */
+  dialogs?: boolean;
 }
 
-type Screen = 'title' | 'pause' | 'settings' | 'controls' | 'levels' | 'end';
+type Screen = 'title' | 'pause' | 'settings' | 'controls' | 'levels' | 'end' | 'dialog';
 type Base = 'title' | 'pause' | 'end';
 
 export class GameMenus {
@@ -116,6 +135,16 @@ export class GameMenus {
   private lastCleared: StatValues = {};
   /** The last level was cleared: the end screen opens on the next step. */
   private endDue = false;
+  /** The dialog the `dialog` screen shows (its `menus.dialogs` id), or null. */
+  private dialogId: string | null = null;
+  /** The end trigger that fired this game (its dialog, then the end screen), or null. */
+  private ending: EndTrigger | null = null;
+  /** The status of the frame the ending fired on (the end screen's stats). */
+  private endingStatus: StatValues = {};
+  /** The ending fired and its dialog or end screen waits for the next step. */
+  private endingDue = false;
+  /** The dialog showing is the ending's: the end screen follows it. */
+  private endingDialog = false;
   /** Every event of every menu, in order (for tests and page hooks). */
   readonly events: { screen: Screen; event: UiEvent }[] = [];
   private busy = false;
@@ -130,14 +159,38 @@ export class GameMenus {
   get state(): MenusState {
     const bottom = this.open[0];
     if (bottom === undefined) return 'play';
-    return bottom.screen === 'title' || bottom.screen === 'pause' || bottom.screen === 'end'
+    return bottom.screen === 'title' ||
+      bottom.screen === 'pause' ||
+      bottom.screen === 'end' ||
+      bottom.screen === 'dialog'
       ? bottom.screen
       : this.from;
+  }
+
+  /**
+   * Whether the game picture under the menus draws its HUD (Engine 0.16 part C T1): not while the
+   * title, or a screen opened from it (settings, controls, the level select), shows over the
+   * waiting game; the pause menu and the end screen keep it. Presentation only: the boot hands it
+   * to the display (`BrowserDisplay.showHud`) before each draw.
+   */
+  get hudShown(): boolean {
+    return this.state !== 'title';
   }
 
   /** The screen on top (`title`, `pause`, `settings`, `controls`), or null in play. */
   get screen(): Screen | null {
     return this.open[this.open.length - 1]?.screen ?? null;
+  }
+
+  /** The dialog box showing (Engine 0.16 part C), with its `menus.dialogs` id, or null. */
+  get dialog(): { id: string; box: DialogBox } | null {
+    if (this.screen !== 'dialog' || this.dialogId === null) return null;
+    const box = this.ui?.dialog(DIALOG_WIDGET);
+    return box === undefined ? null : { id: this.dialogId, box };
+  }
+
+  private get dialogsOn(): boolean {
+    return this.opts.dialogs ?? true;
   }
 
   /** The UI screen on top, or null in play. */
@@ -166,7 +219,9 @@ export class GameMenus {
       case 'levels':
         return levelsScreen(spec, ctx, this.opts.levels?.() ?? []);
       case 'end':
-        return endScreen(spec, ctx, this.endStatus());
+        return endScreen(spec, ctx, this.endStatus(), this.ending ?? undefined);
+      case 'dialog':
+        return dialogScreen(spec, ctx, this.dialogId ?? '');
       case 'pause':
         return pauseScreen(spec, ctx);
       case 'settings':
@@ -261,7 +316,20 @@ export class GameMenus {
       this.busy = false;
       this.closeAll();
       if (this.opts.spec.title.music !== undefined) this.opts.music?.(null);
+      const intro = this.opts.spec.triggers?.intro;
+      if (intro !== undefined && this.dialogsOn) this.showDialog(intro);
     });
+  }
+
+  /**
+   * Shows a dialog of `menus.dialogs` over the game (held under it); false when the menus show
+   * something else, a transition runs or there is no such dialog. Closing it gives play back.
+   */
+  showDialog(id: string): boolean {
+    if (this.open.length > 0 || this.busy || this.opts.spec.dialogs?.[id] === undefined) return false;
+    this.dialogId = id;
+    this.push('dialog');
+    return true;
   }
 
   /** Back to title: the game starts over (the boot rebuilds it) and the title shows. */
@@ -283,7 +351,8 @@ export class GameMenus {
       this.busy = false;
       this.closeAll();
       this.newGame();
-      if (this.opts.spec.title.music !== undefined) this.opts.music?.(null);
+      if (this.opts.spec.title.music !== undefined || this.opts.spec.end?.music !== undefined)
+        this.opts.music?.(null);
       this.opts.startAt!(stage);
     });
   }
@@ -308,11 +377,15 @@ export class GameMenus {
     this.last = null;
     this.endDue = false;
     this.banner = null;
+    this.ending = null;
+    this.endingStatus = {};
+    this.endingDue = false;
+    this.endingDialog = false;
   }
 
   /** The end screen's values: the summed numbers over the last cleared frame's status. */
   private endStatus(): StatValues {
-    return { ...this.lastCleared, ...this.sums };
+    return { ...this.endingStatus, ...this.lastCleared, ...this.sums };
   }
 
   /**
@@ -322,6 +395,7 @@ export class GameMenus {
    * level-clear banner shows (`menus.clear`) until a frame is no longer `cleared`.
    */
   frameStatus(status: StatValues): void {
+    this.endTriggers(status);
     const level = String(status['level'] ?? '');
     const outcome = String(status['outcome'] ?? '');
     const was = this.last;
@@ -355,16 +429,51 @@ export class GameMenus {
   }
 
   /**
+   * The game's ends (Engine 0.16 part C): the first `triggers.end` entry whose `when` holds on
+   * this status fires, once per game (until the title or a level select starts a new one).
+   */
+  private endTriggers(status: StatValues): void {
+    if (!this.dialogsOn || this.ending !== null) return;
+    const hit = this.opts.spec.triggers?.end?.find((t) => mixWhenHolds(t.when, status));
+    if (hit === undefined) return;
+    this.ending = hit;
+    this.endingStatus = { ...status };
+    this.endingDue = true;
+  }
+
+  /**
    * One loop step, before the scenes update: the banner's clock goes on, and a due end screen
-   * opens (in play only). Returns whether the end screen opened.
+   * opens (in play only), or a fired ending's dialog (or, without one, its end screen). Returns
+   * whether a screen opened (the game does not step this time).
    */
   step(): boolean {
     this.banner?.update({ commands: [], taps: [], pointer: null });
-    if (!this.endDue || this.open.length > 0 || this.busy) return false;
+    if (this.open.length > 0 || this.busy) return false;
+    if (this.endingDue) {
+      this.endingDue = false;
+      // An ending's own music (a victory tune, a lament) starts with its dialog.
+      if (this.ending?.music !== undefined) this.opts.music?.(this.ending.music);
+      const id = this.ending?.dialog;
+      if (id !== undefined && this.showDialog(id)) {
+        this.endingDialog = true;
+        return true;
+      }
+      return this.openEnd();
+    }
+    if (!this.endDue) return false;
     this.endDue = false;
+    return this.openEnd();
+  }
+
+  /** The end screen over the game (none without `menus.end`). */
+  private openEnd(): boolean {
+    if (this.opts.spec.end === undefined) return false;
     this.banner = null;
     this.from = 'end';
     this.push('end');
+    // An ending with music of its own keeps it playing under the end screen.
+    if (this.ending?.music === undefined && this.opts.spec.end.music !== undefined)
+      this.opts.music?.(this.opts.spec.end.music);
     return true;
   }
 
@@ -379,6 +488,18 @@ export class GameMenus {
   }
 
   private handle(screen: Screen, e: UiEvent): void {
+    if (screen === 'dialog') {
+      // The box closed after its last page: play again, or the ending's end screen.
+      if (e.type === 'done') {
+        this.pop();
+        this.dialogId = null;
+        if (this.endingDialog) {
+          this.endingDialog = false;
+          this.openEnd();
+        }
+      }
+      return;
+    }
     if (screen === 'settings' && e.type === 'change' && typeof e.item === 'string')
       this.opts.settings.change(e.item, e.value);
     const item = e.type === 'activate' ? e.item : null;

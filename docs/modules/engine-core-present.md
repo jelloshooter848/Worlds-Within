@@ -15,7 +15,9 @@ squash and stretch are optional extension points a backend may ignore.
 Import from `@engine/core/present` (`index.ts`).
 
 - Types: `PresentFrame`, `PresentEntity`, `PresentAnim`, `PresentFx`, `Facing`, `PresentMap`,
-  `PresentMapRef`, `PresentMapLayer`, `PresentEvent`, `PresentStatusValue`, `CameraHint`,
+  `PresentMapRef`, `PresentMapLayer`, `PresentMapPart` (Engine 0.16 part C T4: a full map's
+  optional `parts`, the maps it is made of at their places, such as a room slide's two rooms),
+  `PresentEvent`, `PresentStatusValue`, `CameraHint`,
   `PresentBox`, `DeepReadonly`.
 - `Facing` (Engine 0.9, owner answer 128): `up`, `down`, `left`, `right` and the diagonals
   `up-left`, `up-right`, `down-left`, `down-right` (`FACINGS`). Helpers: `cardinalFacing(f)` (a
@@ -59,6 +61,10 @@ Import from `@engine/core/present` (`index.ts`).
   from T7 a skin's `themes` (map id -> `{ background?, parallax?, tiles? }`, laid over the skin by
   `themedSkin(skin, mapId)`) gives each level its own sky, parallax and ground;
   `resolveTileFrame`, `tileJoinKeys`, `TILE_JOIN_WORDS`, `bad_join_key` (`tile-join.test.ts`).
+  Engine 0.16 part C T3: a 2D tile's `vary` (`{ frames, weights?, period? }`, `variedTileFrame`:
+  floor variety by a hash of the cell's place, after any `join` key), a `hearts` HUD item's `half`
+  (the status counts halves) and any HUD item's `when` (`hudItemShown`: shown only while that
+  status is truthy).
   Engine 0.16 F8: a 3D skin's `rounds2d` (the rounds a 3D page draws in 2D), `labels` on 2D skins,
   2D kind fields `turnToFacing`, `ring` and `hitFlash`, and colour palettes (`#fff`,
   `isSilhouettePalette`: a silhouette, for hit flashes).
@@ -110,7 +116,11 @@ event)` gives the entry, the first matching field key in file order, else the ba
   and the skin a top-level `parallax` list of background layers (a sprite `frame` or a colour
   `gradient`, `factor`, `repeat`, `x`/`y`, `depth`; frames checked across files). `zoomAbout`
   and `cameraArea` (`camera.ts`) are the zoom punch both presenters apply after framing.
-  `games/fx-lab` is the worked example. Field
+  `games/fx-lab` is the worked example. From Engine 0.16 part C T4 a 2D skin may have a
+  top-level `lighting` block (darkness per map tag or id, lights per kind and state, tile, place
+  and event with flicker, a vignette and room-wide particles; `engine/core/fx`'s `SkinLighting`),
+  its references checked (`missing_ref`, `bad_event_key`, a placed sprite's frames across files)
+  and `wrong_backend_field` on a 3D skin. Field
   reference: `docs/reference/schemas.md`, section `skin`.
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named

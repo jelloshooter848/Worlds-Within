@@ -1,0 +1,9 @@
+{
+  "id": "warden-fight",
+  "bpm": 132,
+  "loop": true,
+  "pulse1": "v5 @2 q6 L o4f8 o4a8 o5f8 o4a8 o4f8 o4a8 o5f8 o4a8 | o4f8 o4a8 o5f8 o4a8 o4f8 o4a8 o5f8 o4a8 | o4d8 o4f8 o5d8 o4f8 o4d8 o4f8 o5d8 o4f8 | o4e8 o4g8 o5e8 o4g8 o4e8 o4g8 o5e8 o4g8 | o4f8 o4a8 o5f8 o4a8 o4f8 o4a8 o5f8 o4a8 | o4a+8 o4d8 o5a+8 o4d8 o4a+8 o4d8 o5a+8 o4d8 | o4c+8 o4e8 o5c+8 o4e8 o4c+8 o4e8 o5c+8 o4e8 | o4c+8 o4e8 o5c+8 o4e8 o4c+8 o4e8 o5c+8 o4e8",
+  "pulse2": "v2 @1 L r1 | r1 | r1 | r1 | r1 | r1 | r1 | r1",
+  "triangle": "q5 L o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2a+8 o2a+8 o3a+8 o2a+8 o2a+8 o2a+8 o3a+8 o2a+8 | o3c8 o3c8 o4c8 o3c8 o3c8 o3c8 o4c8 o3c8 | o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2g8 o2g8 o3g8 o2g8 o2g8 o2g8 o3g8 o2g8 | o2a8 o2a8 o3a8 o2a8 o2a8 o2a8 o3a8 o2a8 | o2a8 o2a8 o3a8 o2a8 o2a8 o2a8 o3a8 o2a8",
+  "noise": "v5 L k8 h8 s8 h8 k8 k8 s8 h8 | k8 h8 s8 h8 k8 k8 s8 h8 | k8 h8 s8 h8 k8 k8 s8 h8 | k8 h8 s8 h8 k8 k8 s8 h8 | k8 h8 s8 h8 k8 k8 s8 h8 | k8 h8 s8 h8 k8 k8 s8 h8 | k8 h8 s8 h8 k8 k8 s8 h8 | k8 h8 s8 h8 k8 k8 s8 h8"
+}

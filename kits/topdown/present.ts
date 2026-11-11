@@ -15,12 +15,13 @@ import { DIR_VEC, HUD_H, ROOM_COLS, ROOM_H, ROOM_ROWS, ROOM_W, SIDE_DIR, TILE, t
 import { ATTACK_FRAMES, HOLD_FRAMES, KNOCK_FRAMES, SPIN_FRAMES, USE_FRAMES, swordAt } from './hero';
 import { Chest, FloorSwitch, Pickup, Poof, PushBlock, TdEnemy, Torch, type TdEntity } from './entity';
 import { Bat, Projectile, Rock, Spitter, Walker } from './enemies';
+import { BOSS_HIT_INVULN, TdBoss, bossesIn } from './boss';
 import { BOMB_FUSE, Bomb, Boomerang, Explosion } from './items';
 import { BeamBurst, SwordBeam } from './beam';
 import { TdPerson } from './person';
 import { typeNameOf } from './type-names';
 import { sideOf, tileAt, type Room, type TileKind } from './room';
-import type { TopDownWorld } from './world';
+import { eventPlace, type TopDownWorld } from './world';
 
 /**
  * The top-down kit's side of the presentation contract (`@engine/core/present`, Engine 0.4): it
@@ -45,6 +46,8 @@ export const PRESENT_TILES = {
   block: 'B',
   statue: 'S',
   water: '~',
+  /** A pit (Engine 0.16 part C T5): a dash crosses it. */
+  pit: '^',
   stairs: '=',
   exit: 'E',
   /** A doorway the hero can walk through. */
@@ -220,6 +223,25 @@ export function presentMap(world: TopDownWorld): TdPresentedMap {
     rows: across ? ROOM_ROWS : ROOM_ROWS * 2,
     tiles,
     tags,
+    // Each room's place in the slide map, for a skin's per-room looks (Engine 0.16 part C T4).
+    parts: [
+      {
+        id: tr.from.id,
+        col: fromAt.x / TILE,
+        row: fromAt.y / TILE,
+        cols: ROOM_COLS,
+        rows: ROOM_ROWS,
+        tags: roomTags(tr.from),
+      },
+      {
+        id: room.id,
+        col: origin.x / TILE,
+        row: origin.y / TILE,
+        cols: ROOM_COLS,
+        rows: ROOM_ROWS,
+        tags: roomTags(room),
+      },
+    ],
   };
   return { map, origin, view: { x: fromAt.x + v.dx * shift, y: fromAt.y + v.dy * shift } };
 }
@@ -252,6 +274,26 @@ export class TdPresentIds {
 export class TdPresentState {
   readonly maps = new MapTracker();
   readonly ids = new TdPresentIds();
+  /** The hero's walk counter last seen and the world frame it last changed on (`opts.idle`). */
+  stride: { walkT: number; since: number } | null = null;
+}
+
+/** Ticks the hero's walk counter must stand still before `opts.idle` shows him `idle`. */
+export const IDLE_AFTER = 6;
+
+/**
+ * Ticks the hero has stood idle (his walk counter unchanged for more than `IDLE_AFTER` ticks), or
+ * null while he walks. Kept in the stream's state, never in the world: presentation only.
+ */
+function idleTicks(world: TopDownWorld, state: TdPresentState): number | null {
+  const { walkT } = world.hero;
+  const s = state.stride;
+  if (s === null || s.walkT !== walkT || world.frame < s.since) {
+    state.stride = { walkT, since: world.frame };
+    return s === null ? 0 : null;
+  }
+  const still = world.frame - s.since - IDLE_AFTER;
+  return still >= 0 ? still : null;
 }
 
 /**
@@ -306,6 +348,12 @@ export interface TdPresentOptions {
   /** Tag a hurt hero `calm` instead of `flashing` (the reduce-flashing setting). */
   reduceFlashing?: boolean;
   /**
+   * Opt-in (Engine 0.16 part C T3): with `state`, a hero in `walk` whose walk counter has not
+   * moved for more than `IDLE_AFTER` ticks is presented as `idle` (`t` counting from then), so a
+   * skin can play a breathing loop. Off by default: skins without an `idle` state are unchanged.
+   */
+  idle?: boolean;
+  /**
    * The stream's memory (TdPresentState): with it the full map is sent only when the room or its
    * tiles change, and ids stay stable for things not placed by the room text. Without it every
    * frame carries the full map.
@@ -326,15 +374,17 @@ function presentHero(
   at: { x: number; y: number },
   calm: boolean,
   dark: boolean,
+  idle: number | null,
 ): PresentEntity[] {
   const h = world.hero;
   if (h.dead) return [];
-  let state = 'walk';
-  let t = h.walkT;
+  let state = idle === null ? 'walk' : 'idle';
+  let t = idle === null ? h.walkT : idle;
   if (h.dying >= SPIN_FRAMES) [state, t] = ['poof', h.dying - SPIN_FRAMES];
   else if (h.dying > 0) [state, t] = ['dying', h.dying - 1];
   else if (h.attacking) [state, t] = ['attack', ATTACK_FRAMES - h.attackT];
   else if (h.holdT > 0) [state, t] = ['hold', HOLD_FRAMES - h.holdT];
+  else if (h.dashT > 0) [state, t] = ['dash', h.dashTicks - h.dashT];
   else if (h.kbT > 0) [state, t] = ['hurt', KNOCK_FRAMES - h.kbT];
   else if (h.useT > 0) [state, t] = ['throw', USE_FRAMES - h.useT];
   const tags: string[] = [];
@@ -343,6 +393,7 @@ function presentHero(
     tags.push(calm ? 'calm' : 'flashing');
   }
   if (h.holding) tags.push(`holding:${h.holding}`);
+  if (h.dashT > 0) tags.push('dash');
   const out: PresentEntity[] = [];
   if (h.holding) {
     // The prize held over his head (a tile-sheet frame; its art is centred on him, 16 px up).
@@ -397,6 +448,8 @@ interface EntityCtx {
   calm: boolean;
   /** The room on screen is dark (things drawn from the tile sheet take its dark palette). */
   dark: boolean;
+  /** Ticks the hero has stood idle (`opts.idle`), or null: he is presented as walking. */
+  idle: number | null;
 }
 
 /** Tags for something that blinks or flickers: `flashing`, or `calm` with reduce flashing. */
@@ -428,6 +481,13 @@ function lookOf(e: TdEntity, ctx: EntityCtx): { state: string; t: number; facing
     if (e.invuln > 0) tags.push('invuln', flicker(ctx));
     if (e.kbT > 0) tags.push('knockback');
     if (e.stunT > 0) tags.push('stunned');
+    if (e instanceof TdBoss) {
+      // Its state (BOSS_ANIMS): `t` ticks into it (into the hit for `hurt`).
+      const state = e.anim;
+      const t = state === 'hurt' ? (e.def.hitInvuln ?? BOSS_HIT_INVULN) - e.invuln : e.tick;
+      tags.push('boss', `phase:${e.phase}`);
+      return look(state, t, tags, e.facing);
+    }
     if (e instanceof Bat) return look(e.resting ? 'rest' : 'fly', e.resting ? 0 : frame, tags, e.facing);
     if (e instanceof Spitter && e.stopT > 0) return look('spit', e.stopT - 1, tags, e.facing);
     if (e instanceof Walker) return look('walk', e.anim, tags, e.facing);
@@ -550,7 +610,7 @@ function presentEntities(world: TopDownWorld, ctx: EntityCtx): PresentEntity[] {
     folk.filter((e) => e.y <= heroY),
     TD_DEPTH.folkBehind,
   );
-  out.push(...presentHero(world, ctx.at, ctx.calm, ctx.dark));
+  out.push(...presentHero(world, ctx.at, ctx.calm, ctx.dark, ctx.idle));
   add(
     folk.filter((e) => e.y > heroY),
     TD_DEPTH.folkFront,
@@ -565,7 +625,10 @@ function presentEntities(world: TopDownWorld, ctx: EntityCtx): PresentEntity[] {
  * `ammo.<id>` for every item with ammo (0 until found), `room` (its id), `mapX`/`mapY` (its map
  * cell), `mapCols`/`mapRows`, `visited` (the cells seen, `gx,gy` joined by spaces, sorted),
  * `hasMap`/`hasCompass`, `goalX`/`goalY` once the compass is found, and `top` (the play area's
- * y on the picture, a layout hint).
+ * y on the picture, a layout hint); from Engine 0.16 part C T7 also `time` (the world's ticks),
+ * `roomsSeen`, `exited` (an exit reached), `dead` (the hero dead after his spin) and
+ * `flag.<id>` (true) for each world flag set (a beaten boss's), for a page's end triggers; from
+ * T10 `enemies` (the living enemies in the room, a boss counted), for a danger music layer.
  */
 function presentStatus(world: TopDownWorld, top: number): Record<string, PresentStatusValue> {
   const d = world.dungeon;
@@ -592,7 +655,24 @@ function presentStatus(world: TopDownWorld, top: number): Record<string, Present
     hasMap: world.found.has('map'),
     hasCompass: world.found.has('compass'),
     top,
+    // The run's state for a page's end triggers and end screen (Engine 0.16 part C T7):
+    // presentation only, never in the snapshot.
+    time: world.frame,
+    roomsSeen: cells.length,
+    exited: world.exited,
+    dead: world.hero.dead,
+    // Living enemies in the room (Engine 0.16 part C T10): for a danger music layer.
+    enemies: world.enemies().length,
   });
+  for (const flag of [...world.flags].sort()) status[`flag.${flag}`] = true;
+  // A boss in the room (Engine 0.16 part C T6): its bar's values; none without one.
+  const boss = bossesIn(world.entities)[0];
+  if (boss) {
+    status['bossHp'] = boss.hp;
+    status['bossMaxHp'] = boss.maxHp;
+    status['bossName'] = boss.name;
+    status['bossPhase'] = boss.phase;
+  }
   if (world.found.has('compass')) {
     for (const r of d.rooms.values())
       if (r.def.goal) {
@@ -618,17 +698,22 @@ const HERO_EVENTS = new Set([
   'chest',
   'bomb',
   'exit',
+  'dash',
+  'dash-end',
 ]);
 
 /**
  * The world's events (TdEvents) as presented events: their JSON-safe fields copied, hero events
- * at the hero's centre (`entity: 'hero'`), `unlock` at the middle of its doorway. Events whose
- * place the world does not report (`hit`, `kill`, `room`, ...) carry no position.
+ * at the hero's centre (`entity: 'hero'`), `unlock` at the middle of its doorway, and (Engine 0.16
+ * part C T6) an event raised about an entity (`hit`, `kill`, `stun`, the boss events: the world's
+ * `eventPlace`, kept beside the event, never in it) at that entity's centre when it happened,
+ * with `entity` its presented id. Events with no place (`room`, ...) carry no position.
  */
 function presentEvents(
   world: TopDownWorld,
   events: readonly object[],
   at: { x: number; y: number },
+  ids: TdPresentIds,
 ): PresentEvent[] {
   const h = world.hero;
   return events.map((e) => {
@@ -639,10 +724,15 @@ function presentEvents(
         out[k] = v as JsonValue;
       }
     }
+    const place = eventPlace(e);
     if (HERO_EVENTS.has(out.type)) {
       out.x = at.x + h.x + 8;
       out.y = at.y + h.y + 8;
       out.entity = 'hero';
+    } else if (place) {
+      out.x = at.x + place.x;
+      out.y = at.y + place.y;
+      out.entity = ids.of(place.entity, world.room.id);
     } else if (out.type === 'unlock' && typeof out['side'] === 'string') {
       const side = out['side'] as Side;
       const cells = world.room.doorCells[side] ?? [];
@@ -690,18 +780,20 @@ export function presentWorld(
   const { map, origin, view } = presentMap(world);
   const sent: PresentMap | PresentMapRef = opts.state ? opts.state.maps.next(map) : map;
   const camera = cameraHint(view, size, top);
+  const ids = opts.state?.ids ?? new TdPresentIds();
   return {
     frame: world.frame,
     size: { width: size.width, height: size.height },
     entities: presentEntities(world, {
       world,
       at: origin,
-      ids: opts.state?.ids ?? new TdPresentIds(),
+      ids,
       calm: opts.reduceFlashing ?? false,
       dark: world.room.def.dark === true,
+      idle: opts.idle && opts.state ? idleTicks(world, opts.state) : null,
     }),
     map: sent,
-    events: presentEvents(world, events, origin),
+    events: presentEvents(world, events, origin, ids),
     status: presentStatus(world, top),
     camera,
   };

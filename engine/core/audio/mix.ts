@@ -22,11 +22,11 @@ import { fxRange, fxRng } from '../fx/rng';
  *   }
  *
  * Every layer song starts at the same audio time and is kept in step (same tempo, same length);
- * the first rule whose `when` holds (a rule without one always holds) sets the layers' levels,
- * crossfaded over its `fade` (else the entry's, else {@link DEFAULT_MIX_FADE}) ticks. A layer a
- * rule leaves out keeps its level. An event's sound may vary (`pitch`, `volume` ranges, drawn
- * from `fxRng` per seed, frame and sound), rest (`cooldown` ticks) and duck the music
- * (`duck { amount, attack, hold, release }`).
+ * the first rule whose `when` holds (one status test, or a list of them that must all hold; a rule
+ * without one always holds) sets the layers' levels, crossfaded over its `fade` (else the entry's,
+ * else {@link DEFAULT_MIX_FADE}) ticks. A layer a rule leaves out keeps its level. An event's
+ * sound may vary (`pitch`, `volume` ranges, drawn from `fxRng` per seed, frame and sound), rest
+ * (`cooldown` ticks) and duck the music (`duck { amount, attack, hold, release }`).
  */
 
 /** Ticks a mix rule's crossfade takes when neither it nor its entry gives a `fade`. */
@@ -82,8 +82,24 @@ export type StatusCompare = z.output<typeof statusCompareSchema>;
 
 const COMPARE_OPS = ['eq', 'ne', 'lt', 'lte', 'gt', 'gte'] as const;
 
+/**
+ * When a mix rule holds: one status test, or a list of them that must all hold (Engine 0.16 part
+ * B: a layer per level and its danger, `[{ status: "level", eq: "level-2" }, { status:
+ * "nearestActor", gte: 0, lt: 80 }]`).
+ */
+export const mixWhenSchema = z.union([
+  statusCompareSchema,
+  z.array(statusCompareSchema).min(1).describe('status tests that must all hold'),
+]);
+
+export type MixWhen = z.output<typeof mixWhenSchema>;
+
 export const mixRuleSchema = z.strictObject({
-  when: statusCompareSchema.exactOptional().describe('when the rule holds (left out: always)'),
+  when: mixWhenSchema
+    .exactOptional()
+    .describe(
+      'when the rule holds: one status test `{ status, eq?, ne?, lt?, lte?, gt?, gte? }` (every operator given must hold; a key the frame lacks never matches) or a list of them that must all hold (left out: always)',
+    ),
   layers: z.record(id, level).describe('layer name -> its level (0..1) while the rule holds'),
   fade: ticks('crossfade ticks to these levels').exactOptional(),
 });
@@ -170,9 +186,14 @@ export function statusMatches(when: StatusCompare, status: MixStatus): boolean {
   return true;
 }
 
+/** Whether a rule's `when` holds on `status`: one test, or every test of a list. */
+export function mixWhenHolds(when: MixWhen, status: MixStatus): boolean {
+  return Array.isArray(when) ? when.every((w) => statusMatches(w, status)) : statusMatches(when, status);
+}
+
 /** The first rule of `entry` that holds on `status` (its index), or -1. */
 export function mixRuleIndex(entry: MusicEntry, status: MixStatus): number {
-  return (entry.mix ?? []).findIndex((r) => r.when === undefined || statusMatches(r.when, status));
+  return (entry.mix ?? []).findIndex((r) => r.when === undefined || mixWhenHolds(r.when, status));
 }
 
 /**

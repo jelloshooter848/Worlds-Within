@@ -98,7 +98,7 @@ export abstract class TdEnemy extends TdEntity {
     const n = this.stunFor(frames);
     if (n <= 0 || this.dead) return false;
     this.stunT = Math.max(this.stunT, n);
-    world.emit({ type: 'stun', kind: this.kind });
+    world.emit({ type: 'stun', kind: this.kind }, this);
     return true;
   }
 
@@ -124,13 +124,13 @@ export abstract class TdEnemy extends TdEntity {
       this.kbT = ENEMY_KNOCK_FRAMES;
     }
     if (this.hp <= 0) this.die(world);
-    else world.emit({ type: 'hit', kind: this.kind });
+    else world.emit({ type: 'hit', kind: this.kind }, this);
     return true;
   }
 
   die(world: TopDownWorld): void {
     this.dead = true;
-    world.emit({ type: 'kill', kind: this.kind });
+    world.emit({ type: 'kill', kind: this.kind }, this);
     world.add(new Poof(this.x + this.w / 2 - 8, this.y + this.h / 2 - 8));
     const kind = world.lootFor(this.dropChance);
     if (kind) {

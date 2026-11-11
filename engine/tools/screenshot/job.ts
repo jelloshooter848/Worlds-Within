@@ -104,13 +104,15 @@ export type SheetMenuScreen = (typeof SHEET_MENU_SCREENS)[number];
 
 /**
  * What a sheet tile draws over the run's picture: one of the game's menu screens, a `ui` content
- * file (all of it, or one widget opened alone), stepped `frames` display frames with no input (so
+ * file (all of it, or one widget opened alone), a shell dialog (`menus.dialogs`), stepped `frames` display frames with no input (so
  * focus tweens settle and a dialog types), or a screen transition `age` frames after it started
  * (a slot of `game.json`'s `transitions`, or a kind with the default timing).
  */
 export type SheetOverlay =
   | { kind: 'menu'; screen: SheetMenuScreen; frames: number }
   | { kind: 'ui'; file: string; widget: string | null; frames: number }
+  /** A `menus.dialogs` box as the shell shows it (Engine 0.16 part C); `frames` null: its first page typed out. */
+  | { kind: 'dialog'; id: string; frames: number | null }
   | { kind: 'transition'; what: string; age: number };
 
 /** One picture of a sheet: the tick it is taken at and what is drawn over it. */

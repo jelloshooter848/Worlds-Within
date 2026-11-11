@@ -1,0 +1,7 @@
+{
+  "id": "hopper-boss-rage",
+  "bpm": 150,
+  "loop": true,
+  "pulse1": "v8 @1 q7 L o5d8 o5d8 o5f8 o5d8 o5a8 o5d8 o5f8 o5a8 | o6d4 o6c8 o5a8 o5f4 o5a4 | o5a+8 o5f8 o5d8 o5f8 o5a+4 o6d4 | o6c8 o5g8 o5e8 o5g8 o6c4 o6e4 | o6d8 o5a8 o5f8 o5a8 o6d8 o5a8 o5f8 o5d8 | o5f4 o5e8 o5d8 o5c+4 o5d4 | o5d8 o5f8 o5a+8 o6d8 o6f4 o6d4 | o6c+2 o5e4 o5a4 | o5g8 o5a+8 o6d8 o5a+8 o5g4 o5d4 | o5a8 o6c+8 o6e8 o6c+8 o5a4 o5e4 | o5f8 o5a8 o6d8 o6f8 o6e4 o6d4 | o6d4. o6c8 o5a+4 o5f4 | o5g4 o5a+4 o6d4 o6g4 | o6f8 o6e8 o6c+8 o5a8 o6e4 o6c+4 | o6d2 o5a4 o5f4 | o5e4 o5c+4 o4a2",
+  "noise": "v3 L [h16 h16 h16 h16]64"
+}

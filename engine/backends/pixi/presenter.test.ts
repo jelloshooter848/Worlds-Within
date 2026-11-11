@@ -385,3 +385,24 @@ describe('skinSetPixiPresenter', () => {
     expect(hex((r.stage.children[0] as Sprite).tint)).toBe('#000000');
   });
 });
+
+describe('PixiPresenter lighting (Engine 0.16 part D, D1)', () => {
+  it('draws the darkness on a live surface rendered every frame, the lights erased out of it', () => {
+    const lit: SkinFile = {
+      ...SKIN,
+      lighting: { ambient: { color: '#000010', level: 0.8 }, kinds: { hero: { radius: 24 } } },
+    };
+    const { r, p } = setup(lit);
+    const rendered: Texture[] = [];
+    const gpu = { render: (o: { target: Texture }) => void rendered.push(o.target) };
+    p.present(freezeFrame(frame({ frame: 0, map: MAP })));
+    p.surfaces.flush(gpu);
+    expect(rendered).toHaveLength(2); // the map once, the light map
+    p.present(freezeFrame(frame({ frame: 1, map: { id: 'room', version: 0 } })));
+    p.surfaces.flush(gpu);
+    expect(rendered).toHaveLength(3); // the light map again, the map not
+    // The light map is copied over the picture at the darkness level.
+    const copy = sprites(r.stage).find((e) => e.obj.texture.source === rendered[1]!.source);
+    expect(copy?.obj.alpha).toBeCloseTo(0.8);
+  });
+});

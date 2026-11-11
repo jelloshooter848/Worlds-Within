@@ -24,12 +24,17 @@ so two backends drawing the same frame get the same calls.
 - `skinned-presenter.ts`: `SkinnedPresenter(renderer, skin, sheets, opts?)`, the `Presenter` every
   2D backend draws through: events and frame events (sounds, hit-pause, tweens, effects),
   particles, tweens, camera follow and zoom, camera effects (shake, zoom punch, flash), parallax,
-  per-map looks, the map (cached on `opts.mapSurface`, or tiles every frame without one), entities
-  by layer, the HUD (`layoutHud`, or the UI kit's `SkinHud` painted by `RendererUiPainter` with
+  per-map looks, the map (cached on `opts.mapSurface`, or tiles every frame without one; a
+  layer's anchored frame placed on its cell, part C T1), the skin's `lighting` (Engine 0.16 part C
+  T4, merged into the walk in part D, D1: placed lights' sprites under the entities, then the
+  darkness on `opts.lightSurface` with the lights erased by `radialFilled`, or a flat translucent
+  box without one, the glows and the vignette; a renderer without `gradient` draws no radial
+  fills), entities by layer, the HUD (skipped while `showHud(false)`, part C T1; `layoutHud`, or
+  the UI kit's `SkinHud` painted by `RendererUiPainter` with
   `opts.glyphSurface`). `SkinnedPresenterOptions` holds every option (`size`, `onSound`,
   `background`, `font`, `fonts`, `glyphSurface`, `tintGlyphs`, `clamp`, `reduceFlashing`, `shakeScale`,
-  `subPixelShake`, `onHitPause`, `seed`, `maxParticles`, `mapSurface`); `resize`,
-  `effectSettings`, `focus()` and `particleCount`. The defaults here are no surfaces; a backend's
+  `subPixelShake`, `onHitPause`, `seed`, `maxParticles`, `mapSurface`, `lightSurface`); `resize`,
+  `effectSettings`, `showHud`, `focus()` and `particleCount`. The defaults here are no surfaces; a backend's
   wrapper passes its own (Canvas2D: offscreen canvases). The full behaviour is described in
   `engine/backends/canvas2d/CLAUDE.md` ("SkinnedCanvasPresenter"), which is this class on a canvas.
   Top-down looks (Engine 0.16 F8, for the mini siege's hosted rounds after parts C and E): a
@@ -50,7 +55,7 @@ so two backends drawing the same frame get the same calls.
   tinted image the backend returns.
 - `skin-set.ts`: `skinSetPresenter(opts, make)`: one presenter over a game's skin and one per mini
   game skin, picked by `status.miniGame`, each made by the backend's `make(skin, sheets, opts)`;
-  `effectSettings` reaches every one. `SkinSetPresenterOptions` (`skin`, `rounds?`, `sheet`,
+  `effectSettings` and `showHud` reach every one. `SkinSetPresenterOptions` (`skin`, `rounds?`, `sheet`,
   `fonts?`, `screen`, `background?`, `onSound?`, `onHitPause?`, `main?`).
 
 Change how a feature is drawn here, once, for every 2D backend; a backend wrapper only supplies a

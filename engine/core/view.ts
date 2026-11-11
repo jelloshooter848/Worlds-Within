@@ -3,7 +3,7 @@ import type { Renderer } from './gfx/renderer';
 import type { ScreenSize } from './gfx/screen';
 import type { HeadlessGame, HeadlessOptions } from './headless';
 import { PendingEvents } from './present/stream';
-import type { DeepReadonly, PresentFrame } from './present/types';
+import type { DeepReadonly, Presenter, PresentFrame } from './present/types';
 
 /**
  * The view contract: the headless game plus a way to draw it, so the tools (`pnpm cli
@@ -49,6 +49,13 @@ export interface ViewGame extends HeadlessGame {
    * `+end`). Must not change the game. `frameView` gives it when its drawer returns its frame.
    */
   status?(): DeepReadonly<PresentFrame['status']> | null;
+  /**
+   * Optional (Engine 0.16 part C T1): whether `render` draws the skin's HUD from the next draw, as
+   * the shell's title hides it (`Presenter.showHud`). The screenshot page turns it off for a
+   * `title` or `levels` overlay. Must not change the game. `frameView` gives it, reaching the
+   * drawer's `presenter` when it has one (a `FramePicture`).
+   */
+  showHud?(shown: boolean): void;
 }
 
 /** What a game's view module (named by `view` in `game.json`) exports. */
@@ -83,6 +90,7 @@ export function frameView<W extends object, E>(opts: FrameViewOptions<W, E>): Vi
   const pending = new PendingEvents(game.world, game.events);
   let picture: { r: Renderer; p: ReturnType<FrameViewOptions<W, E>['picture']> } | null = null;
   let status: DeepReadonly<PresentFrame['status']> | null = null;
+  let hud = true;
   const keep = (drawn: unknown) => {
     if (typeof drawn === 'object' && drawn !== null && 'status' in drawn)
       status = (drawn as DeepReadonly<PresentFrame>).status;
@@ -97,7 +105,11 @@ export function frameView<W extends object, E>(opts: FrameViewOptions<W, E>): Vi
     screen: opts.screen,
     render(r) {
       if (picture?.r !== r) picture = { r, p: opts.picture(r) };
+      (picture.p as { presenter?: Presenter }).presenter?.showHud?.(hud);
       keep(picture.p.draw(game.world, pending.take()));
+    },
+    showHud(shown) {
+      hud = shown;
     },
     frame: () => keep(opts.frames.next(game.world, pending.take())) as DeepReadonly<PresentFrame>,
     status: () => status,

@@ -24,7 +24,8 @@ Everything below about how a frame is drawn lives in the core `SkinnedPresenter`
 exactly the same code. This folder keeps thin wrappers with the same names, constructor
 signatures and options: `SkinnedCanvasPresenter` (`presenter.ts`) is `SkinnedPresenter` on a
 `CanvasRenderer` (or the `Renderer` given) with `canvasSurface` (`surface.ts`: an offscreen canvas,
-else a page canvas, none in Node) as its default `mapSurface` and `glyphSurface`;
+else a page canvas, none in Node) as its default `mapSurface`, `glyphSurface` and `lightSurface`
+(the lighting's light map, part C T4);
 `CanvasUiPainter` (`ui-painter.ts`) is `RendererUiPainter` with that default glyph surface;
 `skinSetCanvasPresenter` (`skin-set.ts`) is `skinSetPresenter` making a `SkinnedCanvasPresenter`
 per skin on `r`. `SkinnedPresenterOptions`, `MapSurface` and `GlyphSurface` are re-exported from
@@ -44,7 +45,8 @@ skin's `camera.clamp`, else true),
 `shakeScale?` (0..1, the player's shake setting), `subPixelShake?` (default false) and
 `onHitPause?(ticks)`, `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
 canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle system's cap, default
-`PARTICLE_SYSTEM_MAX`, 1024). `particleCount` is the particles alive after the last `present`
+`PARTICLE_SYSTEM_MAX`, 1024) and from Engine 0.16 part C T4 `lightSurface?(w, h)` (the light
+map's surface, below). `particleCount` is the particles alive after the last `present`
 (the feature benchmark reads it). Each `present(frame)`, in order:
 
 - Events: each event with a skin entry (`resolveSkinEvent`: a field key such as
@@ -98,7 +100,11 @@ canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle sys
   `{ id, version }` ref reuses it; no `map` draws none. Tiles the skin lists draw their frame, or a
   `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`. A tile entry with a
   `join` (Engine 0.16 part B, T6) draws the frame its neighbours in the same grid pick
-  (`resolveTileFrame` from `@engine/core/present`: grass tops, edges, corners, notches).
+  (`resolveTileFrame` from `@engine/core/present`: grass tops, edges, corners, notches). On a
+  layer (not `tiles`; Engine 0.16 part C T1, the platformer kit's `decor` layer) a frame with an
+  `anchor` (a PNG sheet's) is placed by it on its cell (`anchorOffset` over the tile's box), so a
+  prop taller or wider than a tile stands on the cell's bottom centre; terrain tiles and frames
+  without one draw at the cell's corner as before.
 - Entities by `layer`, then list order (no `y`-sort; the kit emits them in draw order): `resolveSkinFrame` picks the frame and flip
   (all eight facings: a diagonal without a frame uses its horizontal one), from the kind's first
   `byTag` look that matches one of the entity's tags (a whole `tag`, or from Engine 0.15 a `prefix`
@@ -151,11 +157,33 @@ canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle sys
   after the clear and before the map (`layoutParallax`, shared with 3D): gradient bands as boxes,
   frames as sprites at scale 1, scrolled against the camera's top-left in picture px (zoom and
   shake included).
+- Lighting (Engine 0.16 part C T4, `@engine/core/fx`): a skin's `lighting` through a
+  `SkinLighting` (seeded by `seed`). Every event (and frame event) goes to its `event` before the
+  skin's entries (an event may have only a light). The placed lights' sprites
+  (`lighting.props`) are drawn over the map and under the entities, in world space. After the
+  particles and before the old effects, flashes and the HUD, `drawLighting` draws its `layout`:
+  the darkness on a picture-sized light map (option `lightSurface(w, h)`, a `MapSurface`; default
+  an offscreen canvas, none in Node; made on the first lit frame and again when the picture size
+  changes): cleared to the darkness colour, each light erased out of it (`radialFilled` with
+  `mode: 'erase'`, stops `lightStops(intensity, bands)`), then copied over the picture as a
+  sprite at the darkness level (`translucent`); without a surface the darkness is a flat
+  translucent box. Then each light with a `glow` is added in its colour (`mode: 'add'`), then the
+  vignette (a radial fill over the whole picture, clear to `inner`, `strength` at the corners).
+  `CanvasRenderer.gradient` (the optional `Renderer.gradient`, `RadialFill`) fills a box with a
+  `createRadialGradient` at `destination-out`, `lighter` or `source-over`. `reduceFlashing`
+  halves event flashes and flicker. Room-wide `lighting.particles` run in `SkinParticles` (the
+  presenter passes it the map shown) and are drawn with the other particles. The walk is the
+  core's (merged in Engine 0.16 part D, D1), so the PixiJS backend runs it too, with its own
+  `gradient` (radial sprites) and a light map surface (feedback item 434's follow-up).
 - Per-map looks (Engine 0.16 part B, T7): the clear colour, the parallax layers and the tiles come
   from `themedSkin(skin, mapId)` (`@engine/core/present`) for the map shown (the full map last
   sent, else the frame's map id), made once per map id: a skin's `themes` entry for that map
   replaces its `background` and `parallax` and lays its `tiles` over the skin's. Everything else
   (kinds, events, HUD, camera) stays the skin's. Tested in `presenter.test.ts` (`per-map looks`).
+
+`showHud(shown)` (Engine 0.16 part C T1) turns the HUD off and on from the next frame (the
+shell hides it while its title shows); `skinSetCanvasPresenter`'s presenter hands it to every
+skin's presenter and `canvasDisplay` gives it as `BrowserDisplay.showHud`.
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit.
 
@@ -271,6 +299,13 @@ and lerp, each entity's box is drawn where `worldToScreen` says and maps back wi
 pixel, and the map copy sits at the camera's top-left, in the middle of the map and clamped at
 its edge. `ui-painter.test.ts` (Engine 0.16 T6) checks `CanvasUiPainter`'s fills, whole and
 part frames, glyph runs and the coloured strip drawn once, and the presenter painting a UI HUD.
+The `lighting (Engine 0.16 part C T4)` block of `presenter.test.ts` records `gradient`
+calls on the screen and on a recording light surface: the darkness cleared and each light erased,
+the light map laid over at the darkness level after the entities and before the HUD, glows added,
+the vignette over the picture, a kind lit only in its states, a placed sprite under the entities,
+an event's flash fading (half with reduced flashing), the surface made once and again on a resize,
+the flat box without a surface, nothing for a skin without lighting and the same calls per seed.
+
 These tests drive the shared walk in `@engine/core/draw` through the thin wrappers here (Engine
 0.16 T13b moved the code, not the tests); `engine/core/draw/draw.test.ts` checks the core's own
 defaults (no surfaces) and the skin set's factory.

@@ -32,10 +32,20 @@ export class ParallaxPlanes {
   private shown: ParallaxDraw[] = [];
 
   constructor(
-    private readonly skin: DeepReadonly<SkinFile>,
+    private skin: DeepReadonly<SkinFile>,
     private readonly pixels: PixelSheetLookup | undefined,
   ) {
     this.group.name = 'parallax';
+  }
+
+  /**
+   * Shows another skin's layers from the next `sync` (a map's theme, Engine 0.16 part B): the
+   * planes are hidden until then, and a skin without `parallax` shows none.
+   */
+  setSkin(skin: DeepReadonly<SkinFile>): void {
+    this.skin = skin;
+    for (const mesh of this.pool) mesh.visible = false;
+    this.shown = [];
   }
 
   /** How far behind the blocks (px) layer `index` stands. */

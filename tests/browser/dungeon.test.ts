@@ -13,8 +13,8 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // in manual-loop mode (`?debug=step`: `window.__ww.step(n)` takes exactly n 60 Hz steps):
 // first by the keyboard (ArrowRight held, the walk-east run: the page's state hash at every golden
 // tick is `runs/walk-east.hashes.json`'s), then each run file through the step hook's replay
-// (the way out to the exit and the fall in the guard room, with their golden hashes and their end
-// states). It checks the picture is drawn (the HUD band black, the dungeon's wall colour under it),
+// (the way out to the exit, the fall in the guard room and, from Engine 0.16 part C T10, the win
+// over the Bone Warden and the loss to it, with their golden hashes and their end states). It checks the picture is drawn (the dark side margin of the 16:9 picture, the west wall's ledge),
 // the volume control is there, and the page logged no errors. Skipped where Chromium is not
 // installed (never in CI).
 
@@ -44,7 +44,7 @@ afterAll(async () => {
 /** A new page that collects its errors. */
 async function openPage(): Promise<{ page: Page; errors: string[]; close(): Promise<void> }> {
   const browser = await launch();
-  const page = await browser.newPage({ viewport: { width: 512, height: 480 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width: 640, height: 360 }, deviceScaleFactor: 1 });
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
   page.on('console', (msg) => {
@@ -59,7 +59,7 @@ function pixel(page: Page, x: number, y: number): Promise<string> {
   return page.evaluate(
     ({ x, y }) => {
       const canvas = document.getElementById('screen') as HTMLCanvasElement;
-      const s = canvas.width / 256;
+      const s = canvas.width / 320;
       const px = canvas.getContext('2d')!.getImageData(Math.floor(x * s), Math.floor(y * s), 1, 1).data;
       return `${px[0]},${px[1]},${px[2]}`;
     },
@@ -99,18 +99,32 @@ describe.skipIf(missing !== null)('the dungeon sample page (headless Chromium)',
         room: string;
       };
       expect(state.room).toBe('guard-room');
-      // The picture: the black HUD band at the top, the dungeon's wall stone below it.
-      expect(await pixel(page, 250, 20)).toBe('0,0,0');
-      expect(await pixel(page, 2, 66)).toMatch(/^(0,120,124|60,188,188|0,56,64)$/);
+      // The 16:9 picture (Engine 0.16 part C T3): the skin's dark background in the side margin,
+      // the west wall's stone ledge beside the room (the CC0 pack's colours), from T4 under the
+      // skin's darkness and vignette (the margin's #141016 darkened).
+      // From T10 a room change dips the picture to dark for a moment (the skin's `room` flash,
+      // timed by presented frames): a few single steps let it fade before the pixels are read.
+      for (let i = 0; i < 16; i++) await step(1);
+      expect(await pixel(page, 12, 120)).toBe('10,7,12');
+      // The ledge's warm stone, dimmed by the darkness (78,64,58 from 170,141,122 at T4).
+      const ledge = (await pixel(page, 32 + 13, 58)).split(',').map(Number) as [number, number, number];
+      expect(ledge[0]).toBeGreaterThan(ledge[1]);
+      expect(ledge[1]).toBeGreaterThan(ledge[2]);
+      expect(ledge[0]).toBeGreaterThanOrEqual(50);
+      expect(ledge[0]).toBeLessThanOrEqual(120);
       expect(errors).toEqual([]);
     } finally {
       await close();
     }
   }, 300_000);
 
+  // Engine 0.16 part C T10: the win (title to the Bone Warden beaten) and the loss to the boss
+  // through the built page too, with the polish pass's effects drawn on every tick.
   it.each([
-    ['escape', { exited: true, dead: false }],
-    ['lost-in-the-guard-room', { exited: false, dead: true }],
+    ['escape', { exited: true, dead: false, flags: [] as string[] }],
+    ['lost-in-the-guard-room', { exited: false, dead: true, flags: [] as string[] }],
+    ['win', { exited: false, dead: false, flags: ['bossDefeated'] }],
+    ['boss-lost', { exited: false, dead: true, flags: [] as string[] }],
   ])(
     'replays %s.run.json through the page with the golden hashes and its end',
     async (name, end) => {
@@ -129,8 +143,14 @@ describe.skipIf(missing !== null)('the dungeon sample page (headless Chromium)',
               ww.step(tick - ww.tick);
               hashes.push({ tick: ww.tick, hash: ww.hash() });
             }
-            const snap = ww.snapshot() as { exited: boolean; hero: { dead: boolean } };
-            return { hashes, refused: ww.refused.length, exited: snap.exited, dead: snap.hero.dead };
+            const snap = ww.snapshot() as { exited: boolean; hero: { dead: boolean }; flags?: string[] };
+            return {
+              hashes,
+              refused: ww.refused.length,
+              exited: snap.exited,
+              dead: snap.hero.dead,
+              flags: snap.flags ?? [],
+            };
           },
           { run: runFile(name), ticks },
         );

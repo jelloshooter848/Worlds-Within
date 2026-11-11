@@ -863,7 +863,7 @@ other text, so a new game gets it without code of its own.
   with Canvas2D as the fallback, and opt-in (`?backend=pixi`) on the other 2D pages; checked
   against Canvas2D by a parity test and the parity sheet. On this build's software GL neither
   backend holds the bar with every feature on, so a check on a machine with a GPU is open (item
-  419); numbers in the [build log](BUILD-LOG.md#t13b-the-pixijs-v8-2d-backend-item-323).)_
+  485); numbers in the [build log](BUILD-LOG.md#t13b-the-pixijs-v8-2d-backend-item-323).)_
 - **3D backend upgrade:** lighting (sun, ambient and point lights), shadows, fog, tone mapping and
   HUD labels anchored to world positions (names, health bars, timers over buildings).
 
@@ -872,7 +872,7 @@ Done when)
 
 - [x] Each feature above is in the engine with tests, a module page entry and an example in a skin.
       (The PixiJS backend, T13b, is built too and draws the same `canvas2d` skins; items 323,
-      419-422.)
+      468-488.)
 - [x] A test proves presentation does not change state: every existing run file, golden hash and
       mutant check passes unchanged with the new effects on. (`tests/runs/presentation-invariance.test.ts` and, on the stepped shell, `tests/runs/stepped-shell-invariance.test.ts`; T14.)
 - [x] The 2D benchmark and feature test is written up with numbers, and the Canvas2D or PixiJS choice
@@ -909,15 +909,21 @@ Kit for 2.5D.
   the camera following the same point as in 2D.
 - Music in layers and sounds for every action.
 
-**Done when:**
+**Done when:** (checked in the [build log](BUILD-LOG.md#engine-016-part-b), Engine 0.16 part B,
+Done when)
 
-- [ ] All levels and the mini-boss play from start to end in 2D and in 2.5D, with run files for a
-      win and a loss that pass in CI.
-- [ ] Every existing platformer run file passes, or its hashes were re-recorded for a listed rule
-      change.
-- [ ] Owner playtest: the levels and the boss feel good to play with keyboard and gamepad.
+- [x] All levels and the mini-boss play from start to end in 2D and in 2.5D, with run files for a
+      win and a loss that pass in CI. (`level-1`, `level-2`, `level-3`, `boss` and their `-lost`
+      runs, `full-game` from the first level to the arena cleared; every tick of every run drawn
+      in 3D with the golden hashes in `platformer.test.ts` and `tests/runs/backend-parity.test.ts`.)
+- [x] Every existing platformer run file passes, or its hashes were re-recorded for a listed rule
+      change. (No hash was re-recorded: the old content moved to `games/platformer-classic` with
+      its run files and hashes unchanged; the lab's runs pass unchanged.)
+- [ ] Owner playtest: the levels and the boss feel good to play with keyboard and gamepad. (Open
+      as item 393.)
 - [ ] Owner screenshot review of this part (2D and 2.5D, in play and in menus) is accepted before
-      parts C-F are considered done.
+      parts C-F are considered done. (The screenshots are in `docs/reports/screenshots/0.16-B/`;
+      open as item 394.)
 
 ### 0.16 part C: the top-down dungeon, The Old Crypt
 
@@ -934,13 +940,20 @@ A short dungeon: 6-8 rooms, a key, an item that opens new paths, and a boss.
 - Combat feel: attack animations, knockback, hit flashes, hit-pause, screen shake and particles.
 - Dialog boxes for a short intro and the end; a HUD with health, key and item.
 
-**Done when:**
+**Done when:** (checked in the [build log](BUILD-LOG.md#engine-016-part-c), Engine 0.16 part C,
+Done when)
 
-- [ ] The dungeon plays from the title to the boss's defeat, with run files for a win and a loss
-      that pass in CI.
-- [ ] Every existing dungeon run file passes, or its hashes were re-recorded for a listed rule
-      change.
-- [ ] Owner playtest and screenshot review of the dungeon are accepted.
+- [x] The dungeon plays from the title to the boss's defeat, with run files for a win and a loss
+      that pass in CI. (`win`, from tick 0 to the Bone Warden beaten, and `boss-lost`, with
+      their golden hashes in `tests/runs`; both replayed through the built page in
+      `tests/browser/dungeon.test.ts`, and `tests/browser/menus.test.ts` plays from the title
+      to the end screen by keyboard.)
+- [x] Every existing dungeon run file passes, or its hashes were re-recorded for a listed rule
+      change. (`walk-east`, `escape` and `lost-in-the-guard-room` unchanged; the part's own
+      `beat-the-warden` (T8, then replaced in T9) and `to-the-boss-door` (T9) re-recorded for the
+      changes listed in the build log.)
+- [ ] Owner playtest and screenshot review of the dungeon are accepted. (The screenshots are in
+      `docs/reports/screenshots/0.16-C/`; open as items 455 and 456.)
 
 ### 0.16 part D: the RTS skirmish, The River Ford
 

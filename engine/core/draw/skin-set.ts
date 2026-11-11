@@ -44,8 +44,14 @@ export type SkinPresenterFactory = (
   opts: SkinnedPresenterOptions,
 ) => Presenter;
 
-/** A presenter for a skin set, which hands the player's effect settings to every skin's presenter. */
-export type SkinSetPresenter = Presenter & { effectSettings(settings: CameraFxSettings): void };
+/**
+ * A presenter for a skin set, which hands the player's effect settings and whether the HUD shows
+ * to every skin's presenter.
+ */
+export type SkinSetPresenter = Presenter & {
+  effectSettings(settings: CameraFxSettings): void;
+  showHud(shown: boolean): void;
+};
 
 /**
  * One presenter for a game that stacks kits (Engine 0.7 T9, gaps G29 and G34 in
@@ -82,6 +88,10 @@ export function skinSetPresenter(
     effectSettings(settings) {
       for (const p of all)
         (p as { effectSettings?: (s: CameraFxSettings) => void }).effectSettings?.(settings);
+    },
+    // Whether the HUD is drawn (Engine 0.16 part C T1: hidden under the title), on every skin's presenter.
+    showHud(shown) {
+      for (const p of all) p.showHud?.(shown);
     },
   };
 }

@@ -1,0 +1,6 @@
+{
+  "id": "respawn",
+  "bpm": 240,
+  "pulse": "v8 @1 l32 o4 c e g > c e g > c16",
+  "pulse2": "v3 @0 l32 r32 o5 c e g > c e16"
+}

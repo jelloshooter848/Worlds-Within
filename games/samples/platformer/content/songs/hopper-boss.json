@@ -1,0 +1,8 @@
+{
+  "id": "hopper-boss",
+  "bpm": 150,
+  "loop": true,
+  "pulse2": "v6 @2 q6 L o4d8 r8 o4d8 r8 o4f8 o4a8 r4 | o4d8 r8 o4d8 r8 o4f8 o4a8 r4 | o3a+8 r8 o3a+8 r8 o4d8 o4f8 r4 | o4c8 r8 o4c8 r8 o4e8 o4g8 r4 | o4d8 r8 o4d8 r8 o4f8 o4a8 r4 | o4d8 r8 o4d8 r8 o4f8 o4a8 r4 | o3a+8 r8 o3a+8 r8 o4d8 o4f8 r4 | o3a8 r8 o3a8 r8 o4c+8 o4e8 r4 | o4g8 r8 o4g8 r8 o4a+8 o5d8 r4 | o3a8 r8 o3a8 r8 o4c+8 o4e8 r4 | o4d8 r8 o4d8 r8 o4f8 o4a8 r4 | o3a+8 r8 o3a+8 r8 o4d8 o4f8 r4 | o4g8 r8 o4g8 r8 o4a+8 o5d8 r4 | o3a8 r8 o3a8 r8 o4c+8 o4e8 r4 | o4d8 r8 o4d8 r8 o4f8 o4a8 r4 | o3a8 r8 o3a8 r8 o4c+8 o4e8 r4",
+  "triangle": "q5 L o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2a+8 o2a+8 o3a+8 o2a+8 o2a+8 o2a+8 o3a+8 o2a+8 | o3c8 o3c8 o4c8 o3c8 o3c8 o3c8 o4c8 o3c8 | o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2a+8 o2a+8 o3a+8 o2a+8 o2a+8 o2a+8 o3a+8 o2a+8 | o2a8 o2a8 o3a8 o2a8 o2a8 o2a8 o3a8 o2a8 | o2g8 o2g8 o3g8 o2g8 o2g8 o2g8 o3g8 o2g8 | o2a8 o2a8 o3a8 o2a8 o2a8 o2a8 o3a8 o2a8 | o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2a+8 o2a+8 o3a+8 o2a+8 o2a+8 o2a+8 o3a+8 o2a+8 | o2g8 o2g8 o3g8 o2g8 o2g8 o2g8 o3g8 o2g8 | o2a8 o2a8 o3a8 o2a8 o2a8 o2a8 o3a8 o2a8 | o2d8 o2d8 o3d8 o2d8 o2d8 o2d8 o3d8 o2d8 | o2a8 o2a8 o3a8 o2a8 o2a8 o2a8 o3a8 o2a8",
+  "noise": "v6 L [k8 h8 s8 k8 k8 h8 s8 s16 s16]16"
+}

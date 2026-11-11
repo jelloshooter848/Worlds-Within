@@ -66,3 +66,70 @@ describe('CanvasRenderer quarter turns (Sophia III on walls and ceilings)', () =
     expect(corners[0]).toEqual([13.5, 27.5]);
   });
 });
+
+describe('CanvasRenderer radial gradients (Engine 0.16 part C T4)', () => {
+  function gradCtx() {
+    const calls: string[] = [];
+    const ctx = {
+      canvas: { width: 64, height: 32 },
+      imageSmoothingEnabled: true,
+      globalCompositeOperation: 'source-over',
+      fillStyle: '' as unknown,
+      save: () => calls.push('save'),
+      restore: () => calls.push('restore'),
+      createRadialGradient: (x0: number, y0: number, r0: number, x1: number, y1: number, r1: number) => {
+        calls.push(`radial ${x0},${y0},${r0} ${x1},${y1},${r1}`);
+        return { addColorStop: (at: number, c: string) => calls.push(`stop ${at} ${c}`) };
+      },
+      fillRect(x: number, y: number, w: number, h: number) {
+        calls.push(`fill ${this.globalCompositeOperation} ${x},${y} ${w}x${h}`);
+      },
+    };
+    return { ctx: ctx as unknown as CanvasRenderingContext2D, calls };
+  }
+
+  it("erases a light out of the light map with destination-out, inside the circle's square", () => {
+    const { ctx, calls } = gradCtx();
+    new CanvasRenderer(ctx).gradient({
+      x: 10,
+      y: 8,
+      radius: 4,
+      color: '#f80',
+      stops: [
+        { at: 0, alpha: 1 },
+        { at: 1, alpha: 0 },
+      ],
+      mode: 'erase',
+    });
+    expect(calls).toEqual([
+      'radial 10,8,0 10,8,4',
+      'stop 0 rgba(255,136,0,1)',
+      'stop 1 rgba(255,136,0,0)',
+      'save',
+      'fill destination-out 6,4 8x8',
+      'restore',
+    ]);
+  });
+
+  it("adds a glow with lighter, fills a vignette's box, and draws nothing at radius 0", () => {
+    const { ctx, calls } = gradCtx();
+    const r = new CanvasRenderer(ctx);
+    r.gradient({ x: 0, y: 0, radius: 2, color: '#000', stops: [{ at: 0, alpha: 0.5 }], mode: 'add' });
+    r.gradient({
+      x: 32,
+      y: 16,
+      radius: 36,
+      color: '#000',
+      stops: [{ at: 1, alpha: 2 }],
+      mode: 'normal',
+      box: { x: 0, y: 0, w: 64, h: 32 },
+    });
+    r.gradient({ x: 0, y: 0, radius: 0, color: '#000', stops: [], mode: 'add' });
+    expect(calls.filter((c) => c.startsWith('fill') || c.startsWith('stop'))).toEqual([
+      'stop 0 rgba(0,0,0,0.5)',
+      'fill lighter -2,-2 4x4',
+      'stop 1 rgba(0,0,0,1)',
+      'fill source-over 0,0 64x32',
+    ]);
+  });
+});

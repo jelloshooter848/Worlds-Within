@@ -1,0 +1,6 @@
+{
+  "id": "boss-charge-warn",
+  "bpm": 200,
+  "triangle": "l16 o2 c c+ c c+ c4",
+  "noise": "v6 l16 n12 n13 n12 n13 n12"
+}

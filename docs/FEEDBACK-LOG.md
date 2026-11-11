@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 379.** (Last used: 378.)
+**Next unused number: 489.** (Last used: 488.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1490,3 +1490,448 @@ Build choices)
 - **378.** Four run files, each starting at its stage (`start: { stage }`): `level-2` and
   `level-3` (wins, cleared at ticks 959 and 1010) and `level-2-lost` and `level-3-lost` (two
   respawns on the checkpoint, by pits and by spikes, then the level afresh). OK?
+
+**Engine 0.16 part B, T8: the mini-boss's arena, level-clear and end screen** (details in
+`games/samples/platformer/CLAUDE.md`, "The game", "Build choices (T8)", "The 2D skin" and "Run
+files")
+
+- **379.** The mini-boss is **Burrlock, the bramble beetle** (original text pixel art): four hit
+  points; phase 1 a thorn shot and a wall-to-wall charge, phase 2 (at 2 hp, shorter telegraphs)
+  the shot, a leap at the frog and an acorn dropped over it; each attack has its own wind-up.
+  Four stomps beat it. Is it the right difficulty for a first boss?
+- **380.** The arena, **Burrlock's Hollow**: a runway with the checkpoint, then a step down under
+  a hanging wall into a one-screen arena; a death puts the frog back on the runway with the boss
+  as it was (its hit points kept). OK, or should a death reset the boss's health?
+- **381.** The boss's look: a pose per telegraph, a white silhouette as the hit flash, a red
+  palette for phase 2 (which gives every phase-2 telegraph the same roaring pose, since a skin
+  look matches one tag), a defeat of eight white flashes, a cracked shell, a blast and the beetle
+  sinking on its back; a dusk sky for the arena; a name plate and a health bar top right. OK?
+- **382.** The end: the level-clear banner (Coins, Time, Deaths) between levels, and after the
+  arena the end screen "Hopper's Way cleared!" with a credit line, the summed stats, Back to
+  title and Levels; every death plays an iris on the frog (`transitions.respawn`). OK?
+- **383.** Three run files: `boss` (win), `boss-lost` (loss) and `full-game` (stage 0 to the arena
+  cleared, the four wins' input on their stages' ticks: the headless equivalent of title to end
+  screen; the end screen itself is checked by the browser test). The boss runs were found by a
+  small reactive bot whose keys were recorded. OK?
+
+**Engine 0.16 part B, T9: layered music and a sound for every action** (details in
+`games/samples/platformer/CLAUDE.md`, "Build choices (T9)" and "Music and sound")
+
+- **384.** The music: one layered song, `hoppers-way`, with a calm and a drive layer per level
+  (Meadow in C major, Autumn Hills in A minor, Starlit Ridge in E minor) and the boss's fight and
+  rage layers (D minor), all 150 bpm and 16 bars so they stay in step; the level's own layers
+  play, the drive layer comes up within 96 px of an enemy, the rage layer joins in Burrlock's
+  second phase, and everything fades out at a clear, a game over and the boss's defeat. Its own
+  title tune and an end fanfare. All original MML; no CC0 sound pack was fetched. OK, or would you
+  rather each level start its own song from the top (needs an engine change: music chosen by status)?
+- **385.** Two small engine additions: a mix rule's `when` may be a list of status tests that must
+  all hold (a level and its danger), and `game.json`'s `menus.end.music` plays a song when the end
+  screen opens. OK?
+- **386.** The sounds: 39 original sfx, a jump per tier, footsteps on the run cycle's frames, a
+  skid, land, bump, block, a 1-up for the life block, break, coin, stomp, kick, hurt, death, the
+  puff, respawn, checkpoint, a telegraph and an attack sound per boss attack, the boss's hit,
+  defeat, pops, crack and blast, the clear jingle and the UI moves; most vary in pitch and volume,
+  steps and landings rest a few frames. OK?
+- **387.** Ducking: a hurt (60%), a death (85%), a boss hit (55%), the boss's defeat and its blast
+  (90%) and a stomp (a light 25%) duck the music; the level clear mutes it under the jingle. Too
+  much or too little?
+
+**Engine 0.16 part B, T10: the 2.5D view of Hopper's Way** (details in
+`games/samples/platformer/CLAUDE.md`, "Build choices (T10)" and "The 2.5D view")
+
+- **388.** The 2.5D view is built from the CC0 GLB packs: Kenney's grass and dirt blocks (three
+  tiles deep, a grass-topped block wherever a cell's top is open), crates and the gold cube for
+  blocks, platforms for the one-way planks, spikes, the gold coin, a jewel for the goal and a flag
+  for the checkpoint; Quaternius' character as the player stand-in (a blue character, not a frog:
+  no CC0 3D frog was fetched), `enemy` and `skull` for the two walkers and the `crab`, tinted
+  violet and red in phase 2, for Burrlock. Thorns and acorns stay text low-poly meshes. OK, or
+  should a 3D frog be found or made?
+- **389.** The look: a sun with soft shadows, a hemisphere light and ACES tone mapping per level
+  (day, autumn afternoon, moonlit night, dusk in the arena), linear fog from just behind the play
+  plane, the 2D parallax art as distant fogged planes, and rows of 3D scenery behind (a grass
+  ridge, trees, rocks, flowers, a taller far ridge), placed by a seeded jitter. The camera frames
+  exactly what 2D frames, tilted 7 degrees down (fov 32). The picture is drawn at 320x180 and
+  scaled up, so the 3D view is pixelated like the 2D one. OK?
+- **390.** Engine additions: tweens in 3D (item 340 resolved: scale, offsets, turn, alpha, and a
+  colour tween as a white emissive hit flash), per-map `themes` in 3D (with a theme's own
+  `scene3d` and `scenery`), a 3D tile `join` that picks another tile entry, `scenery` rows, a tag
+  look's own `model`, and a model's `tint`, `stretch` and `clipHold`. OK?
+- **391.** The runner's "Hopper" name label and health bar over its head (the 3D skin's T12
+  labels) were removed in 3D: the HUD shows the hearts and a name over the hero is clutter in a
+  side view (it also showed through the respawn iris). The GOAL label stays. OK?
+- **392.** No depth of field: the backend has none, and fog on the background does that job. Add
+  a depth-of-field pass later (needs a post-processing pass in the 3D backend)?
+
+**Engine 0.16 part B, T11: close-out** (details in `docs/BUILD-LOG.md`, Engine 0.16 part B)
+
+- **393.** Owner playtest (part B's Done when): please play Hopper's Way from the title through
+  the three levels and Burrlock's arena with the keyboard and with a gamepad, in 2D and with
+  `?backend=three`, and say whether the movement, the levels and the boss feel good. Open.
+- **394.** Owner screenshot review (part B's Done when): the ten 1920x1080 screenshots in
+  `docs/reports/screenshots/0.16-B/` (2D play in all three levels and the boss's hit, 2.5D play
+  in level 1 and the arena, the title, the level select, the level-clear banner and the end
+  screen). Accepted, or what should change? Parts C-F wait for this.
+- **395.** Review screenshots are kept as binary PNGs in `docs/reports/screenshots/<release>/`
+  (one folder per release; `tests/architecture/no-content.test.ts` and DESIGN.md's binary-files
+  sentence now allow it, PNG only, no subfolders). OK?
+- **396.** Engine fix found in the screenshots: the end screen's heading ("Hopper's Way
+  cleared!") ran over its panel's frame. The level select, level-clear banner and end screen now
+  widen their panel so the heading fits with 16 px each side (never wider than the picture less
+  8 px); no other game's screens change size. OK?
+- **397.** Found in the screenshots: the title font's `W` read as an upside-down `M` ("Hopper's
+  May"). It is redrawn with its middle stroke (`content/fonts/hopper-title.txt`). OK?
+- **398.** Known and left (2.5D): Burrlock is Quaternius' red crab tinted violet, which under the
+  arena's dusk light reads dark maroon in phase 1 rather than the 2D violet (phase 2 reads bright
+  red, so the phases still differ), and the 3D arena's ground is olive-green grass where the 2D
+  arena's is autumn orange. Fix (recolour the crab's material or give the arena an autumn ground
+  tint in 3D), or leave?
+- **399.** Known and left (2D and 2.5D): the HUD panel (top left, about 136x36 picture px) covers
+  the top two rows of the level, so the frog bumping the life block high in Autumn Hills' cache
+  (tick 631) is half behind it. Make the HUD smaller or translucent while the frog is under it,
+  move it, or leave it?
+
+**Engine 0.16 part B, finalize: smaller build choices** (T1-T3 and the build process; details in
+`docs/BUILD-LOG.md`, Engine 0.16 part B, "Smaller build choices")
+
+- **400.** A checkpoint respawn resets only the player: coins taken stay taken, used blocks and
+  broken bricks stay, and actors keep moving (as the old respawn at the start did). With no lives
+  left the level fails and restarts from scratch, without the checkpoint. OK?
+- **401.** The checkpoint touched last becomes the current one, even an earlier one the player
+  walked back to; touching the current one again does nothing. OK?
+- **402.** To keep every old hash, the new snapshot fields appear only when used: `checkpoint` only
+  in levels with a `K`, `player.coyote` only when the profile's `coyote` is over 0 (as
+  `endedRound` does). OK?
+- **403.** `jumpCut` is guarded by the existing `variable-jump` rule, not a rule of its own (the
+  lab's `feel` run checks it). Should it be a separate rule?
+- **404.** Coyote time counts from the tick after the player walks off: `coyote: 6` allows a jump
+  up to 6 ticks late, not 7 (pinned by unit tests). OK?
+- **405.** `checkLevel` accepts a checkpoint only with a solid or one-way tile right under it; a
+  breakable brick counts as solid, though it could be broken later. OK?
+- **406.** A boss level clears through a header field (`clear: "boss"`, boss on the map, no goal
+  needed; a goal still clears it too), and boss phases are a list of hp thresholds, each with its
+  own pattern. OK?
+- **407.** A stomp on the boss always bounces the player and gives it a short grace (`kickGrace`,
+  15 ticks), so the player is not hurt on the way up; during the boss's hit invulnerability a
+  stomp only bounces. OK?
+- **408.** Boss projectiles are ordinary actor types (flying or falling) and vanish at a wall, on
+  landing or on touching the player; there is no separate spawn event (the boss-attack event names
+  the projectile). The only randomness is the drop step's optional spread, from the world's seeded
+  rng. OK?
+- **409.** The sample's `boss` run guards `boss-hit-invuln` through the invulnerability values it
+  checks, not a real double stomp (that is in `boss.test.ts`). Enough?
+- **410.** The level-clear banner is declared in `game.json` (`menus.clear`), not a `ui` content
+  file, and is painted over the game rather than pushed as a scene (a scene would stop the
+  between-level pause), so it takes no input and hides under an open menu. OK?
+- **411.** The end screen opens when the page's last level is cleared and sums the stats of the
+  levels cleared since the game started or a level was picked. OK?
+- **412.** The respawn transition plays only when `transitions.respawn` is set or an event maps to
+  it (no fallback to `default`), after the frame with the death sound; a respawn that ends a
+  mini-game round is covered by the round's own transition instead. OK?
+- **413.** Levels unlock one by one (`menus.levels.lock`, default on), and progress is stored with
+  the settings helpers under `ww:<game>:progress`. OK?
+- **414.** The browser tests hold the run files' `run` action as X (attack, which also runs),
+  because `run` has no key of its own. Should `run` get its own key?
+- **415.** Vitest's global test timeout was raised from 5 s to 30 s (`vite.config.ts`): under full
+  load, unrelated slow tests failed at random. OK, or set it per slow test?
+- **416.** Builders found two finished but uncommitted tasks in the tree (T3 and T7) and committed
+  them as their own commits after all checks passed (b829e3e, 2a63285). OK as a rule for future
+  builds?
+- **417.** The art, skin and boss-input generators (scratch Python and a reactive bot) were not
+  committed; the text art, skins and run files they made are now the source. OK, or commit them?
+- **418.** A HUD text item with a format is drawn even when its status is missing, so Burrlock's
+  name is a sprite icon instead. Should the engine hide such text when the status is missing?
+
+**Engine 0.16 part C, T1: Hopper's Way fixes** (the title's HUD, the 2.5D portrait, fuller levels;
+details in `docs/BUILD-LOG.md`, Engine 0.16 part B, "Fixes after review"):
+
+- **419.** The game picture under the title, and under a screen opened from it (settings, controls,
+  the level select), is drawn without its HUD; the pause menu and the end screen keep it. The
+  screenshot tool hides it for its `title` and `levels` overlays only (its `settings` and
+  `controls` could be the pause menu's). OK?
+- **420.** The 2.5D HUD's lives portrait is original text art of Quaternius' blue long-eared hero
+  (24x15, like the frog's face), not a picture rendered from its model. OK?
+- **421.** Level decoration is a new optional platformer-kit level field, `decor` (a `.decor.txt`
+  grid the map's size, any printable character but the terrain's `#B?u=^`), presented as the map
+  layer `decor` and drawn by a skin's `tiles`; the kit gives it no meaning and it is not in the
+  snapshot. It is 2D only: the 2.5D view keeps its scenery rows. OK, or should 3D draw it too?
+- **422.** The props are mostly original text art (tufts, flowers, rocks, bushes, trees, crystals,
+  stones and fossils in the dirt) in meadow, autumn and night sets, plus five Kenney Pixel
+  Platformer props from the pack already in `assets/` (sign, fence, tan mushroom, sprout, pine).
+  OK?
+- **423.** In 2D a map layer's frame with an `anchor` (a PNG sheet's) stands on its cell's bottom
+  centre; text sprites have no anchor, so a larger text prop is written at its top-left cell (a
+  tree two rows above its ground). OK, or should text sprites get anchors?
+- **424.** The seven new enemies were placed where a headless search found the existing run
+  inputs still win and lose as before, so no run steps changed (eight run files re-recorded);
+  most are stomped on the hero's existing path. Should the levels instead get enemies that need
+  new routes (and new run inputs)?
+
+**Engine 0.16 part C, T2: The Old Crypt's CC0 art pack** (0x72's DungeonTileset II v1.7, fetched
+from itch.io; credited in `games/samples/dungeon/assets/CREDITS.md`):
+
+- **425.** The pack was fetched as asked (no substitute), but kept as its one 512 x 512 sheet with
+  its tile list (`name x y w h` per frame) and three autotile atlases (65 KB), not as the zip's
+  750 per-frame PNGs, since a skin's `images` entry names frames as rectangles of one PNG; the
+  sheet also holds characters the game will not use (elves, lizards, wizards). The pack has no
+  torches, bats or sounds: torches and bats stay original text art (or come from T4's lighting),
+  and the sound stays MML (no CC0 SFX pack was added). OK, or should unused characters be cut
+  from the sheet, or a CC0 torch and bat set be found?
+
+**Engine 0.16 part C, T3: The Old Crypt at 16:9 on the CC0 art** (the skin, HUD and menus for the
+existing five rooms; details in `games/samples/dungeon/CLAUDE.md`, "16:9 on the CC0 art"):
+
+- **426.** The screen is 320x180 (6x is exactly 1920x1080, as Hopper's Way), not 384x216 with a
+  40 px HUD band: the 256x176 room fills the height (2 px above and below) with 32 px dark side
+  margins, and the HUD is two framed panels laid over the top wall's corner (hearts and keys) and
+  the right margin (the item and its count). The kit's `top` is 0. OK, or the 384x216 band?
+- **427.** Monsters from the pack: the bat is the `imp` (the pack has no bat; it rests idling and
+  flies with its run cycle), the knight the `orc_warrior`, the rock-spitter a `goblin` whose
+  rocks are short arrows. The hero is `knight_m`, which faces only sideways: walking up or down
+  keeps his last side. OK, or other pack monsters (skeleton, masked orc, chort)?
+- **428.** Pieces the pack has no rectangle for are cut, flipped, turned and pasted from it into
+  two text sheets (`crypt-art`, `crypt-floor`, by a scratch generator, not committed): the wall
+  joins and corners, doors in side walls (the door's middle turned to face the room), the turned
+  blades and arrows, the white hit-flash silhouettes, the statue (the column cut to one tile), the
+  crate on the floor and the floor in the top wall's shadow. A few pieces are original in the
+  pack's colours: the brazier (the torch, cold and lit with a 4-frame flame), the key, the panel
+  frame and the padlock. The pack's PNG itself draws the hero, monsters, chests, bombs, hearts,
+  flasks, coins and the skull. OK?
+- **429.** The relic is the pack's red-gem sword, the heart container and refill its red flasks,
+  the map and compass (unused here) its yellow and blue flasks, the boomerang (unused) its
+  throwing axe, the stun stars its spinning coin, the hero's last poof its skull; the explosion
+  and the enemies' poof are particles only (no pack frames). OK?
+- **430.** Three engine additions for this: a tile's `vary` (floor variety: a frame picked per cell
+  by a hash of its place, with weights and a repeat period so a room keeps its look in a slide),
+  a `hearts` HUD item's `half` (the status counts halves) and any HUD item's `when` (shown only
+  while a status is truthy: the bomb count once an item is owned). The top-down kit's
+  `presentWorld` gained an opt-in `idle` (a standing hero is `idle`, so a skin can breathe him).
+  None moves a hash. OK?
+- **431.** The scene now draws through the page display's presenter (so the settings screen's
+  shake and flashing and the HUD hidden under the title reach the dungeon), and the old debug-font
+  status lines are gone: the HUD shows hearts, keys and the item, and an end banner in a framed
+  panel says how the run ended. The room name and the controls hint are no longer on screen
+  (the controls are on the title's Controls screen). OK?
+- **432.** The old NES-style text sheets (`hero`, `dungeon` and their palettes) were removed, not
+  kept as a fallback; the title's art is now the pack's knight and orc at 3x. OK?
+- **433.** No lighting yet (torches do not glow, no darkness or vignette): that is T4. The
+  footsteps raise dust but make no sound (the sample has no step sfx). OK, or add a step sound?
+
+**Engine 0.16 part C, T4: 2D lighting and mood in skins** (darkness, lights, flicker, vignette,
+room-wide dust; details in `engine/core/fx/CLAUDE.md`, "Lighting", and
+`games/samples/dungeon/CLAUDE.md`, "Lighting and mood"):
+
+- **434.** The PixiJS backend (`engine/backends/pixi`, a parallel track) does not draw a skin's
+  `lighting` yet: it needs the same pass later (the light map from `SkinLighting.layout`, each
+  light erased out of the darkness with `lightStops`, the coloured glows added, the vignette, and
+  the placed lights' sprites from `SkinLighting.props`). The 3D backend ignores `lighting` too (it
+  lights with `scene3d` and kinds' `light`); a 3D skin with `lighting` is `wrong_backend_field`.
+  Schedule the PixiJS pass with the backend's next task?
+- **435.** The Old Crypt's rooms have no wall torches in their text (adding `T` torches would move
+  the run files' hashes), so the skin places them: `lighting.maps.<room>.lights` are lights at
+  fixed places with an optional animated sprite (the original brazier) drawn under the darkness.
+  They are decoration: the hero walks in front of them. To keep them through a room slide the
+  top-down kit's slide map now lists its two rooms as `parts` (`PresentMapPart`, a new optional
+  map field: id, place in tiles, tags), so per-room lights and darkness follow each room; nothing
+  in the world or a snapshot changed. OK, or should torches become room content later?
+- **436.** The bat hall and the crypt are now `dark: true` (the kit's free room flag, which only
+  tags the map `dark`; no hash moved) and take the skin's `tags.dark` darkness (0.86); the other
+  rooms 0.55 (the courtyard 0.5). The falloff is in 6 flat bands (`bands`) for a pixel-art look
+  rather than a smooth gradient; the vignette is 0.5. Judged moody and readable from screenshots
+  at 3x (the guard room's fight stays readable at 0.55); a browser playtest is T10. OK?
+
+**Engine 0.16 part C, T8: The Old Crypt's new wing** (eight rooms, the dash and the path to the boss
+door; details in `games/samples/dungeon/CLAUDE.md`, "The dungeon" and "Run files"):
+
+- **437.** The final layout is eight rooms: the five old ones unchanged (the courtyard, guard room,
+  store room, bat hall and crypt, so walk-east, escape and lost-in-the-guard-room keep their
+  hashes and escape still ends on the crypt's exit), the chasm (the dash), a new **ossuary** south
+  of it (a pit band, monsters and a key on a ledge only the dash reaches) and the warden hall,
+  now behind the chasm's **locked** east door. So the game has two ways: the bombed wall to the
+  relic and the exit, and the dash to the key and the boss door. Keys are counted, not named, so
+  either key opens either door. OK, or should the old escape wing become the way on (and the
+  crypt's exit go)?
+- **438.** `beat-the-warden` was re-recorded (`WW_UPDATE_GOLDEN=1`): the locked boss door means
+  its path now goes through the ossuary for the key (1502 ticks instead of 960; the fight's input
+  is T6's, 542 ticks later, and every boss check holds at the same offsets). No other hash moved.
+  OK, or should T9's win run replace it?
+- **439.** Decorations (banners, wall fountains, skulls) are placed lights with a sprite and no
+  light (`radius` 1, `intensity` 0) in the skin's `lighting.maps`, the only data place for a
+  prop the map has no tile for. OK, or should the engine get a proper per-map `props` list?
+- **440.** The HUD's item panel always shows the bomb icon and `ammo.bomb` (0 with the dash): the
+  skin's `icon` HUD item has one frame and no per-value frames. Left for T10's polish pass (a
+  per-value icon in the UI kit, or two items keyed on a status). OK?
+
+**Engine 0.16 part C, T9: the boss room, the win and loss runs, dialogs and the boss music**
+(details in `games/samples/dungeon/CLAUDE.md`, "The Bone Warden (T9)"):
+
+- **441.** The Bone Warden keeps T6's name and the pack's big demon, now a three-phase fight in
+  data: 6 hit points; phase 1 a charge and a ring of 8 shots; at 4 hp a spread of 5, a faster
+  charge and two summoned bats; at 2 hp a slam, an aimed ring of 12 and the fastest charge;
+  every attack after a telegraph naming it. The hall gained two columns and two hearts. Its
+  telegraph poses (a crouch before the charge, risen before the slam and summon, burning eyes
+  before a shot), a white hit flash and a red-hot last phase are text frames cut from the pack's
+  demon by a small generator (`crypt-art.txt`, one colour added to its palette). OK, or harder?
+- **442.** `beat-the-warden` is gone: `win` (the whole dungeon from tick 0 to the Warden beaten and
+  its flag, 1940 ticks) and `boss-lost` (the hero dies in the fight, 2429 ticks) replace it, both
+  found by a scratch search bot (greedy over cloned worlds, not committed) whose held keys went
+  into the run files as plain data. `to-the-boss-door` was re-recorded (the hall's new hearts
+  are in its last ticks' snapshots). OK?
+- **443.** The game now has three ends: the Warden beaten (`flag.bossDefeated`: the victory dialog,
+  the `warden-falls` tune and the end screen "The Warden is at rest"), the old escape with the
+  relic (its dialog now says the Warden still stirs) and a fall. OK, or should the escape go?
+- **444.** The hero is named: Sir Edrin, last knight of the hill watch, going down to put the Bone
+  Warden to rest because it wakes the dead each night. Intro of three pages. OK?
+- **445.** Engine addition: an end trigger may give its own `music` (`menus.triggers.end[].music`,
+  played when that ending opens and kept under the end screen; else `menus.end.music`), so the
+  victory tune never plays after a fall. OK?
+- **446.** Engine addition: a HUD `icon`'s `frames` (a frame per status value, else `frame`), so the
+  item panel shows the dash (the pack's green flask, as its pickup) or the bomb; the bomb count
+  shows only with bombs. Closes item 440. OK?
+- **447.** Room music from data: the scene plays a room's `music` (else `crypt`); the warden
+  hall's is the skin's layered `warden` (calm, fight and rage layers, 132 bpm, 8 bars, mixed
+  from the frame's `bossHp`/`bossPhase`/`flag.bossDefeated`, ducking under hits, the slam, the
+  phase change, the defeat and dialogs). The page now plays music through the shell's mixer. OK?
+
+**Engine 0.16 part C, T10: combat feel and polish pass, browser play test**
+(details in `games/samples/dungeon/CLAUDE.md`, "Combat feel and polish (T10)"):
+
+- **448.** Combat feel in the skin: hits throw white-gold sparks and knockback dust and hold the
+  game 3 ticks; kills release blue soul wisps and bone bits with a 4-tick hit-pause and a shake;
+  the hero's hurt adds dust to its sparks; the sword leaves a short white trail; chests and
+  pickups got rays and a ring. The enemies' and the boss's white flashes and the shakes on
+  blasts, slams and boss hits are kept from T3 and T9. Strong enough, or more?
+- **449.** The dash leaves pale steel afterimages of the knight (two text frames added to
+  `crypt-art.txt`, facing right and left, keyed on the dash event's `dir`). OK?
+- **450.** Engine addition: a placed light may `emit` (an emitter at its centre while its map
+  shows, each slide part at its place), so every brazier, and the warden hall's four torches,
+  throw embers. OK?
+- **451.** Engine addition: `game.json` `transitions.level: false` (no transition on a map id
+  change even with a `default`), so the dungeon keeps the kit's room slide, with a brief dip to
+  dark (the skin's `room` flash, skipped with reduced flashing), Start and Back to title fade
+  through the dark (`default`) and the fall fades to dark red (`dead` -> `respawn`). Should the
+  room change use the part A wipe instead of the slide?
+- **452.** A danger layer over the dungeon theme: the skin's layered `crypt` (the old `crypt` song
+  plus `crypt-danger`, a tense pedal and drums), the danger in while `enemies` (a new kit status:
+  the living enemies in the room, presentation only) is at least 1. OK?
+- **453.** Every action has a sound, most with pitch variation: new `shutters`, `secret`, `dead`
+  and `push` sfx; stun, block, beam, whirr, switch, torch and item-select reuse others at other
+  pitches. OK?
+- **454.** The item panel moved from the top-right to the bottom-right corner of the right margin:
+  the page's volume control and pause button covered it. OK?
+
+**Engine 0.16 part C, T11: close-out** (details in `docs/BUILD-LOG.md`, Engine 0.16 part C):
+
+- **455.** Owner playtest (part C's Done when): please play The Old Crypt
+  (`pnpm dev`, then `/games/samples/dungeon/`) from the title through the intro, the dash, the
+  ossuary's key and the locked door to the Bone Warden's defeat and the end screen, with keyboard
+  and, if you have one, a gamepad. Does it feel good to play (the dash, the fight, the lighting,
+  the sound)? Accepted, or what should change?
+- **456.** Owner screenshot review (part C's Done when): the ten 1920x1080 screenshots in
+  `docs/reports/screenshots/0.16-C/` (title, intro dialog, the lit crypt, a hurt in the guard
+  room, the dash, the key and the locked door, the Warden's telegraph and a hit, the victory
+  dialog and the end screen), listed with their commands in the build log. Accepted?
+- **457.** The HUD's item panel (bottom right) now shows only once an item is owned (`when:
+"item"`): before, it was an empty frame from the start and its edge peeked out past the intro
+  dialog's corner. OK?
+- **458.** Once an item is owned, the item panel's right edge and bottom still show past a dialog
+  box's lower-right corner (the victory dialog, screenshot 09): the box spans the picture less a
+  margin and the panel sits in that margin. Options: (a) leave it; (b) hide the HUD while a shell
+  dialog shows (an engine change, every game); (c) a narrower dialog box for this game (a new
+  `menus.dialogs` field). Which?
+- **459.** The dash (T5): default tuning 8 ticks, 48 px, cooldown 24 and 6 ticks of guard after
+  it, the hero unhurtable while dashing, the pit tile `^`, and `hero.dash` in the snapshot only
+  once the dash is owned, so no older run's hash moved. OK?
+- **460.** The boss (T6): declared in a room's `boss` field (pattern steps, phases by hp, a
+  defeat flag), with `shutters: "boss"` to seal the room; where hits, kills and boss events
+  happened is kept beside the event for presenters (a `WeakMap`), never in the snapshot, so the
+  feel events moved no hash. OK?
+- **461.** Dialogs (T7) are a shell feature in `game.json` that holds the game's ticks while a box
+  shows; with `?debug=step` or `?record` they are skipped (the old end banner shows), so every run
+  file replays through the page unchanged. OK, or should the step hook show them too?
+- **462.** The end screen's "Rooms seen" shows the rooms entered (4 on the win's route, of 8)
+  without the total. OK, or show `4/8`?
+- **463.** Pits only block: falling in is not modelled. A dash stopped over a pit puts the hero
+  back where the dash started, and `TopDownBot` was not taught to dash (its pathing treats pits as
+  walls). OK, or should pits be a fall (a hurt and a respawn)?
+- **464.** An end trigger's `when` reuses the music mixer's status test (`mixWhenSchema`,
+  `mixWhenHolds` in `engine/core/audio/mix.ts`), so the UI kit now imports that pure audio file
+  (noted in its `CLAUDE.md`). OK, or move the test to a shared module?
+- **465.** Tests loosened for the darkness: the dungeon page's side-margin pixel has a new expected
+  colour and its wall ledge is checked by colour range, the fx-lab torch-pole tolerance went from
+  24 to 64, and the walk-east browser test steps 16 ticks so the room dip fades first. OK?
+- **466.** The boss takes no boomerang stun and drops no loot, its minions and shots vanish when its
+  defeat starts, and it is not pushed by default (`knockResist` 1; a push stops a charge). OK?
+- **467.** The hero's death is a dark-red fade, not an iris (he is already gone from the frame), and
+  the skin's fallback colour for a missing frame is now `#ff00ff` (was `#f878f8`). OK?
+
+**Engine 0.16 part A2: the PixiJS backend** (T13b-1 to T13b-9, built on the track branch
+`engine/0.16-track2` and merged into `engine/build-0.15` in Engine 0.16 part D, D1; details in
+`docs/BUILD-LOG.md`, Engine 0.16 part A2 and part A's T13b section). The track's build decisions
+had their own labels there and its owner questions were numbered 419-422, which part C had used
+meanwhile; the merge renumbered them 468-484 and 485-488.
+
+- **468.** `pixi.js` is pinned at 8.22.0, the newest stable release, published 2026-10-01.
+- **469.** Glow is a pre-made soft halo texture, tinted and stretched behind each glowing box,
+  sprite or line, instead of a PixiJS filter (one sprite in the same batch, no extra pass). It
+  is an oval over the shape's box, not its outline, so it is softer than Canvas2D's glow on
+  large sprites.
+- **470.** The shared drawing code went into a new folder, `engine/core/draw`, not into
+  `engine/core/present`, because kits import `present` and the drawing code must be blocked
+  for kits and the sim. It is on `PURE_CORE` and has its own agent docs.
+- **471.** In the core the map and glyph surfaces default to none (redrawn every frame);
+  Canvas2D's wrappers default them to an offscreen canvas, so Canvas2D behaves exactly as
+  before. Canvas2D's exported names are unchanged.
+- **472.** A new optional core option, `tintGlyphs`, lets PixiJS draw HUD glyphs once in white
+  and tint them. Off, Canvas2D is unchanged.
+- **473.** `pixiDisplay` asks for WebGL only (`preference: ['webgl']`, not `'webgl'`, which
+  would fall back to WebGPU or canvas) and allows software WebGL (SwiftShader), as the 3D view
+  does.
+- **474.** When PixiJS cannot start, Canvas2D runs on a fresh copy of the canvas. A page that
+  asks for a backend the game does not have runs Canvas2D. `backendFromQuery` gained an
+  optional `fallback`.
+- **475.** The dungeon page now draws through the display's presenter (so it works on any 2D
+  backend) and plays the skin's sounds through the display; its view and tests keep their own
+  Canvas2D presenter, so screenshots and hashes are unchanged.
+- **476.** PixiJS screenshots always use software WebGL (SwiftShader), even on a machine with a
+  GPU, so PNGs and the parity test repeat exactly.
+- **477.** Parity tolerance: threshold 8 and at most 0.1% of pixels where nothing glows (RTS,
+  TD, the fx lab's top half); threshold 32 and at most 1% for the whole fx lab. The iris is not
+  compared, because the screenshot page's Canvas2D tile closes it on the picture's centre.
+- **478.** `pixiDisplay` lets the page do the whole-number upscale by default
+  (`upscale: 'page'`, `image-rendering: pixelated`), the largest saving on software GL. The
+  picture can sit up to s-1 device pixels from where Canvas2D puts it; `upscale: 'gl'` keeps
+  the old path.
+- **479.** Tuning changed how the display list is built: a top-level opaque `clear` becomes the
+  GL clear colour, `alpha` and `blend` scopes are set on each object instead of making
+  containers, and the renderer culls off-picture objects (with the glow radius as margin).
+- **480.** `engine/core/fx` was made allocation-free (`lerpColor` keeps a cache of up to 1024
+  parsed colours; `keyframeAt` reads in place). Output is the same on every backend.
+- **481.** To let the bench reach the game's presenter, `PixiDisplayOptions` gained `seed` and
+  `maxParticles`, and `pixiDisplay` returns `PixiDisplay` (a `BrowserDisplay` plus `main`).
+- **482.** The RTS, tower-defense and menus browser tests now run on the PixiJS default
+  instead of being pinned to Canvas2D, so they check pointer input through the PixiJS display.
+- **483.** Old map `RenderTexture`s are not destroyed when a new map version arrives (the core
+  gives no signal); noted in the backend's `CLAUDE.md`.
+- **484.** The BUILD-LOG summary line "the last number used is 363" was already out of date
+  and was left for the feedback-numbering owner. The track's owner questions (419-422 on the
+  track, which part C had used meanwhile) are 485-488; the orchestrator copied them and these
+  decisions (468-484) into FEEDBACK-LOG.md at the merge (Engine 0.16 part D, D1).
+
+Owner questions of the PixiJS close-out (T13b-9; 419-422 on the track):
+
+- **485.** PixiJS is the default 2D backend for the RTS skirmish and the tower defense (Canvas2D
+  the fallback without WebGL), although on this container's software GL it does not hold 16.7 ms
+  p95 with every feature on; its draw call does, and T13b-7 estimates a GPU makes the rest
+  small. Keep it the default until someone measures frame times on a machine with a GPU
+  (`pnpm bench:features`), or go back to Canvas2D by default until then?
+- **486.** Hopper's Way (`games/samples/platformer`) is not wired to PixiJS (another track owns it
+  in part B); every other 2D page is, opt-in by `?backend=pixi`. Wire Hopper's Way after part B,
+  and should any other page default to PixiJS?
+- **487.** The parity tolerance: threshold 8 and 0.1% of the pixels for pictures without glow or
+  additive blending (RTS, tower defense: equal to the bit here), threshold 32 and 1% where glow
+  shows (the fx lab), glow drawn as a halo sprite in PixiJS against `shadowBlur` on the canvas
+  (the coins' and the door's halo differ a little, as the parity sheet shows), the iris not
+  compared. OK?
+- **488.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
+  positional run file's folder (`../../samples/rts-skirmish/runs/battle/141`), added so the
+  parity sheet tiles three games. OK?

@@ -222,6 +222,7 @@ export function pixiDisplayOn(
     // font's glyph strip is drawn once.
     uiPainter: () => (painter ??= new PixiUiPainter(renderer, opts.sheet, opts.fonts, surfaces)),
     effectSettings: (settings) => presenter.effectSettings(settings),
+    showHud: (shown) => presenter.showHud(shown),
     toScreen(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
       return {

@@ -20,6 +20,7 @@ import { Chest, FloorSwitch, Pickup, PushBlock, TdEnemy, Torch, type TdEntity } 
 import { DEFAULT_ITEMS, Inventory, circleHits, type TdItem } from './items';
 import { Bat, Knight, Projectile, Spitter } from './enemies';
 import { TdHero } from './hero';
+import { TdBoss, type BossDef } from './boss';
 import { TOPDOWN_RULES } from './rules';
 import {
   neighbourCell,
@@ -37,9 +38,11 @@ import {
  * How something moves through tiles. `hero`: the player (open doors and exits let him through, and
  * an open doorway lets him walk off the edge into the next room). `walk`: walking enemies.
  * `fly`: over water, blocks and statues but not walls. `shot`: projectiles (over water).
- * `block`: a push block (only onto open floor).
+ * `block`: a push block (only onto open floor). `dash`: the hero dashing (Engine 0.16 part C T5):
+ * as `hero`, and over pits while the rule `dash-crosses-pits` is on. Pits (`^`) stop the hero,
+ * walking enemies and blocks; flyers and shots pass over them.
  */
-export type Mover = 'hero' | 'walk' | 'fly' | 'shot' | 'block';
+export type Mover = 'hero' | 'walk' | 'fly' | 'shot' | 'block' | 'dash';
 
 export type TdEvent =
   | { type: 'sword' }
@@ -70,7 +73,34 @@ export type TdEvent =
   | { type: 'fuse' }
   | { type: 'blast' }
   | { type: 'whirr' }
+  | { type: 'dash'; dir: Dir; distance: number }
+  | { type: 'dash-end' }
+  | { type: 'boss-telegraph'; boss: string; attack: string; ticks: number; x: number; y: number }
+  | { type: 'boss-attack'; boss: string; attack: string; x: number; y: number }
+  | { type: 'boss-hit'; boss: string; hp: number; maxHp: number; phase: number; invuln: number }
+  | { type: 'boss-phase'; boss: string; phase: number; hp: number }
+  | { type: 'boss-defeat'; boss: string; ticks: number }
+  | { type: 'boss-defeated'; boss: string; flag?: string }
   | { type: string; [k: string]: unknown };
+
+/**
+ * Where an event happened, for presentation only (Engine 0.16 part C T6): the entity it is about
+ * and its centre when it was raised. Kept beside the event object (a `WeakMap`), never in it, so
+ * a snapshot's events, and every state hash, stay as they were; `presentWorld` reads it to place
+ * `hit`, `kill`, `stun` and the boss events for particles and hit-pauses (`eventPlace`).
+ */
+export interface EventPlace {
+  entity: TdEntity;
+  x: number;
+  y: number;
+}
+
+const PLACES = new WeakMap<object, EventPlace>();
+
+/** Where an event the world raised happened (`TopDownWorld.emit`'s `at`), if it said. */
+export function eventPlace(e: object): EventPlace | undefined {
+  return PLACES.get(e);
+}
 
 /** What a room remembers between visits (for the whole run). */
 export interface RoomState {
@@ -89,6 +119,8 @@ export interface RoomState {
   blasted: Set<string>;
   /** Where the push blocks ended up once the room's plates were solved (else they reset). */
   blocks: Map<string, { x: number; y: number }> | null;
+  /** The room's boss is beaten (its defeat sequence ended): it stays gone. */
+  bossDown: boolean;
 }
 
 /** Builds an entity for a spawn character; null skips it. */
@@ -203,6 +235,11 @@ export class TopDownWorld {
   keys = 0;
   /** The dungeon's treasures found: its map, its compass (and a game's own, e.g. a relic). */
   readonly found = new Set<string>();
+  /**
+   * World flags (Engine 0.16 part C T6): a boss's `flag` once it is beaten (`bossDefeated`), for
+   * the game's end and run files (the snapshot's `flags`, listed only once there is one).
+   */
+  readonly flags = new Set<string>();
   transition: Transition | null = null;
   /**
    * After a slide the hero walks himself in through the doorway, as Link does in a Zelda
@@ -252,11 +289,28 @@ export class TopDownWorld {
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
     this.hero = opts.hero ? opts.hero(at.x, at.y, opts.maxHp) : new TdHero(at.x, at.y, opts.maxHp);
     this.room = start;
+    for (const room of dungeon.rooms.values()) this.checkBoss(room.id, room.def.boss);
     this.enterRoom(start);
   }
 
-  emit(e: TdEvent): void {
+  /** A boss's summons must name spawn kinds this world has. */
+  private checkBoss(room: string, boss: BossDef | undefined): void {
+    if (!boss) return;
+    for (const ph of [{ pattern: boss.pattern }, ...(boss.phases ?? [])])
+      for (const step of ph.pattern)
+        if (step.do === 'summon')
+          for (const kind of step.kinds)
+            if (!this.spawners[kind])
+              throw new Error(`room "${room}": boss "${boss.id}" summons "${kind}", which has no spawner`);
+  }
+
+  /**
+   * Raises an event. `at` (Engine 0.16 part C T6) is the entity it is about: its centre now is
+   * kept beside the event for presentation (`eventPlace`), never in it.
+   */
+  emit(e: TdEvent, at?: TdEntity): void {
     this.events.push(e);
+    if (at) PLACES.set(e, { entity: at, x: at.x + at.w / 2, y: at.y + at.h / 2 });
   }
 
   add(e: TdEntity): void {
@@ -276,6 +330,7 @@ export class TopDownWorld {
         lit: new Set(),
         blasted: new Set(),
         blocks: null,
+        bossDown: false,
       };
       this.states.set(id, s);
     }
@@ -309,6 +364,16 @@ export class TopDownWorld {
       e.key = `${s.col},${s.row}`;
       this.entities.push(e);
     }
+    const boss = room.def.boss;
+    if (boss) {
+      this.hadEnemies = true;
+      if (!cleared && !st.bossDown) {
+        const [col, row] = boss.at;
+        const b = new TdBoss(col * TILE, row * TILE, boss);
+        b.key = `${col},${row}`;
+        this.entities.push(b);
+      }
+    }
     this.syncHidden();
     this.shutWas = this.shuttersShut();
     this.emit({ type: 'room', id: room.id, first });
@@ -338,6 +403,9 @@ export class TopDownWorld {
         const t = es.filter((e): e is Torch => e instanceof Torch);
         return t.length > 0 && t.every((p) => p.lit);
       }
+      case 'boss':
+        // Off, a boss room never seals: its condition holds from the start.
+        return !!this.room.def.boss && (this.state().bossDown || !this.rules.isOn('boss-seals-room'));
     }
   }
 
@@ -370,8 +438,9 @@ export class TopDownWorld {
   /** Is a tile solid for a mover (`col`/`row` may be outside the room)? */
   private tileSolid(col: number, row: number, mover: Mover): boolean {
     const inside = col >= 0 && row >= 0 && col < ROOM_COLS && row < ROOM_ROWS;
+    const hero = mover === 'hero' || mover === 'dash';
     if (!inside) {
-      if (mover !== 'hero') return true;
+      if (!hero) return true;
       // Past the edge: open only straight through an open doorway (an outdoor screen: past any
       // walkable edge cell).
       const c = Math.max(0, Math.min(ROOM_COLS - 1, col));
@@ -381,7 +450,7 @@ export class TopDownWorld {
       return tileAt(this.room, c, r) !== 'door' || !this.doorOpen(sideOf(c, r, this.room.wall) as Side);
     }
     const t = tileAt(this.room, col, row) as TileKind;
-    if (mover === 'hero' && this.room.entrances.length > 0) {
+    if (hero && this.room.entrances.length > 0) {
       const e = this.entranceAt(col, row);
       if (e && !this.entranceOpen(e)) return true;
     }
@@ -398,11 +467,14 @@ export class TopDownWorld {
       case 'statue':
         return mover !== 'fly';
       case 'water':
-        return mover === 'hero' || mover === 'walk' || mover === 'block';
+        return hero || mover === 'walk' || mover === 'block';
+      case 'pit':
+        if (mover === 'fly' || mover === 'shot') return false;
+        return mover !== 'dash' || !this.rules.isOn('dash-crosses-pits');
       case 'exit':
-        return mover !== 'hero';
+        return !hero;
       case 'door':
-        return mover !== 'hero' || !this.doorOpen(sideOf(col, row, this.room.wall) as Side);
+        return !hero || !this.doorOpen(sideOf(col, row, this.room.wall) as Side);
     }
   }
 
@@ -421,7 +493,7 @@ export class TopDownWorld {
     const r1 = Math.floor((box.y + box.h - 1) / TILE);
     for (let r = r0; r <= r1; r++)
       for (let c = c0; c <= c1; c++) if (this.tileSolid(c, r, mover)) return true;
-    if (mover === 'hero' && this.inDoorJamb(box)) return true;
+    if ((mover === 'hero' || mover === 'dash') && this.inDoorJamb(box)) return true;
     if (mover === 'fly') return false;
     return this.solidEntityAt(box, self) !== null;
   }
@@ -518,6 +590,17 @@ export class TopDownWorld {
         e.hidden = hide;
       }
     return shown;
+  }
+
+  /** Does `box` touch a pit tile (`^`) of the room on screen? */
+  onPit(box: Box): boolean {
+    const c0 = Math.floor(box.x / TILE);
+    const c1 = Math.floor((box.x + box.w - 1) / TILE);
+    const r0 = Math.floor(box.y / TILE);
+    const r1 = Math.floor((box.y + box.h - 1) / TILE);
+    for (let r = r0; r <= r1; r++)
+      for (let c = c0; c <= c1; c++) if (tileAt(this.room, c, r) === 'pit') return true;
+    return false;
   }
 
   /** Is `box` on the room's floor (inside the wall band)? */
@@ -704,7 +787,7 @@ export class TopDownWorld {
     const st = this.state();
     for (const e of this.entities)
       if (e instanceof FloorSwitch && e.kind === 'latch' && e.pressed && e.key) st.pressed.add(e.key);
-    for (const cond of ['clear', 'plates', 'switches', 'torches'] as const) {
+    for (const cond of ['clear', 'plates', 'switches', 'torches', 'boss'] as const) {
       if (st.met.has(cond) || !this.metNow(cond)) continue;
       const used = this.room.def.shutters === cond || this.room.def.reveal === cond;
       // 'clear' is remembered for every room that had enemies (they stay gone).
@@ -792,6 +875,7 @@ export class TopDownWorld {
     this.left = null;
     this.transition = null;
     this.walkIn = null;
+    if (this.hero.dashing) this.hero.endDash(this);
     this.hero.x = (door.col + v.dx) * TILE;
     this.hero.y = (door.row + v.dy) * TILE;
     this.hero.facing = out;
@@ -847,6 +931,7 @@ export class TopDownWorld {
     hero.facing = SIDE_DIR[side];
     hero.attackT = 0;
     hero.kbT = 0;
+    if (hero.dashing) hero.endDash(this);
     const v = DIR_VEC[SIDE_DIR[side]];
     const frames = Math.round((v.dx !== 0 ? ROOM_W : ROOM_H) / this.slideSpeed);
     this.enterRoom(next);
@@ -872,9 +957,23 @@ export class TopDownWorld {
     this.walkIn = null;
     this.entering = null;
     this.left = null;
+    if (this.hero.dashing) this.hero.endDash(this);
     this.hero.x = x;
     this.hero.y = y;
     this.enterRoom(room);
+  }
+
+  /**
+   * A boss's defeat sequence ended (`TdBoss`): the room remembers it beaten (its `boss`
+   * condition is met, so `shutters: "boss"` open), its `flag` is set and `boss-defeated` raised.
+   */
+  bossDown(boss: TdBoss): void {
+    this.state().bossDown = true;
+    if (boss.def.flag) this.flags.add(boss.def.flag);
+    this.emit(
+      { type: 'boss-defeated', boss: boss.def.id, ...(boss.def.flag ? { flag: boss.def.flag } : {}) },
+      boss,
+    );
   }
 
   /** Living enemies in the room. */

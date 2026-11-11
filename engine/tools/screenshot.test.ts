@@ -105,15 +105,15 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
       run: WALK,
       game: 'games/samples/dungeon',
       tick: 60,
-      width: 256,
-      height: 240,
+      width: 320,
+      height: 180,
       matchesHeadless: true,
     });
     expect(a.result.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(b.result.sha256).toBe(a.result.sha256);
     const pngA = readFileSync(join(dir, 'a.png'));
     expect(pngA.equals(readFileSync(join(dir, 'b.png')))).toBe(true);
-    expect(pngSize(pngA)).toEqual({ width: 256, height: 240 });
+    expect(pngSize(pngA)).toEqual({ width: 320, height: 180 });
     expect(a.result.bytes).toBe(pngA.length);
   }, 120_000);
 
@@ -178,10 +178,11 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
       for (let x = 0; x < 16; x++) {
         const want = sheet.pixel(1 + x, 1 + y);
         if (want[3] === 0) continue;
-        // Within a little: the flame's additive particles light the pole up a few levels.
+        // Within a little: the flame's additive particles and (Engine 0.16 part C T4) the torch's
+        // own light glowing over the level's darkness shift the pole by a few dozen levels.
         const got = shot.pixel(96 + x, 200 + y);
         const off = Math.max(...[0, 1, 2].map((i) => Math.abs(got[i]! - want[i]!)));
-        expect(off, `${x},${y}: ${got.join(',')} for ${want.join(',')}`).toBeLessThanOrEqual(24);
+        expect(off, `${x},${y}: ${got.join(',')} for ${want.join(',')}`).toBeLessThanOrEqual(64);
       }
     }
   }, 120_000);
@@ -211,8 +212,8 @@ describe.skipIf(missing !== null)('screenshot --scale and --overlay (Engine 0.16
     ]);
     expect(six.code).toBe(EXIT.ok);
     expect(six.result).toMatchObject({
-      width: 1536,
-      height: 1440,
+      width: 1920,
+      height: 1080,
       scale: 6,
       overlay: null,
       matchesHeadless: true,
@@ -224,8 +225,8 @@ describe.skipIf(missing !== null)('screenshot --scale and --overlay (Engine 0.16
       [0, 0],
       [17, 33],
       [128, 120],
-      [200, 211],
-      [255, 239],
+      [200, 170],
+      [319, 179],
     ] as const)
       for (const [dx, dy] of [
         [0, 0],
@@ -256,8 +257,11 @@ describe.skipIf(missing !== null)('screenshot --scale and --overlay (Engine 0.16
     expect(clear.result.sha256).not.toBe(plain.result.sha256);
     const levels = await cli(['screenshot', run, '--tick', '0', '--overlay', 'levels', '--scale', '2']);
     expect(levels.result).toMatchObject({ overlay: 'levels', width: 512, height: 480 });
-    const bad = await cli(['screenshot', WALK, '--tick', '0', '--overlay', 'end']);
+    // The dungeon has an end screen (Engine 0.16 part C T7) but no level-clear banner.
+    const bad = await cli(['screenshot', WALK, '--tick', '0', '--overlay', 'clear']);
     expect(bad.code).toBe(EXIT.usage);
+    const noDialog = await cli(['screenshot', WALK, '--tick', '0', '--overlay', 'dialog:nope']);
+    expect(noDialog.code).toBe(EXIT.usage);
     const nope = await cli(['screenshot', run, '--tick', '0', '--overlay', 'nope']);
     expect(nope.code).toBe(EXIT.usage);
   }, 120_000);

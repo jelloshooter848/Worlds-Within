@@ -5,8 +5,10 @@
  */
 export {
   glowHalo,
+  GRADIENT_SIZE,
   HALO_SIZE,
   PixiRenderer,
+  radialTexture,
   sheetSource,
   TintedImage,
   type PixiRendererOptions,

@@ -10,6 +10,7 @@ export * from './geometry';
 export * from './room';
 export * from './entity';
 export * from './enemies';
+export * from './boss';
 export * from './items';
 export * from './hero';
 export * from './world';

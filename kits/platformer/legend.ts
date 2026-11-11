@@ -81,3 +81,15 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
 export function legendEntry(ch: string): LegendEntry | undefined {
   return Object.hasOwn(LEGEND, ch) ? LEGEND[ch] : undefined;
 }
+
+/**
+ * The characters a level's decoration grid (`decor`, its `.decor.txt`; Engine 0.16 part C T1) may
+ * hold: `.` for nothing and any other printable ASCII character but the terrain's presented ones
+ * (`#`, `B`, `?`, `u`, `=`, `^`), so a skin's `tiles` can map each to a prop without clashing with
+ * the terrain. The kit gives them no meaning: they are presentation only (a map layer).
+ */
+export const DECOR_CHARS: ReadonlySet<string> = new Set(
+  Array.from({ length: 126 - 33 + 1 }, (_, i) => String.fromCharCode(33 + i)).filter(
+    (c) => !'#B?u=^'.includes(c),
+  ),
+);

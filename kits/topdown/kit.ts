@@ -3,6 +3,7 @@ import type { ContentKind } from '@engine/core/content/kinds';
 import { defineKit, kitOptionsOf, type KitManifest } from '@engine/core/kit';
 import { TopDownBot, type BotStep } from './bot';
 import type { RoomChallenge } from './challenge';
+import { DEFAULT_ITEMS, dashItem, type DashTuning, type TdItem } from './items';
 import { MISSION_ROOM, missionRoomParamsSchema } from './mission-room';
 import { TOPDOWN_RULES } from './rules';
 import { roomKind, topdownOptionsSchema, type RoomMode } from './schema';
@@ -37,6 +38,18 @@ export function roomMode(manifest?: KitManifest): RoomMode {
     rooms?: RoomMode;
   };
   return rooms ?? 'dungeon';
+}
+
+/**
+ * The kit's items for a game (Engine 0.16 part C T5): `DEFAULT_ITEMS` with the dash tuned by the
+ * game's `kitOptions.topdown.dash` (`dashTuningSchema`; fields left out keep `DASH_TUNING`). A
+ * game passes it as the world's `items`.
+ */
+export function topdownItems(manifest?: KitManifest): Readonly<Record<string, TdItem>> {
+  const { dash } = kitOptionsOf({ name: 'topdown', options: topdownOptionsSchema }, manifest) as {
+    dash?: Partial<DashTuning>;
+  };
+  return dash ? { ...DEFAULT_ITEMS, dash: dashItem(dash) } : DEFAULT_ITEMS;
 }
 
 export const kit = defineKit({

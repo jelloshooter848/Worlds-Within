@@ -5,7 +5,7 @@ import type { InputFrame } from '@engine/core/input/input-manager';
 import type { Presenter } from '@engine/core/present';
 import type { Scene } from '@engine/core/scene';
 import { snapshotWorld, type TopDownWorld } from '@kits/topdown';
-import { DUNGEON_MUSIC, ESCAPE_MUSIC } from './content';
+import { DUNGEON_MUSIC, ESCAPE_MUSIC, VICTORY_MUSIC } from './content';
 import { createWorld } from './headless';
 import { DungeonPicture, dungeonEnd, type DungeonLook } from './picture';
 
@@ -18,17 +18,22 @@ export interface DungeonSceneOptions {
   /** Plays a song by id (the page's audio, once it is there). */
   music?: (id: string) => void;
   /**
-   * The page's display presenter (Canvas2D or PixiJS, which plays the skin's sounds itself);
-   * left out, the scene draws through its own Canvas2D presenter with `onSound`.
+   * Draw through this presenter (the page display's: it takes the shell's shake and flashing
+   * settings and hides the HUD under the title) instead of one of the scene's own.
    */
   presenter?: Presenter;
+  /**
+   * The shell shows the run's end (its dialogs and end screen, `BootPage.endings`): no end banner
+   * and no Z-to-restart here (Back to title starts a new run). Default false.
+   */
+  shellEnds?: boolean;
 }
 
 /**
  * The dungeon: the top-down kit's world in the sample's rooms, drawn by the Canvas2D backend from
  * the kit's presentation frames and the sample's skin (`picture.ts`). Walk with the arrows, Z or X
- * for the sword, C for the selected item. The run ends when the hero walks out through the exit
- * or falls; the banner says which and, `END_HOLD` steps on, Z or X starts a new run (a new seed).
+ * for the sword, C for the selected item. The run ends when the hero beats the Bone Warden, walks
+ * out through the exit or falls; the banner says which and, `END_HOLD` steps on, Z or X starts a new run (a new seed).
  * Until then the scene is exactly the headless game (`headless()`), so the page's step hook hashes
  * it like a run file.
  */
@@ -42,6 +47,8 @@ export class DungeonScene implements Scene {
   private frame = 0;
   /** Loop steps since the run ended (0 while it plays). */
   private ended = 0;
+  /** The song playing now (a room's `music`, else the dungeon's; an end's tune). */
+  private song: string | null = null;
 
   constructor(
     private readonly content: ContentBundle,
@@ -54,12 +61,14 @@ export class DungeonScene implements Scene {
   }
 
   enter(): void {
-    this.opts.music?.(DUNGEON_MUSIC);
+    this.song = null;
+    this.roomMusic();
   }
 
   update(input: InputFrame): void {
     this.frame++;
     if (
+      !this.opts.shellEnds &&
       dungeonEnd(this.world) &&
       ++this.ended > END_HOLD &&
       (input.pressed('attack') || input.pressed('jump'))
@@ -69,18 +78,37 @@ export class DungeonScene implements Scene {
     }
     // The world steps on after the end (a fallen hero lies still, an escaped one may walk), so the
     // page stays the headless game tick for tick until a new run starts.
-    const escaped = this.world.exited;
+    const before = dungeonEnd(this.world);
     this.world.update(input);
     this.last = this.world.events.splice(0);
     this.events.push(...this.last);
-    if (this.world.exited && !escaped) this.opts.music?.(ESCAPE_MUSIC);
+    const end = dungeonEnd(this.world);
+    if (end === before) {
+      if (end === null) this.roomMusic();
+    } else if (end === 'escaped') this.play(ESCAPE_MUSIC);
+    // The shell's ending plays the victory tune itself (`menus.triggers.end`'s `music`).
+    else if (end === 'won' && !this.opts.shellEnds) this.play(VICTORY_MUSIC);
+  }
+
+  /**
+   * The room's song (its `music` field: the warden hall's layered `warden`, mixed by the skin's
+   * rules from the frame's status), else the dungeon's, started when it changes.
+   */
+  private roomMusic(): void {
+    this.play(this.world.room.def.music ?? DUNGEON_MUSIC);
+  }
+
+  private play(id: string): void {
+    if (id === this.song) return;
+    this.song = id;
+    this.opts.music?.(id);
   }
 
   render(r: Renderer): void {
-    const { onSound, presenter } = this.opts;
     this.picture ??= new DungeonPicture(r, this.look, {
-      ...(onSound && { onSound }),
-      ...(presenter && { presenter }),
+      ...(this.opts.onSound ? { onSound: this.opts.onSound } : {}),
+      ...(this.opts.presenter ? { presenter: this.opts.presenter } : {}),
+      ...(this.opts.shellEnds ? { banner: false } : {}),
     });
     this.picture.draw(this.world, this.events.splice(0));
   }
@@ -100,6 +128,7 @@ export class DungeonScene implements Scene {
     this.events = [];
     this.ended = 0;
     this.picture?.reset();
-    this.opts.music?.(DUNGEON_MUSIC);
+    this.song = null;
+    this.roomMusic();
   }
 }

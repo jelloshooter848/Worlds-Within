@@ -10,16 +10,37 @@ items, walking townsfolk and a scripted test bot. It never knows about a particu
 supplies rooms, extra spawn kinds and its own scene, and a backend draws the kit's presentation
 frames through the game's skin. It reports what happened through `world.events`.
 
+From Engine 0.16 part C T5 the kit has a third item, the **dash** (`dashItem`, `DASH`, in
+`DEFAULT_ITEMS`): a data-tuned burst along the facing (`DashTuning`: `ticks`, `distance`,
+`cooldown`, `guard`; a game sets it in `game.json`'s `kitOptions.topdown.dash` and passes
+`topdownItems(manifest)` from `kit.ts` as the world's `items`), unhurtable while it lasts, that
+crosses **pits** (`^`, tile `pit`: they stop walking, walkers and blocks) to floor within its reach
+(rule `dash-crosses-pits`). Events `dash` and `dash-end`; the hero is presented in `dash` with a
+`dash` tag; the snapshot gains `hero.dash` only once he owns it.
+
+From Engine 0.16 part C T6 a room may declare a **boss** purely in data (`boss.ts`; the room
+file's `boss` field, `bossSchema` in `schema.ts`): its size, hp, touch damage, hit invulnerability,
+knockback resistance, a looping pattern of steps (`idle`, `telegraph`, `charge`, `shoot` a ring
+or spread, `slam`, `summon` minions of listed spawn kinds), phases by hp with their own patterns
+and speed, a defeat sequence and a world `flag` (the snapshot's `flags`). The room condition
+`boss` (`shutters: "boss"`) seals the boss room until it is down. Randomness only through the
+world's seeded RNG. Events `boss-telegraph`, `boss-attack`, `boss-hit`, `boss-phase`,
+`boss-defeat`, `boss-defeated`; presented as kind `boss:<id>` with its states and tags, and HUD
+status `bossHp`, `bossMaxHp`, `bossName`, `bossPhase`. From T7 the status also has `time`,
+`roomsSeen`, `exited`, `dead` and `flag.<id>` for a page's end triggers (presentation only). Rules `boss-patterns`, `boss-phases`,
+`boss-hit-invuln`, `boss-seals-room`. For combat feel, `hit`, `kill`, `stun` and the boss events are
+placed in presented frames at their entity (`eventPlace`, kept beside the event, so no hash moves).
+
 ## Public API entry points
 
 `index.ts`, imported as `@kits/topdown`, re-exports `geometry`, `room` (rooms and the `LEGEND` text
-format), `entity`, `enemies`, `items`, `hero`, `world`, `frames` (tile-sheet text transforms), `walker`,
+format), `entity`, `enemies`, `boss` (`TdBoss`, `BossDef`, `BossShot`, `BOSS_DIRS`), `items`, `hero`, `world`, `frames` (tile-sheet text transforms), `walker`,
 `person`, `snapshot` (`snapshotWorld`, `topdownGame`: the world as the engine's `HeadlessGame`,
 for `pnpm cli run` and `dump`), `present` (`presentWorld(world, events, opts)`: the world as an
 engine `PresentFrame` (room map with a version that changes with its tiles, the hero and every
 other entity in draw order with `TD_DEPTH` depths, HUD status values, events with positions and a
 camera hint; the kit's `CLAUDE.md` maps old frame names to presented kinds and animations) without drawing and without changing any state;
-`TdPresentState` keeps the `MapTracker` and stable entity ids), `rules` (`TOPDOWN_RULES`: the named rules a run can switch off
+`TdPresentState` keeps the `MapTracker` and stable entity ids; from Engine 0.16 part C T3 the opt-in `idle` option presents a hero standing still for more than `IDLE_AFTER` ticks as `idle`), `rules` (`TOPDOWN_RULES`: the named rules a run can switch off
 with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full adoption in 0.5)
 `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
 `.map.txt` text grid) and `challenge` (`roomChallenge(opts)`: a one-room challenge as the engine's
@@ -75,7 +96,7 @@ by the `kit` name in `game.json`.
 ## How to test
 
 `*.test.ts` next to the code (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
+`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`, `dash.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
 seed. `tests/kits/mission-adapter.test.ts` plays an `engine/sim` mission (the siege fixture's
 `raid`, a real `mission-room` mission since Engine 0.15 T9, with its room in `tests/kits/__fixtures__/`) through
 `topdownMissionAdapter` with the core's `playMissionRound`, outside every layer, since the kit

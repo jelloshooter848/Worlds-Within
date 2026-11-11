@@ -4,12 +4,14 @@ import type { FieldPath } from '../content/validate';
 import {
   emitterSchema,
   flashSpecSchema,
+  lightingSchema,
   hitPauseSpecSchema,
   parallaxLayerSchema,
   shakeSpecSchema,
   tweensSchema,
   zoomSpecSchema,
   type EmitterDef,
+  type LightingSpec,
 } from '../fx/schema';
 import { EASE_NAMES, isEaseName } from '../fx/ease';
 import { imageSheetFrames, imageSheetSchema } from '../gfx/image-sheet';
@@ -23,8 +25,8 @@ import {
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
 import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
-import { checkDecorRefs, decorSchema, placesSchema, tileVarySchema } from './decor';
-import { tileJoinSchema } from './tile-join';
+import { checkDecorRefs, decorSchema, placesSchema, tileVarySchema as modelTileVarySchema } from './decor';
+import { checkVaryWeights, tileJoinSchema, tileVaryShape, type TileVary } from './tile-join';
 import {
   DEFAULT_MODEL_ANCHOR,
   MODEL_TICKS_PER_SECOND,
@@ -233,7 +235,6 @@ const SPRITE_FIELDS = [
   'frame',
   'blend',
   'glow',
-  'join',
   'turnToFacing',
   'ring',
   'hitFlash',
@@ -252,13 +253,18 @@ const MESH_FIELDS = [
   'castShadow',
   'receiveShadow',
   'light',
-  'materials',
   'tint',
+  'stretch',
+  'clipHold',
+  'materials',
 ] as const;
-/** The model fields that mean nothing without a `model` (Engine 0.16 T11; `materials` and `tint` F6). */
-const MODEL_FIELDS = ['anchor', 'rotate', 'clip', 'materials', 'tint'] as const;
+/**
+ * The model fields that mean nothing without a `model` (Engine 0.16 T11; `tint`, `stretch` and
+ * `clipHold` part B T10; `materials` F6).
+ */
+const MODEL_FIELDS = ['anchor', 'rotate', 'clip', 'tint', 'stretch', 'clipHold', 'materials'] as const;
 /** Skin-level fields only a 3D skin has. */
-const MESH_SKIN_FIELDS = ['meshes', 'camera3d', 'scene3d', 'rounds2d'] as const;
+const MESH_SKIN_FIELDS = ['meshes', 'camera3d', 'scene3d', 'rounds2d', 'scenery'] as const;
 
 const meshRef = id.describe(
   `3D: a primitive (${MESH_PRIMITIVES.map((p) => `\`${p}\``).join(', ')}) or a key of \`meshes\``,
@@ -280,6 +286,19 @@ export {
   type ModelAnchorName,
 } from './model-fields';
 
+const modelStretch = z
+  .strictObject({
+    x: z
+      .number()
+      .positive()
+      .exactOptional()
+      .describe("factor along the model's own x, before `rotate` (default 1)"),
+    y: z.number().positive().exactOptional().describe('factor along its y (default 1)'),
+    z: z.number().positive().exactOptional().describe('factor along its z (default 1)'),
+  })
+  .describe(
+    '3D model: factors per axis on top of `scale` (a thicker plank, a deeper block; Engine 0.16 part B)',
+  );
 const castShadow = z
   .boolean()
   .exactOptional()
@@ -424,14 +443,21 @@ const tagEntry = z
     color: color.exactOptional().describe("3D: the mesh's colour (default the kind's)"),
     model: modelPath
       .exactOptional()
-      .describe("3D: a glTF model shown instead of the kind's (a burnt engine, a scaffold); Engine 0.16 F6"),
+      .describe("3D: a glTF model shown in place of the kind's (Engine 0.16 part B)"),
     scale: z
       .number()
       .positive()
       .exactOptional()
-      .describe("3D model: px per model unit for this look (default the kind's); Engine 0.16 F6"),
-    materials: modelMaterials.exactOptional(),
+      .describe("3D: the kind's `scale` for this look (for a `model`, px per model unit)"),
+    anchor: modelAnchor.exactOptional(),
+    rotate: modelRotate.exactOptional(),
+    clip: z
+      .union([id, z.record(id, id)])
+      .exactOptional()
+      .describe("3D model: the clips for this look, as the kind's `clip`"),
     tint: modelTint.exactOptional(),
+    stretch: modelStretch.exactOptional(),
+    materials: modelMaterials.exactOptional(),
   })
   .superRefine((v, ctx) => {
     if ((v.tag === undefined) === (v.prefix === undefined)) {
@@ -467,7 +493,18 @@ const TAG_MATCH_FIELDS = ['tag', 'prefix', 'min', 'max'] as const;
 
 /** The fields a tag entry may give, of each shape. */
 const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor'] as const;
-const TAG_MESH_FIELDS = ['mesh', 'color', 'model', 'scale', 'materials', 'tint'] as const;
+const TAG_MESH_FIELDS = [
+  'mesh',
+  'color',
+  'model',
+  'scale',
+  'anchor',
+  'rotate',
+  'clip',
+  'tint',
+  'stretch',
+  'materials',
+] as const;
 
 /** One emitter name or a list of them: what an event's or a kind's `emit` takes (Engine 0.16 T3). */
 const emitRefs = z
@@ -523,10 +560,18 @@ const kindEntry = z.strictObject({
     .describe(
       "3D model: the animation clip to play, one name for every state or animation state -> clip name (a state not listed plays `idle`'s, else none); looped, `anim.t` / 60 seconds in",
     ),
+  clipHold: z
+    .array(id)
+    .min(1)
+    .exactOptional()
+    .describe(
+      '3D model: animation states whose clip plays once and holds its last pose (a death), instead of looping (Engine 0.16 part B)',
+    ),
   castShadow,
   receiveShadow,
-  materials: modelMaterials.exactOptional(),
   tint: modelTint.exactOptional(),
+  stretch: modelStretch.exactOptional(),
+  materials: modelMaterials.exactOptional(),
   light: kindLightSchema.exactOptional(),
   offset: offset.exactOptional(),
   spawnTween: tweensSchema
@@ -594,6 +639,15 @@ const tileEntry = z.strictObject({
   sheet: id.exactOptional().describe('2D: the sprite file (default `sheets.sheet`)'),
   frame: id.exactOptional().describe('2D: the frame name in the sheet'),
   join: tileJoinSchema.exactOptional(),
+  vary: z
+    .union([tileVaryShape, modelTileVarySchema])
+    .superRefine((v, ctx) => {
+      if ('frames' in v) checkVaryWeights(v, ctx);
+    })
+    .exactOptional()
+    .describe(
+      "per-cell variety: 2D `{ frames, weights?, period? }` picks the tile's frame by the cell's place (Engine 0.16 part C T3); 3D `{ turn?, height?, tint? }` turns, stretches and tints a model tile's cells (Engine 0.16 F3)",
+    ),
   fallbackColor: color
     .exactOptional()
     .describe('2D: the colour when the frame is missing (default `sheets.fallbackColor`)'),
@@ -618,10 +672,47 @@ const tileEntry = z.strictObject({
     ),
   castShadow,
   receiveShadow,
-  materials: modelMaterials.exactOptional(),
   tint: modelTint.exactOptional(),
-  vary: tileVarySchema.exactOptional(),
+  stretch: modelStretch.exactOptional(),
+  materials: modelMaterials.exactOptional(),
 });
+
+/**
+ * One row of 3D scenery (Engine 0.16 part B, T10): copies of a model set along a map, `every` px
+ * apart from `from`, at `z` px from the blocks' plane (negative is behind them), standing on world
+ * row `y` (px, y down; default the map's bottom edge), each nudged by its own seeded `jitter`.
+ * Presentation only: the 3D backend places them when it builds a map, never in a frame or a hash.
+ */
+export const sceneryRowSchema = z
+  .strictObject({
+    model: modelPath,
+    scale: z.number().positive().exactOptional().describe('px per model unit (default 1)'),
+    stretch: modelStretch.exactOptional(),
+    rotate: modelRotate.exactOptional(),
+    tint: modelTint.exactOptional(),
+    every: z.number().positive().describe('px between one copy and the next along x'),
+    from: z.number().exactOptional().describe('px x of the first copy (default 0)'),
+    z: z.number().describe("px toward the camera from the blocks' plane (negative: behind them)"),
+    y: z
+      .number()
+      .exactOptional()
+      .describe("world px (y down) the copies stand on (default the map's bottom edge)"),
+    jitter: z
+      .strictObject({
+        x: z.number().min(0).exactOptional().describe('px either way along x'),
+        y: z.number().min(0).exactOptional().describe('px either way up and down'),
+        z: z.number().min(0).exactOptional().describe('px either way in depth'),
+        scale: z.number().min(0).max(0.9).exactOptional().describe('share either way of the size'),
+        turn: z.number().min(0).max(180).exactOptional().describe('degrees either way about the upright'),
+      })
+      .exactOptional()
+      .describe("each copy's own seeded nudge (default none)"),
+    castShadow,
+    receiveShadow,
+  })
+  .describe('3D: a row of scenery models along the map (Engine 0.16 part B)');
+
+export type SkinSceneryRow = z.output<typeof sceneryRowSchema>;
 
 const effect = z.strictObject({
   kind: z.enum(['flash', 'particles', 'shake', 'tint']).describe('what the backend shows'),
@@ -786,6 +877,17 @@ const hudItem = z
       .exactOptional()
       .describe('the sprite file for hearts, icons, counters and panels (default `sheets.sheet`)'),
     frame: id.exactOptional().describe("the frame for hearts, icons, a counter's icon and a panel"),
+    frames: z
+      .record(z.string().min(1), id)
+      .exactOptional()
+      .describe(
+        'an icon\'s frame per status value (`{ "bomb": "bomb", "dash": "boots" }`; a value not listed shows `frame`), such as the selected item (Engine 0.16 part C T9)',
+      ),
+    half: id
+      .exactOptional()
+      .describe(
+        'hearts: the frame for a last half point (Engine 0.16 part C T3); with it the status counts halves, two points to a `frame`',
+      ),
     font: id
       .exactOptional()
       .describe(
@@ -865,10 +967,11 @@ const hudItem = z
       .describe(
         "a `clock`'s day bar under its text: the day from midnight to midnight with a marker at the time now (Engine 0.16 F4)",
       ),
-    when: statusCompareSchema
+    when: z
+      .union([id, statusCompareSchema])
       .exactOptional()
       .describe(
-        'draw the item only while this status test holds (`{ status, eq?, ne?, lt?, lte?, gt?, gte? }`; a key the frame lacks never holds; Engine 0.16 F7)',
+        "draw the item only while a status key's value is truthy (not 0, false or empty; such as the item count once an item is owned; Engine 0.16 part C T3) or while a status test holds (`{ status, eq?, ne?, lt?, lte?, gt?, gte? }`; a key the frame lacks never holds; Engine 0.16 F7)",
       ),
     alpha: z
       .number()
@@ -890,6 +993,10 @@ const hudItem = z
     if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined && !flatPanel) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
     }
+    if (v.frames !== undefined && v.as !== 'icon')
+      ctx.addIssue({ code: 'custom', path: ['frames'], message: '`frames` is for "icon" only' });
+    if (v.half !== undefined && v.as !== 'hearts')
+      ctx.addIssue({ code: 'custom', path: ['half'], message: '`half` is for "hearts" only' });
     const statusFree =
       v.as === 'panel' ||
       v.as === 'minimap' ||
@@ -1003,6 +1110,18 @@ function checkShapes(
         });
       }
     });
+    // A tile's `vary` is either shape: frames (2D) or a model tile's turn, height and tint (3D).
+    const vary = entry['vary'];
+    if (vary !== undefined && isFrameVary(vary as SkinTileEntry['vary']) === mesh) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...where, key, 'vary'],
+        message: mesh
+          ? `"vary" with "frames" is a 2D field; backend "${backend}" takes \`{ turn?, height?, tint? }\``
+          : `"vary" without "frames" is a 3D field; backend "${backend}" takes \`{ frames, weights?, period? }\``,
+        params: { code: 'wrong_backend_field' },
+      });
+    }
     for (const field of wrong) {
       if (entry[field] === undefined) continue;
       const msg = `"${field}" is a ${mesh ? '2D' : '3D'} field; backend "${backend}" takes ${mesh ? 'meshes' : 'sprites'}`;
@@ -1046,9 +1165,11 @@ function checkMeshes(
       { mesh?: string; poses?: Record<string, SkinStateFrames>; byTag?: { mesh?: string }[] }
     >;
     tiles?: Record<string, { mesh?: string }>;
+    themes?: Record<string, { tiles?: Record<string, { mesh?: string }> }>;
     meshes?: Record<string, unknown>;
     camera3d?: unknown;
     scene3d?: unknown;
+    scenery?: unknown;
     labels?: unknown;
     rounds2d?: unknown;
   },
@@ -1105,6 +1226,9 @@ function checkMeshes(
     (entry.byTag ?? []).forEach((look, i) => check(['kinds', key, 'byTag', i], look.mesh));
   }
   for (const [key, entry] of Object.entries(skin.tiles ?? {})) check(['tiles', key], entry.mesh);
+  for (const [map, theme] of Object.entries(skin.themes ?? {}))
+    for (const [key, entry] of Object.entries(theme.tiles ?? {}))
+      check(['themes', map, 'tiles', key], entry.mesh);
 }
 
 /** Every `events` key must be a bare type, `type:value` or `type:field=value` ({@link parseEventKey}). */
@@ -1151,6 +1275,86 @@ function checkEmitRefs(
     for (const [ch, entry] of Object.entries(decor.legend)) check(['decor', map, 'legend', ch], entry.emit);
 }
 
+/**
+ * A skin's `lighting` (Engine 0.16 part C T4): a 2D field (`wrong_backend_field` on a 3D skin);
+ * its kinds and tiles must be the skin's (`missing_ref`), its event keys read like `events`' keys
+ * (`bad_event_key`) and its particles' `emit` must name emitters of the skin (`missing_ref`).
+ */
+function checkLighting(
+  skin: {
+    backend: string;
+    kinds: Record<string, unknown>;
+    tiles?: Record<string, unknown>;
+    emitters?: Record<string, unknown>;
+    lighting?: LightingSpec;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const lighting = skin.lighting;
+  if (lighting === undefined) return;
+  if (MESH_BACKENDS.includes(skin.backend)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['lighting'],
+      message: `"lighting" is a 2D field; backend "${skin.backend}" lights with \`scene3d\` and kinds' \`light\``,
+      params: { code: 'wrong_backend_field' },
+    });
+    return;
+  }
+  const missing = (path: (string | number)[], what: string, name: string, known: Record<string, unknown>) => {
+    const names = Object.keys(known);
+    ctx.addIssue({
+      code: 'custom',
+      path,
+      message: `no ${what} "${name}" in this skin${names.length ? ` (${names.slice(0, 20).join(', ')})` : ''}`,
+      params: { code: 'missing_ref' },
+    });
+  };
+  for (const kind of Object.keys(lighting.kinds ?? {}))
+    if (!Object.hasOwn(skin.kinds, kind)) missing(['lighting', 'kinds', kind], 'kind', kind, skin.kinds);
+  const tiles = skin.tiles ?? {};
+  for (const tile of Object.keys(lighting.tiles ?? {}))
+    if (!Object.hasOwn(tiles, tile)) missing(['lighting', 'tiles', tile], 'tile', tile, tiles);
+  for (const key of Object.keys(lighting.events ?? {})) {
+    if (parseEventKey(key) !== null) continue;
+    ctx.addIssue({
+      code: 'custom',
+      path: ['lighting', 'events', key],
+      message: `"${key}" is not an event key: use "type", "type:value" or "type:field=value"`,
+      params: { code: 'bad_event_key' },
+    });
+  }
+  const emitters = skin.emitters ?? {};
+  (lighting.particles ?? []).forEach((p, i) => {
+    const list = typeof p.emit === 'string' ? [p.emit] : p.emit;
+    list.forEach((name, j) => {
+      if (Object.hasOwn(emitters, name)) return;
+      const at =
+        typeof p.emit === 'string'
+          ? ['lighting', 'particles', i, 'emit']
+          : ['lighting', 'particles', i, 'emit', j];
+      missing(at, 'emitter', name, emitters);
+    });
+  });
+  for (const [mapId, entry] of Object.entries(lighting.maps ?? {}))
+    (entry.lights ?? []).forEach((light, i) => {
+      if (light.emit === undefined) return;
+      const list = typeof light.emit === 'string' ? [light.emit] : light.emit;
+      list.forEach((name, j) => {
+        if (Object.hasOwn(emitters, name)) return;
+        const at = ['lighting', 'maps', mapId, 'lights', i, 'emit'];
+        missing(typeof light.emit === 'string' ? at : [...at, j], 'emitter', name, emitters);
+      });
+    });
+}
+
+/** Whether a tile's `vary` is the 2D shape (`{ frames, ... }`), not a 3D model tile's. */
+export function isFrameVary(
+  vary: DeepReadonly<SkinTileEntry['vary']> | undefined,
+): vary is DeepReadonly<TileVary> {
+  return vary !== undefined && 'frames' in vary;
+}
+
 function isPrimitive(name: string): name is MeshPrimitive {
   return (MESH_PRIMITIVES as readonly string[]).includes(name);
 }
@@ -1172,6 +1376,13 @@ const themeSchema = z
       .describe(
         "tile entries laid over the skin's `tiles` on this map (a key given here replaces the skin's)",
       ),
+    scene3d: scene3dSchema
+      .exactOptional()
+      .describe("3D: this map's scene look (lights, fog, tone mapping), in place of the skin's `scene3d`"),
+    scenery: z
+      .array(sceneryRowSchema)
+      .exactOptional()
+      .describe("3D: this map's scenery rows, in place of the skin's `scenery`"),
   })
   .describe("one map's look");
 
@@ -1218,6 +1429,12 @@ export const skinSchema = z
       .describe(
         "3D: the mini games whose rounds a 3D page draws in 2D (Engine 0.16 F8): their frames go to the game's `canvas2d-<id>` skins on a 2D layer over the 3D picture (the shell picks Canvas2D or PixiJS), while the world stays in 3D",
       ),
+    scenery: z
+      .array(sceneryRowSchema)
+      .exactOptional()
+      .describe(
+        '3D: rows of scenery models along the map, in front of or behind the blocks (Engine 0.16 part B): `{ model, scale?, stretch?, rotate?, tint?, every, from?, z, y?, jitter?: { x?, y?, z?, scale?, turn? }, castShadow?, receiveShadow? }`',
+      ),
     decor: decorSchema.exactOptional(),
     places: placesSchema.exactOptional(),
     emitters: z
@@ -1232,11 +1449,16 @@ export const skinSchema = z
       .describe(
         'background layers behind the map, back to front (Engine 0.16): `{ frame | gradient, factor, repeat?, x?, y?, sheet?, bands?, height?, depth? }`',
       ),
+    lighting: lightingSchema
+      .exactOptional()
+      .describe(
+        '2D lighting and mood (Engine 0.16 part C): `{ ambient?, tags?, maps?: { id: { ambient?, lights? } }, kinds?, tiles?, events?, vignette?, bands?, particles? }`: darkness per map tag or id, lights per kind and state, tile, place and event (radius, colour, intensity, glow, flicker), a vignette and room-wide particles',
+      ),
     themes: z
       .record(id, themeSchema)
       .exactOptional()
       .describe(
-        "per-map looks (Engine 0.16 part B, T7): map id -> `{ background?, parallax?, tiles? }`, used in place of the skin's own `background` and `parallax`, and over its `tiles` key by key, while a frame shows the map with that id (a platformer level's id); the Canvas2D presenter draws them, the 3D backend does not yet",
+        "per-map looks (Engine 0.16 part B, T7): map id -> `{ background?, parallax?, tiles?, scene3d?, scenery? }`, used in place of the skin's own `background`, `parallax`, `scene3d` and `scenery`, and over its `tiles` key by key, while a frame shows the map with that id (a platformer level's id); both backends draw them (3D from Engine 0.16 part B, T10)",
       ),
     music: skinMusicSchema
       .exactOptional()
@@ -1252,6 +1474,7 @@ export const skinSchema = z
     }
     checkMusicLayers(skin.music, ctx);
     checkEmitRefs(skin, ctx);
+    checkLighting(skin, ctx);
     checkMeshes(skin, ctx);
     checkShapes(skin.backend, skin.sheets, skin.kinds, ['kinds'], ['sheet', 'frames', 'fallbackColor'], ctx);
     checkShapes(
@@ -1266,7 +1489,39 @@ export const skinSchema = z
       const at = ['themes', map, 'tiles'];
       checkShapes(skin.backend, skin.sheets, theme.tiles ?? {}, at, ['sheet', 'frame', 'fallbackColor'], ctx);
     }
+    checkJoinTiles(skin, ctx);
   });
+
+/**
+ * In a 3D skin a tile's `join` picks another `tiles` entry by key (Engine 0.16 part B, T10: a
+ * grass-topped block on top, plain dirt inside), so each `join.frames` value must be a key of the
+ * skin's tiles (or, in a theme, of the theme's or the skin's): `missing_ref` otherwise.
+ */
+function checkJoinTiles(
+  skin: {
+    backend: string;
+    tiles?: Record<string, { join?: { frames: Record<string, string> } }>;
+    themes?: Record<string, { tiles?: Record<string, { join?: { frames: Record<string, string> } }> }>;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  if (!MESH_BACKENDS.includes(skin.backend)) return;
+  const check = (at: FieldPath, tiles: typeof skin.tiles, known: Record<string, unknown>) => {
+    for (const [tile, entry] of Object.entries(tiles ?? {}))
+      for (const [key, name] of Object.entries(entry.join?.frames ?? {})) {
+        if (Object.hasOwn(known, name)) continue;
+        ctx.addIssue({
+          code: 'custom',
+          path: [...at, tile, 'join', 'frames', key],
+          message: `no tile "${name}" in this skin's \`tiles\` (a 3D join names a tile entry)`,
+          params: { code: 'missing_ref' },
+        });
+      }
+  };
+  check(['tiles'], skin.tiles, skin.tiles ?? {});
+  for (const [map, theme] of Object.entries(skin.themes ?? {}))
+    check(['themes', map, 'tiles'], theme.tiles, { ...skin.tiles, ...theme.tiles });
+}
 
 export type SkinFile = z.output<typeof skinSchema>;
 
@@ -1405,7 +1660,11 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
         frame,
         path: ['join', 'frames', key],
       }));
-      sheetAt([...at, tile], entry.sheet, [...one(entry.frame), ...joined]);
+      const varied = (isFrameVary(entry.vary) ? entry.vary.frames : []).map((frame, i) => ({
+        frame,
+        path: ['vary', 'frames', i],
+      }));
+      sheetAt([...at, tile], entry.sheet, [...one(entry.frame), ...joined, ...varied]);
     }
   };
   tileRefs(['tiles'], skin.tiles);
@@ -1419,7 +1678,11 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
   issues.push(...checkLabelFonts(name, skin, others));
   issues.push(...checkDecorRefs(name, skin, others));
   (skin.hud ?? []).forEach((item, i) => {
-    sheetAt(['hud', i], item.sheet, one(item.frame));
+    sheetAt(['hud', i], item.sheet, [
+      ...one(item.frame),
+      ...(item.half === undefined ? [] : [{ frame: item.half, path: ['half'] }]),
+      ...Object.entries(item.frames ?? {}).map(([value, frame]) => ({ frame, path: ['frames', value] })),
+    ]);
     if (item.panel !== undefined) sheetAt(['hud', i, 'panel'], item.panel.sheet, one(item.panel.frame));
   });
   const parallaxRefs = (at: FieldPath, layers: SkinFile['parallax']) =>
@@ -1442,6 +1705,27 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     parallaxRefs(['themes', map, 'parallax'], theme.parallax);
     tileRefs(['themes', map, 'tiles'], theme.tiles);
   }
+  // A placed light's sprite (Engine 0.16 part C T4) is checked like any frame.
+  for (const [map, entry] of Object.entries(skin.lighting?.maps ?? {}))
+    (entry.lights ?? []).forEach((light, i) => {
+      const sprite = light.sprite;
+      if (sprite === undefined) return;
+      const at: FieldPath = ['lighting', 'maps', map, 'lights', i, 'sprite'];
+      if (sprite.sheet === undefined && skin.sheets?.sheet === undefined) {
+        issues.push({
+          name,
+          path: [...at, 'sheet'],
+          code: 'missing_field',
+          message: 'a light sprite needs "sheet" (or sheets.sheet)',
+        });
+        return;
+      }
+      sheetAt(
+        at,
+        sprite.sheet,
+        sprite.frames.map((frame, j) => ({ frame, path: ['frames', j] })),
+      );
+    });
   if (!MESH_BACKENDS.includes(skin.backend)) {
     for (const [emitter, def] of Object.entries(skin.emitters ?? {})) {
       if (def.frame !== undefined) sheetAt(['emitters', emitter], def.sheet, one(def.frame));
@@ -1824,6 +2108,8 @@ export function themedSkin<S extends DeepReadonly<SkinFile>>(skin: S, mapId: str
     ...(theme.background !== undefined && { background: theme.background }),
     ...(theme.parallax !== undefined && { parallax: theme.parallax }),
     ...(theme.tiles !== undefined && { tiles: { ...skin.tiles, ...theme.tiles } }),
+    ...(theme.scene3d !== undefined && { scene3d: theme.scene3d }),
+    ...(theme.scenery !== undefined && { scenery: theme.scenery }),
   };
 }
 
@@ -2273,13 +2559,17 @@ export interface SkinModel {
   castShadow: boolean;
   /** The clip to play now, or null (the model's rest pose). */
   clip: string | null;
-  /** Seconds into the clip (looped by the backend). */
+  /** Seconds into the clip (looped by the backend, unless `hold`). */
   time: number;
+  /** Play the clip once and hold its last pose (the entry's `clipHold` names the state; Engine 0.16 part B). */
+  hold: boolean;
   /** Px right and down from the box (the entry's `offset`), and toward the camera (`z`). */
   offset: { x: number; y: number; z: number };
+  /** Factors per axis on top of `scale` (Engine 0.16 part B; 1 each by default). */
+  stretch: { x: number; y: number; z: number };
   /** Material name -> colour, replacing those materials' colours (Engine 0.16 F6; empty: none). */
   materials: Record<string, string>;
-  /** A colour every material's colour is multiplied by, or null (Engine 0.16 F6). */
+  /** A colour every material's colour is multiplied by, or null (Engine 0.16 part B and F6). */
   tint: string | null;
 }
 
@@ -2298,6 +2588,7 @@ function modelOf(
   entry: DeepReadonly<SkinKindEntry | SkinTileEntry>,
   clip: string | null,
   time: number,
+  hold = false,
 ): SkinModel | undefined {
   if (entry.model === undefined) return undefined;
   const offset = 'offset' in entry ? entry.offset : undefined;
@@ -2314,9 +2605,32 @@ function modelOf(
     castShadow: entry.castShadow ?? false,
     clip,
     time,
+    hold,
     offset: { x: offset?.x ?? 0, y: offset?.y ?? 0, z: entry.z ?? 0 },
-    materials: 'materials' in entry && entry.materials !== undefined ? { ...entry.materials } : {},
-    tint: 'tint' in entry && entry.tint !== undefined ? entry.tint : null,
+    stretch: { x: entry.stretch?.x ?? 1, y: entry.stretch?.y ?? 1, z: entry.stretch?.z ?? 1 },
+    materials: entry.materials !== undefined ? { ...entry.materials } : {},
+    tint: entry.tint ?? null,
+  };
+}
+
+/**
+ * A scenery row's model as a backend builds each copy (Engine 0.16 part B, T10): no clip, the
+ * bounding box's bottom centre on the copy's spot. Pure.
+ */
+export function sceneryModel(row: DeepReadonly<SkinSceneryRow>): SkinModel {
+  return {
+    model: row.model,
+    scale: row.scale ?? 1,
+    anchor: DEFAULT_MODEL_ANCHOR,
+    rotate: { x: row.rotate?.x ?? 0, y: row.rotate?.y ?? 0, z: row.rotate?.z ?? 0 },
+    castShadow: row.castShadow ?? false,
+    clip: null,
+    time: 0,
+    hold: false,
+    offset: { x: 0, y: 0, z: 0 },
+    stretch: { x: row.stretch?.x ?? 1, y: row.stretch?.y ?? 1, z: row.stretch?.z ?? 1 },
+    materials: {},
+    tint: row.tint ?? null,
   };
 }
 
@@ -2331,7 +2645,9 @@ export function resolveSkinModel(
 ): SkinModel | undefined {
   const entry = resolveSkinKind(skin, entity);
   if (entry === undefined) return undefined;
-  return modelOf(entry, modelClipFor(entry.clip, entity.anim.state), entity.anim.t / MODEL_TICKS_PER_SECOND);
+  const state = entity.anim.state;
+  const hold = entry.clipHold?.includes(state) ?? false;
+  return modelOf(entry, modelClipFor(entry.clip, state), entity.anim.t / MODEL_TICKS_PER_SECOND, hold);
 }
 
 /** A tile entry's model, its `clip` looped on the frame clock (`frame` / 60 seconds); undefined without one. Pure. */
@@ -2348,47 +2664,52 @@ export interface SkinModelUse {
   clips: { path: FieldPath; clip: string }[];
 }
 
-/** Every model a skin names, kinds, tiles then decor legends, in file order, with the clips each asks for. Pure. */
+/**
+ * Every model a skin names, in file order, with the clips each asks for: kinds (each kind, then
+ * its tag looks; a look without its own `model` that gives `clip` is checked against the kind's),
+ * tiles, scenery rows, each theme's tiles and scenery (Engine 0.16 part B), then decor legends
+ * (Engine 0.16 F3; each model at its own field, then its stack, F6). Pure.
+ */
 export function skinModelUses(skin: DeepReadonly<SkinFile>): SkinModelUse[] {
   const out: SkinModelUse[] = [];
+  const clipsOf = (at: FieldPath, clip: DeepReadonly<SkinKindEntry['clip']>) =>
+    clip === undefined
+      ? []
+      : typeof clip === 'string'
+        ? [{ path: [...at, 'clip'], clip }]
+        : Object.entries(clip).map(([state, name]) => ({ path: [...at, 'clip', state], clip: name }));
   for (const [kind, entry] of Object.entries(skin.kinds)) {
-    if (entry.model === undefined) continue;
     const at: FieldPath = ['kinds', kind];
-    const clip = entry.clip;
-    const clips =
-      clip === undefined
-        ? []
-        : typeof clip === 'string'
-          ? [{ path: [...at, 'clip'], clip }]
-          : Object.entries(clip).map(([state, name]) => ({ path: [...at, 'clip', state], clip: name }));
-    out.push({ path: at, model: entry.model, clips });
-  }
-  // A tag look's own model (Engine 0.16 F6), played with the kind's clips.
-  for (const [kind, entry] of Object.entries(skin.kinds)) {
+    if (entry.model !== undefined) out.push({ path: at, model: entry.model, clips: clipsOf(at, entry.clip) });
     (entry.byTag ?? []).forEach((look, i) => {
-      if (look.model === undefined) return;
-      const clip = entry.clip;
-      const at: FieldPath = ['kinds', kind, 'byTag', i];
-      const clips =
-        clip === undefined
-          ? []
-          : typeof clip === 'string'
-            ? [{ path: ['kinds', kind, 'clip'], clip }]
-            : Object.entries(clip).map(([state, name]) => ({
-                path: ['kinds', kind, 'clip', state],
-                clip: name,
-              }));
-      out.push({ path: at, model: look.model, clips });
+      const model = look.model ?? entry.model;
+      if (model === undefined || (look.model === undefined && look.clip === undefined)) return;
+      const lookAt: FieldPath = [...at, 'byTag', i];
+      out.push({
+        path: lookAt,
+        model,
+        clips: clipsOf(lookAt, look.clip ?? (look.model ? undefined : entry.clip)),
+      });
     });
   }
-  for (const [tile, entry] of Object.entries(skin.tiles ?? {})) {
-    if (entry.model === undefined) continue;
-    const at: FieldPath = ['tiles', tile];
-    out.push({
-      path: at,
-      model: entry.model,
-      clips: entry.clip === undefined ? [] : [{ path: [...at, 'clip'], clip: entry.clip }],
-    });
+  const tilesOf = (base: FieldPath, tiles: DeepReadonly<SkinFile['tiles']>) => {
+    for (const [tile, entry] of Object.entries(tiles ?? {})) {
+      if (entry.model === undefined) continue;
+      const at: FieldPath = [...base, tile];
+      out.push({
+        path: at,
+        model: entry.model,
+        clips: entry.clip === undefined ? [] : [{ path: [...at, 'clip'], clip: entry.clip }],
+      });
+    }
+  };
+  const sceneryOf = (base: FieldPath, rows: DeepReadonly<SkinFile['scenery']>) =>
+    (rows ?? []).forEach((row, i) => out.push({ path: [...base, i], model: row.model, clips: [] }));
+  tilesOf(['tiles'], skin.tiles);
+  sceneryOf(['scenery'], skin.scenery);
+  for (const [map, theme] of Object.entries(skin.themes ?? {})) {
+    tilesOf(['themes', map, 'tiles'], theme.tiles);
+    sceneryOf(['themes', map, 'scenery'], theme.scenery);
   }
   // Decor legends (Engine 0.16 F3): each model of each entry, at its own field; then its stack (F6).
   for (const [map, decor] of Object.entries(skin.decor ?? {})) {

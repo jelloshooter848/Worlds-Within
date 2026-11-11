@@ -64,6 +64,14 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
   renders its scope to a texture and blurs it; the halo is one more sprite in the batch). The
   halo is an ellipse over the box, not the shape's outline: close to the canvas's `shadowBlur`
   on small particles and boxes, softer on large sprites.
+- Radial gradients (Engine 0.16 part D, D1: a skin's `lighting`, part C T4): `gradient(fill)`
+  draws one sprite of `radialTexture(stops)` (`GRADIENT_SIZE` texels, made from bytes, linear
+  filtering; the stops' alphas clamped and divided by the largest, so one texture serves a
+  light's every strength; cached by the rounded stops, at most 64 kept) over the circle's bounds,
+  tinted the colour, its alpha the stops' peak times the scope's, blended `add` (`'add'`),
+  `erase` (`'erase'`: a hole in the light map) or with the scope's mode. A `box` smaller than the
+  circle's bounds that does not cover the picture clips it (a pooled mask); outside the circle
+  nothing is drawn (the vignette's circle reaches the picture's corners). Culled like a box.
 
 - Tinted sheets (T13b-3): a sheet whose `image` is a `TintedImage` (a texture and a colour) draws
   every sprite with that colour as `tint` (and its alpha as alpha); a sheet whose `image` is a
@@ -76,7 +84,7 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
 (`@engine/core/draw`, the same walk Canvas2D's `SkinnedCanvasPresenter` draws through) on a
 `PixiRenderer`: every option and method is the core's (`size`/`resize`, `onSound`, `background`,
 `fonts`/`font`, `clamp`, `reduceFlashing`, `seed`, `shakeScale`, `subPixelShake`, `onHitPause`,
-`maxParticles`, `particleCount`, `focus()`, `effectSettings`), with the same observable behaviour
+`maxParticles`, `particleCount`, `focus()`, `effectSettings`, `showHud`), with the same observable behaviour
 (sounds once per frame number, hit-pause requests, particles, camera). Change how a feature draws
 in `engine/core/draw`, never here. What it adds is its surfaces (`opts.surfaces`, default a new
 `PixiSurfaces` on the renderer; `.surfaces` reads it):
@@ -87,6 +95,9 @@ in `engine/core/draw`, never here. What it adds is its surfaces (`opts.surfaces`
   `flush(gpu)` renders its display list into the texture once and lets it go; the display flushes
   before each picture. In Node nothing flushes, and tests read `waiting`. Old map textures are not
   destroyed (one per map version a page shows).
+- `PixiSurfaces.makeLive(w, h)` is the `lightSurface` (Engine 0.16 part D, D1): the skin's
+  lighting's light map, drawn again every lit frame, so each `flush` renders what it was given
+  since the last one (a surface not drawn keeps its picture).
 - `PixiSurfaces.tint` is the core UI painter's `tintGlyphs`: each font's glyphs are drawn once in
   white, and a colour's strip is that texture as a `TintedImage` (sprite tint), not another
   texture per colour.

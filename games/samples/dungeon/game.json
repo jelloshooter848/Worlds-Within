@@ -1,6 +1,6 @@
 {
   "id": "dungeon",
-  "title": "The dungeon sample: The Old Crypt, five rooms and a way out on the top-down kit",
+  "title": "The dungeon sample: The Old Crypt, eight rooms, a dash over the pits and the Bone Warden on the top-down kit",
   "kit": "topdown",
   "content": {
     "room": ["content/rooms/*.json"],
@@ -12,38 +12,53 @@
     "font": ["content/fonts/*.txt"]
   },
   "start": { "seed": 1 },
-  "screen": { "width": 256, "height": 240 },
+  "screen": { "width": 320, "height": 180 },
+  "transitions": {
+    "level": false,
+    "default": { "kind": "fade", "ticks": 16, "hold": 6, "color": "#05030a", "ease": "quadInOut" },
+    "respawn": { "kind": "fade", "ticks": 30, "hold": 24, "color": "#1a0508", "ease": "cubicIn" },
+    "events": { "dead": "respawn" }
+  },
   "menus": {
     "font": "crypt-small",
     "titleFont": "crypt-title",
     "style": {
-      "text": "#fcfcfc",
-      "shadow": "#000000",
-      "focusText": "#fca044",
-      "disabledText": "#a4a4a4",
-      "back": "#0c0c1c",
-      "focusBack": "#6c0000",
-      "border": "#fcfcfc",
-      "track": "#3c3c3c",
-      "fill": "#d82800",
-      "padding": 6,
-      "gap": 3,
-      "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
-      "heading": "#fca044",
-      "outline": "#000000",
-      "dim": 0.5
+      "text": "#e8e0d8",
+      "shadow": "#141016",
+      "focusText": "#f6c445",
+      "disabledText": "#8e7b6e",
+      "back": "#1a1219",
+      "focusBack": "#62232f",
+      "border": "#aa8d7a",
+      "track": "#3a3236",
+      "fill": "#e8762a",
+      "padding": 4,
+      "gap": 2,
+      "sounds": {
+        "move": "ui-move",
+        "select": "ui-select",
+        "back": "ui-back",
+        "type": "ui-move",
+        "page": "ui-select"
+      },
+      "heading": "#f6c445",
+      "outline": "#141016",
+      "dim": 0.6,
+      "panel": { "sheet": "crypt-art", "frame": "panel", "slice": 5 },
+      "cursor": ">",
+      "dimColor": "#0c0a10"
     },
     "title": {
       "name": "The Old Crypt",
-      "subtitle": "Torches, keys and a relic in the dark",
+      "subtitle": "A knight, a dark crypt and the Bone Warden",
       "art": [
-        { "sheet": "hero", "frame": "attack-side", "scale": 3, "anchor": "left", "x": 34, "y": -4 },
-        { "sheet": "dungeon", "frame": "knight-side-0", "scale": 3, "anchor": "right", "x": 34, "y": -4 }
+        { "sheet": "crypt-actors", "frame": "knight-idle-0", "scale": 3, "anchor": "left", "x": 30, "y": 8 },
+        { "sheet": "crypt-actors", "frame": "orc-idle-0", "scale": 3, "anchor": "right", "x": 30, "y": 8 }
       ],
       "music": "crypt",
       "footer": "An original game made with the Worlds Within engine",
       "items": ["start", "controls", "settings"],
-      "dim": 0.85
+      "dim": 0.72
     },
     "pause": { "items": ["resume", "controls", "settings", "title"] },
     "controls": [
@@ -51,7 +66,57 @@
       { "actions": ["attack"], "label": "Sword" },
       { "actions": ["special"], "label": "Use item" },
       { "actions": ["select"], "label": "Next item" }
-    ]
+    ],
+    "end": {
+      "heading": "The end",
+      "credits": "Art: 0x72's DungeonTileset II (CC0)",
+      "lines": [
+        { "label": "Time", "status": "time", "format": "time" },
+        { "label": "Rooms seen", "status": "roomsSeen" },
+        { "label": "Health", "status": "hp", "of": "maxHp" }
+      ],
+      "items": ["title"]
+    },
+    "dialogs": {
+      "intro": {
+        "speaker": "Sir Edrin",
+        "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
+        "pages": [
+          "I am Edrin, last knight of the hill watch. Each night the dead walk out of the old crypt below the hill.",
+          "Something down there wakes them: the Bone Warden, the old keeper of the tombs. Tonight I go down to put it to rest.",
+          "Keys open locked doors, a cracked wall may give way to a bomb, and a light step crosses a pit. Into the dark."
+        ]
+      },
+      "victory": {
+        "speaker": "Sir Edrin",
+        "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
+        "pages": [
+          "The Bone Warden falls to dust, and the torches burn steady again.",
+          "No more dead will walk out of the crypt. The hill can sleep, and so can I."
+        ]
+      },
+      "escaped": {
+        "speaker": "Sir Edrin",
+        "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
+        "pages": [
+          "Daylight at last, and the relic with me. But the Bone Warden still stirs below. Another night."
+        ]
+      },
+      "fallen": { "pages": ["The torches gutter out. The crypt keeps its secrets, and its Warden, for now."] }
+    },
+    "triggers": {
+      "intro": "intro",
+      "end": [
+        {
+          "when": { "status": "flag.bossDefeated", "eq": true },
+          "dialog": "victory",
+          "heading": "The Warden is at rest",
+          "music": "warden-falls"
+        },
+        { "when": { "status": "exited", "eq": true }, "dialog": "escaped", "heading": "You escaped!" },
+        { "when": { "status": "dead", "eq": true }, "dialog": "fallen", "heading": "You fell" }
+      ]
+    }
   },
   "headless": "headless.ts",
   "view": "view.ts"

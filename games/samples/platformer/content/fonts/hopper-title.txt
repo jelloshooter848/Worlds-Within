@@ -1,6 +1,7 @@
 ; Hopper's Way's title font (Engine 0.16 T9): the small font made bold (each column inked one px
 ; to the right as well) and doubled with the Scale2x rule: heavy caps 14 px tall, for the name
-; and headings drawn with an outline.
+; and headings drawn with an outline. (T11: W redrawn with its middle stroke, so it no longer
+; reads as an upside-down M.)
 cell 12 18
 baseline 14
 spacing 2
@@ -461,14 +462,14 @@ glyph W
 ####....####
 ####....####
 ####....####
+####.##.####
+####.##.####
+####.##.####
+############
+############
+############
 #####..#####
-############
-############
-############
-############
-############
-############
-#####..#####
+####....####
 .##......##.
 ............
 ............

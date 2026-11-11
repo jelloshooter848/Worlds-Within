@@ -37,6 +37,17 @@ describe('levelSchema', () => {
     expect(ragged.errors).toMatchObject([{ path: 'map.4', code: 'ragged_row', row: 4 }]);
   });
 
+  it("takes a decoration grid the map's size, of props but no terrain character (0.16 part C T1)", () => {
+    const decor = ['.f.....', '.......', '..r..t.', '.......'];
+    expect(parsed({ decor }).decor).toEqual(decor);
+    const size = validate('l.json', { ...LEVEL, decor: decor.slice(1) }, levelSchema);
+    expect(size.errors).toMatchObject([{ path: 'decor', code: 'size_mismatch' }]);
+    const terrain = validate('l.json', { ...LEVEL, decor: ['.#.....', ...decor.slice(1)] }, levelSchema);
+    expect(terrain.errors).toMatchObject([{ path: 'decor.0', code: 'unknown_char', row: 0, col: 1 }]);
+    const ragged = validate('l.json', { ...LEVEL, decor: [...decor.slice(0, 3), '..'] }, levelSchema);
+    expect(ragged.errors).toMatchObject([{ path: 'decor.3', code: 'ragged_row', row: 3 }]);
+  });
+
   it('refuses spawn keys that are not one free character', () => {
     const r = validate(
       'l.json',

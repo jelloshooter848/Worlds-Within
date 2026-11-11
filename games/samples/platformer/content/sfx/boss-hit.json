@@ -1,0 +1,8 @@
+{
+  "id": "boss-hit",
+  "bpm": 240,
+  "pulse": "v12 @2 l32 o4 p-12 g16 < c16",
+  "pulse2": "v8 @3 l32 o5 c+ < g",
+  "noise": "v12 x1 l16 n11 n13",
+  "triangle": "l32 o2 c c < c8"
+}

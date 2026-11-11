@@ -1,6 +1,7 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { HeadlessOptions } from '@engine/core/headless';
+import type { DeepReadonly, PresentFrame } from '@engine/core/present';
 import type { ViewGame } from '@engine/core/view';
 import { snapshotWorld } from '@kits/topdown';
 import { createWorld } from './headless';
@@ -18,6 +19,10 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
   // As `topdownGame` (the headless contract): each step takes the events it emitted.
   let last: object[] = world.events.splice(0);
   let picture: { r: Renderer; p: DungeonPicture } | null = null;
+  let hud = true;
+  let status: DeepReadonly<PresentFrame['status']> | null = null;
+  // The page shows the run's end through the shell (`menus.triggers.end`), so no banner here.
+  const banner = content.manifest.menus?.triggers?.end === undefined;
   return {
     step(input) {
       world.update(input);
@@ -26,8 +31,15 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
     snapshot: () => snapshotWorld(world, last),
     screen: look.screen,
     render(r) {
-      if (picture?.r !== r) picture = { r, p: new DungeonPicture(r, look) };
-      picture.p.draw(world, last);
+      if (picture?.r !== r) picture = { r, p: new DungeonPicture(r, look, { banner }) };
+      picture.p.showHud(hud);
+      status = picture.p.draw(world, last).status;
+    },
+    // The frame status drawn last, for the screenshot page's `end` overlay (time, rooms seen).
+    status: () => status,
+    // The screenshot page's title overlay hides the HUD (Engine 0.16 part C T1).
+    showHud(shown) {
+      hud = shown;
     },
   };
 }

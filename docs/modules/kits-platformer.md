@@ -6,7 +6,8 @@ Folder: `kits/platformer`. Detailed rules: [`kits/platformer/CLAUDE.md`](../../k
 
 Gameplay rules for a side-scrolling platformer (Engine 0.5), extracted from SMBC as rules only,
 with generic names and no SMBC content. Today it holds the kit's content kinds: `level` (a JSON
-header plus a `.map.txt` text grid of the kit legend) and `profile` (physics numbers in whole
+header plus a `.map.txt` text grid of the kit legend, and from Engine 0.16 part C T1 an optional
+`.decor.txt` grid of presentation-only decoration, presented as the map layer `decor`) and `profile` (physics numbers in whole
 sub-pixel and 1/4096 px per tick units, and actor types such as `walker` and `shell` whose
 behaviour is set by data), and a headless world (`PlatformerWorld`) that moves the player over a
 level with SMBC-style whole-number physics and named, switchable movement rules, and plays a whole level: coins, bump blocks

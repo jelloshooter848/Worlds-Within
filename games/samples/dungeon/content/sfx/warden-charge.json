@@ -1,0 +1,6 @@
+{
+  "id": "warden-charge",
+  "bpm": 220,
+  "noise": "v12 l16 s k k s k k s k",
+  "pulse": "v8 @2 l16 o3 g f+ f e d+ d c+ c"
+}

@@ -1,0 +1,6 @@
+{
+  "id": "warden-roar",
+  "bpm": 160,
+  "noise": "v13 l16 k s k s s s s s",
+  "pulse": "v9 @2 l16 o3 d d+ e f f+ g g+ a"
+}

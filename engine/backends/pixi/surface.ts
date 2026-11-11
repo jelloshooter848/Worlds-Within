@@ -27,6 +27,8 @@ export interface PendingSurface {
  */
 export class PixiSurfaces {
   private pending: PendingSurface[] = [];
+  /** Surfaces drawn again every frame (the lighting's light map): rendered at each `flush`. */
+  private readonly live: PendingSurface[] = [];
 
   constructor(private readonly main: PixiRenderer) {}
 
@@ -37,6 +39,21 @@ export class PixiSurfaces {
       sheetSource: (sheet) => this.main.sourceOf(sheet),
     });
     this.pending.push({ renderer, texture });
+    return { renderer, image: texture as unknown as SpriteSheet['image'] };
+  };
+
+  /**
+   * A `SurfaceFactory` for a surface the presenter draws again every frame (the skin's lighting's
+   * light map, Engine 0.16 part D, D1): each `flush` renders what it was given since the last one
+   * into its texture.
+   */
+  readonly makeLive = (width: number, height: number): DrawSurface => {
+    const texture = RenderTexture.create({ width, height, scaleMode: 'nearest' });
+    const renderer = new PixiRenderer({
+      size: { width, height },
+      sheetSource: (sheet) => this.main.sourceOf(sheet),
+    });
+    this.live.push({ renderer, texture });
     return { renderer, image: texture as unknown as SpriteSheet['image'] };
   };
 
@@ -58,5 +75,11 @@ export class PixiSurfaces {
       renderer.beginFrame();
     }
     this.pending = [];
+    // A live surface drawn this frame is rendered and emptied; one not drawn keeps its picture.
+    for (const { renderer, texture } of this.live) {
+      if (renderer.stage.children.length === 0) continue;
+      gpu.render({ container: renderer.stage, target: texture, clear: true });
+      renderer.beginFrame();
+    }
   }
 }

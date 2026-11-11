@@ -29,6 +29,9 @@ backdrop? })` implements the core `Renderer` contract (`clear`, `rect`, `sprite`
   empty source for a headless sheet); sheet frames are cached `Texture` sub-rectangles of it.
 - `glowHalo()`, `HALO_SIZE`: the glow's pre-made soft halo texture, tinted and stretched behind
   each glowing shape (cheaper than a filter).
+- `radialTexture(stops)`, `GRADIENT_SIZE` (Engine 0.16 part D, D1): `PixiRenderer.gradient`'s
+  cached radial gradient textures, what a skin's lighting draws (with `PixiSurfaces.makeLive`,
+  the light map surface rendered every frame).
 - `PoolCounts`: the pool counts' shape.
 
 - `TintedImage`: a sheet `image` (a texture and a colour) drawn with that sprite tint; a sheet

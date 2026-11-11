@@ -125,6 +125,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
     presenter: Object.keys(rounds).length > 0 ? presenterBySkinSet(presenter, rounds) : presenter,
     uiPainter: () => painter,
     effectSettings: (settings) => presenter.effectSettings(settings),
+    showHud: (shown) => presenter.showHud(shown),
     fit(layout) {
       const dpr = window.devicePixelRatio || 1;
       applyCanvasBox(

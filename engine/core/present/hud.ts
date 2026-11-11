@@ -55,7 +55,9 @@ export const HUD_FALLBACK_COLOR = '#ff00ff';
  * The HUD's draw items for `status` through `skin.hud`, in the skin's order. A key the status
  * lacks draws nothing. `number` and `text` are one `text` item in `item.font`, else `opts.font`,
  * else `DEFAULT_HUD_FONT`. `hearts` repeat their frame once per whole point (a non-number draws
- * none), `icon` draws it once when the value is truthy; each copy is the frame's width plus 1 px
+ * none; with `half` the value counts halves: a `frame` per two points and `half` for one left
+ * over), `icon` draws it once when the value is truthy (its `frames` entry for the value, else
+ * `frame`); each copy is the frame's width plus 1 px
  * right of the last, from the item's `sheet` (else `sheets.sheet`) in `sheets.palette`. Where the
  * sheet or frame is missing (`frameSize` gives null) each copy is an 8 x 8 box in
  * `sheets.fallbackColor`, else `HUD_FALLBACK_COLOR`, 9 px apart.
@@ -78,29 +80,32 @@ export function layoutHud(
       out.push({ kind: 'text', font, text: String(value), x: item.x, y: item.y });
       continue;
     }
-    const count =
+    // With `half` (Engine 0.16 part C T3) a hearts value counts halves: a `frame` per two points,
+    // then `half` for one left over.
+    const halves = item.as === 'hearts' && item.half !== undefined;
+    const points =
       item.as === 'hearts' ? (typeof value === 'number' ? Math.max(0, Math.floor(value)) : 0) : value ? 1 : 0;
+    const frames: string[] = [];
+    const whole = halves ? Math.floor(points / 2) : points;
+    // An icon's frame may follow the value (`frames`, Engine 0.16 part C T9: the selected item).
+    const own = item.as === 'icon' ? (item.frames?.[String(value)] ?? item.frame) : item.frame;
+    for (let i = 0; i < whole; i++) if (own !== undefined) frames.push(own);
+    if (halves && points % 2 === 1) frames.push(item.half!);
     const sheet = item.sheet ?? defaults?.sheet;
     const palette = defaults?.palette;
-    const size =
-      sheet === undefined || item.frame === undefined ? null : frameSize(sheet, palette, item.frame);
+    const sizeOf = (frame: string | undefined) =>
+      sheet === undefined || frame === undefined ? null : frameSize(sheet, palette, frame);
+    const size = sizeOf(own);
     const step = (size?.w ?? HUD_FALLBACK_SIZE) + 1;
-    for (let i = 0; i < count; i++) {
+    frames.forEach((frame, i) => {
       const x = item.x + i * step;
-      if (size && sheet !== undefined && item.frame !== undefined) {
-        out.push({
-          kind: 'sprite',
-          sheet,
-          ...(palette !== undefined && { palette }),
-          frame: item.frame,
-          x,
-          y: item.y,
-        });
+      if (sizeOf(frame) && sheet !== undefined) {
+        out.push({ kind: 'sprite', sheet, ...(palette !== undefined && { palette }), frame, x, y: item.y });
       } else {
         const color = defaults?.fallbackColor ?? HUD_FALLBACK_COLOR;
         out.push({ kind: 'box', x, y: item.y, w: HUD_FALLBACK_SIZE, h: HUD_FALLBACK_SIZE, color });
       }
-    }
+    });
   }
   return out;
 }
@@ -137,16 +142,20 @@ export function hudHidden(status: DeepReadonly<PresentFrame['status']>): boolean
 }
 
 /**
- * Whether a HUD item shows on this status (Engine 0.16 F7): true without a `when`, else whether
- * its status test holds (a key the status lacks never holds); never while the status hides the
- * HUD ({@link HUD_HIDDEN_STATUS}, Engine 0.16 F9).
+ * Whether a HUD item shows on this status: true without a `when`; a status key (Engine 0.16 part
+ * C T3) while its value is truthy (missing, 0, false and '' are not); a status test (Engine 0.16
+ * F7) while it holds (a key the status lacks never holds); never while the status hides the HUD
+ * ({@link HUD_HIDDEN_STATUS}, Engine 0.16 F9).
  */
 export function hudItemShown(
-  item: DeepReadonly<Pick<SkinHudItem, 'when'>>,
+  item: DeepReadonly<Pick<SkinHudItem, 'when'>> | { readonly when?: string | undefined },
   status: DeepReadonly<PresentFrame['status']>,
 ): boolean {
   if (hudHidden(status)) return false;
-  return item.when === undefined || statusMatches(item.when, status as MixStatus);
+  const when = item.when;
+  if (when === undefined) return true;
+  if (typeof when === 'string') return Boolean(status[when]);
+  return statusMatches(when, status as MixStatus);
 }
 
 /** A HUD box in picture px. */

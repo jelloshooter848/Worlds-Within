@@ -109,6 +109,17 @@ function frameSizeOf(sheets: SheetLookup): UiFrameSize {
   };
 }
 
+/**
+ * Whether a tile's overlay is the title or a screen only the title opens (the level select): the
+ * shell draws the game picture under those without its HUD (Engine 0.16 part C T1), so the page
+ * does too. Settings and controls also open from the pause menu, which keeps the HUD.
+ */
+function hidesHud(tile: ShotTile): boolean {
+  return (
+    tile.overlay?.kind === 'menu' && (tile.overlay.screen === 'title' || tile.overlay.screen === 'levels')
+  );
+}
+
 /** What a tile's overlay needs: the content, its 2D sheets (frame sizes, the 2D painter) and fonts. */
 interface OverlayContext {
   content: ContentBundle;
@@ -223,7 +234,17 @@ async function shootCanvas(job: ShotJob, game: ViewGame, content: ContentBundle)
   const tiles: string[] = [];
   const played = await play(job, game, (tick) => {
     game.render(renderer);
-    for (const i of tilesAt(job, tick))
+    const here = tilesAt(job, tick);
+    for (const i of here.filter((i) => !hidesHud(job.tiles![i]!)))
+      tiles[i] = canvasTile(job, canvas, job.tiles![i]!, overlays!, game.status?.() ?? null);
+    // Tiles under the title: the same tick drawn again without the HUD (the frame shown twice).
+    const bare = here.filter((i) => hidesHud(job.tiles![i]!));
+    if (bare.length > 0 && game.showHud !== undefined) {
+      game.showHud(false);
+      game.render(renderer);
+      game.showHud(true);
+    }
+    for (const i of bare)
       tiles[i] = canvasTile(job, canvas, job.tiles![i]!, overlays!, game.status?.() ?? null);
   });
   return {
@@ -326,6 +347,7 @@ async function shootThree(
       const tile = job.tiles![i]!;
       const o = overlays!;
       presenter.transition(tile.overlay === null ? null : overlayTransition(o.content, tile.overlay));
+      presenter.showHud(!hidesHud(tile));
       draw.present(shown);
       if (tile.overlay !== null)
         presenter.ui(
@@ -338,6 +360,7 @@ async function shootThree(
       tiles[i] = pngOf(job, canvas);
     }
     presenter.transition(null);
+    presenter.showHud(true);
   });
   const png = lastInLayer && layer !== null ? layer.png(canvas.width, canvas.height) : pngOf(job, canvas);
   presenter.dispose();

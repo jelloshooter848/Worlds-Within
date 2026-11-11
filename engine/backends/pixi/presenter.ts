@@ -18,10 +18,12 @@ export interface PixiPresenterOptions extends SkinnedPresenterOptions {
  * `PixiRenderer`, so every 0.16 part A feature draws through the same code. Its surfaces are
  * PixiJS `RenderTexture`s (`PixiSurfaces`): the map is drawn once per id and version onto one and
  * copied as a sprite each frame, and each HUD font is drawn once in white and tinted per colour
- * (sprite tint) instead of a strip per colour. Every other option and method (`size`/`resize`,
- * `onSound`, `background`, `fonts`/`font`, `clamp`, `reduceFlashing`, `seed`, `shakeScale`,
- * `subPixelShake`, `onHitPause`, `maxParticles`, `particleCount`, `focus()`, `effectSettings`) is
- * the core presenter's.
+ * (sprite tint) instead of a strip per colour. The skin's `lighting` (Engine 0.16 part C T4,
+ * merged in part D, D1) draws its darkness on a live surface (`PixiSurfaces.makeLive`, rendered
+ * every frame) with `PixiRenderer.gradient`'s radial sprites. Every other option and method
+ * (`size`/`resize`, `onSound`, `background`, `fonts`/`font`, `clamp`, `reduceFlashing`, `seed`,
+ * `shakeScale`, `subPixelShake`, `onHitPause`, `maxParticles`, `particleCount`, `focus()`,
+ * `effectSettings`, `showHud`) is the core presenter's.
  */
 export class PixiPresenter extends SkinnedPresenter {
   /** Where the map and glyph strips wait to be rendered into their textures. */
@@ -38,6 +40,7 @@ export class PixiPresenter extends SkinnedPresenter {
       ...rest,
       mapSurface: rest.mapSurface ?? surfaces.make,
       glyphSurface: rest.glyphSurface ?? surfaces.make,
+      lightSurface: rest.lightSurface ?? surfaces.makeLive,
       tintGlyphs: rest.tintGlyphs ?? surfaces.tint,
     });
     this.surfaces = surfaces;

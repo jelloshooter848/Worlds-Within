@@ -1,0 +1,6 @@
+{
+  "id": "jump-high",
+  "bpm": 240,
+  "pulse": "v11 @2 l32 o4 p14 c8 > p5 c16 q3 e32 g32",
+  "pulse2": "v4 @0 l32 r16 o6 c e g"
+}

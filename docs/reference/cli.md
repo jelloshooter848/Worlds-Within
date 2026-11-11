@@ -218,7 +218,7 @@ Flags:
   --allow-software-gl              three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)
   --scale <number>                 whole-number upscale, nearest neighbour: each pixel becomes N x N (320x180 at 6 is 1920x1080)
   --render-scale <number>          three only: draw the 3D picture at N x the picture size, supersampled, HUD and labels scaled with it (default the skin's scene3d.renderScale, else 1): a 320x180 picture at 6 is 1920x1080
-  --overlay <string>               draw one of sheet's overlays over the picture: title, pause, settings, controls, levels, clear, end, ui=<file>[.<widget>] or a transition, each with an optional *<n>
+  --overlay <string>               draw one of sheet's overlays over the picture: title, pause, settings, controls, levels, clear, end, ui=<file>[.<widget>], dialog:<id> (a menus.dialogs box) or a transition, each with an optional *<n>
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

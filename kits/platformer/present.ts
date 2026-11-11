@@ -159,7 +159,8 @@ function versionOf(rows: readonly string[]): number {
 /**
  * The level's terrain as rows of `PRESENT_TILES` characters: id the level's id, tag
  * `scroll:<mode>`. `version` is a hash of the tiles, so it changes when a bump block is used, a
- * brick breaks or a gate opens, and not when a coin is taken.
+ * brick breaks or a gate opens, and not when a coin is taken. A level with `decor` (Engine 0.16
+ * part C T1) adds it as the layer `decor`, drawn over the terrain (it never changes).
  */
 export function presentMap(world: PlatformerWorld): PresentMap {
   const t = world.tiles;
@@ -176,6 +177,8 @@ export function presentMap(world: PlatformerWorld): PresentMap {
     cols: t.cols,
     rows: t.rows,
     tiles,
+    // The level's decoration (Engine 0.16 part C T1): a layer drawn over the terrain, presentation only.
+    ...(world.level.decor !== undefined && { layers: [{ name: 'decor', tiles: [...world.level.decor] }] }),
     tags: [`scroll:${world.level.scroll}`],
   };
 }

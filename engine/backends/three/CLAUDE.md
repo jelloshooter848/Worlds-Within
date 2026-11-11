@@ -190,6 +190,52 @@ are no longer 3D only: the 2D presenter draws a skin's `labels` too (`engine/cor
   page's title screen) shows none, and its HUD hides too (`hudItemShown`). Tests:
   `decor.test.ts`.
 
+## Tweens, per-map looks, 3D joins, scenery and model looks (Engine 0.16 part B, T10)
+
+Added for Hopper's Way's 2.5D view (`games/samples/platformer`); a skin without these fields
+builds exactly as before.
+
+- **Tweens (item 340, resolved: scale and every other prop).** As the Canvas2D presenter: one
+  `TweenSet` per entity id, an event entry's `tween` started on its `entity` (once per frame
+  number, with its sound), a kind's `spawnTween` the first frame an entity is shown (again after
+  it leaves and comes back), ended tweens and those of entities gone dropped, all dropped on a
+  frame number lower than the last (a new level). `place` lays the state on the root over `fx`:
+  `x`/`y` world px added to the position, `scaleX`/`scaleY` times the squash (the root's depth
+  scale follows `scaleX`, so a squash stays solid), `rotate` added to the turn, `alpha` times the
+  alpha, and a `color` tween as each material's emissive colour (`colorAmount` times the colour;
+  the material's own emissive is kept in `userData.ownEmissive` and given back when no colour
+  tween runs): a white hit flash. `tweenState(id, frame)` reads it (tests).
+- **Per-map looks (`themes`).** Each `sync` takes the frame's map id (else the shown map's) and,
+  when it changes, `themedSkin(skin, id)`: the clear colour (unless the `background` option is
+  set), the parallax layers (`ParallaxPlanes.setSkin`), the scene look (`look` and the lights and
+  fog are updated in place: ambient, sun colour, strength, direction and shadow settings, the
+  hemisphere light added, changed or removed, a new `Fog`/`FogExp2` or none) and, through the map
+  build, its tiles and scenery. `look` and `hemisphere` are therefore no longer fixed after the
+  constructor; the presenter reads `look` before each draw as before.
+- **A tile's `join` in 3D** picks another `tiles` entry by key (`resolveTileFrame` with the
+  cell's neighbours): a grass-topped block where the top is open, plain dirt inside. Cells are
+  grouped by the entry they show.
+- **Scenery rows** (the skin's or theme's `scenery`, `buildScenery`): copies of each row's model
+  `every` px along x from `from`, from the map's start minus the row's depth and a step to its end
+  plus the same (a row far behind is seen past the map's edges), standing on `y` (default the
+  map's bottom edge) at `z`, each nudged by `jitter` (x, y, z px, a size share and a turn about
+  the upright) drawn from `fxRng(seed, row, "scenery:<copy>")`, so a seed always places them the
+  same. Built with the map (a row whose model is loading waits; the map is rebuilt once it is
+  there); `sceneryObjects()` lists them. Behind the blocks they take the scene's fog: the layered
+  depth of a side view.
+- **Model looks**: a tag look may give its own `model` (with `scale`, `rotate`, `anchor`, `clip`,
+  `tint`, `stretch`), so a raised checkpoint or a used block changes model; `tint` multiplies
+  every own material's colour (`ModelInstance`); `stretch` scales the model per axis on top of
+  `scale` (model axes, before `rotate`; a deeper block, a thicker plank); a kind's `clipHold`
+  states play their clip once and hold the last pose (`ModelInstance.pose(clip, time, hold)`):
+  a death, a hurt.
+
+Tested in `look.test.ts` (tweens: an event's squash and offset and back to rest, a spawn fade and
+again on a new level, a colour flash on the emissive colour and given back, unknown entities;
+themes: the sky, parallax, hemisphere, fog and tile colours per map and back; a 3D join; scenery
+placed per seed, the same twice, waiting for its model, none in a theme without it; a tag look's
+model with its tint and the kind's stretch) and `models.test.ts` (a held clip).
+
 ## Lights, shadows, fog, tone mapping and labels (Engine 0.16 T12)
 
 The skin's `scene3d` (`@engine/core/present`'s `scene3d.ts`: `resolveScene3d(skin.scene3d,
@@ -379,7 +425,10 @@ its `ThreeScene` (`presenter.scene`) and draws it with `presenter.renderer`, a `
 Options mirror `SkinnedCanvasPresenter` where they apply: `size?` (else `frame.size`),
 `onSound?(id)`, `background?` (default the skin's `background`, else `#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `shakeScale?`, `subPixelShake?`,
 `onHitPause?`, `sheets?`; they are passed on to the scene (and `withSkin`'s scenes);
-`effectSettings(settings)` changes the flashing and shake settings on all of them. Each frame draws the scene, then (when it shows any quad) the scene's HUD pass over it
+`effectSettings(settings)` changes the flashing and shake settings on all of them;
+`showHud(shown)` (Engine 0.16 part C T1, also `threeDisplay`'s `BrowserDisplay.showHud`) skips the
+HUD pass of every scene it draws from the next frame (the shell's title hides the HUD; the scene
+still syncs it). Each frame draws the scene, then (when it shows any quad) the scene's HUD pass over it
 with `autoClear` off and the depth cleared. So a paused frame draws the same every time on one machine, the renderer is fixed:
 `antialias: false`, `preserveDrawingBuffer: true` (screenshots read the buffer after drawing),
 pixel ratio 1, `SRGBColorSpace` output, no shadows (from Engine 0.16 T12 the scene's `look`
@@ -443,6 +492,9 @@ places the canvas absolutely in its (positioned) container with `image-rendering
 - Same-layer entities are not ordered by list order (they share a depth plane).
 - The HUD and particles (gap G33) are drawn from Engine 0.15 (above); a kind's `blend` and `glow`
   are 2D only, and particle sprite frames draw as squares.
+- The scene draws into a buffer of the picture size (320x180 for Hopper's Way) that CSS or the
+  screenshot tool scales up, so the 3D view is as pixelated as the 2D art; there is no depth of
+  field (fog stands in for it on the background).
 
 ## The page's display (`display.ts`, Engine 0.7)
 

@@ -1,7 +1,10 @@
 {
   "id": "hoppers-way",
   "player": {
-    "box": { "w": 12, "h": 16 },
+    "box": {
+      "w": 12,
+      "h": 16
+    },
     "minWalk": 384,
     "walkAccel": 192,
     "runAccel": 256,
@@ -12,9 +15,23 @@
     "maxRun": 10240,
     "runHold": 10,
     "jumps": [
-      { "below": 4096, "speed": 16384, "holdGravity": 512, "gravity": 1920 },
-      { "below": 8192, "speed": 16896, "holdGravity": 512, "gravity": 1920 },
-      { "speed": 19456, "holdGravity": 608, "gravity": 2176 }
+      {
+        "below": 4096,
+        "speed": 16384,
+        "holdGravity": 512,
+        "gravity": 1920
+      },
+      {
+        "below": 8192,
+        "speed": 16896,
+        "holdGravity": 512,
+        "gravity": 1920
+      },
+      {
+        "speed": 19456,
+        "holdGravity": 608,
+        "gravity": 2176
+      }
     ],
     "jumpBuffer": 6,
     "coyote": 6,
@@ -30,7 +47,138 @@
   "actorGravity": 1024,
   "actorMaxFall": 16384,
   "actors": {
-    "walker": { "speed": 1536, "turnAt": "walls", "stompable": true, "kickable": false, "harms": true },
-    "ledge-walker": { "speed": 1536, "turnAt": "ledges", "stompable": true, "kickable": false, "harms": true }
+    "walker": {
+      "speed": 1536,
+      "turnAt": "walls",
+      "stompable": true,
+      "kickable": false,
+      "harms": true
+    },
+    "ledge-walker": {
+      "speed": 1536,
+      "turnAt": "ledges",
+      "stompable": true,
+      "kickable": false,
+      "harms": true
+    },
+    "burrlock": {
+      "box": {
+        "w": 28,
+        "h": 22
+      },
+      "speed": 0,
+      "turnAt": "walls",
+      "stompable": true,
+      "kickable": false,
+      "harms": true,
+      "boss": {
+        "hp": 4,
+        "hitInvuln": 50,
+        "defeatTicks": 150,
+        "pattern": [
+          {
+            "do": "idle",
+            "ticks": 40
+          },
+          {
+            "do": "telegraph",
+            "ticks": 36,
+            "attack": "shoot"
+          },
+          {
+            "do": "shoot",
+            "actor": "thorn",
+            "ticks": 14
+          },
+          {
+            "do": "idle",
+            "ticks": 24
+          },
+          {
+            "do": "telegraph",
+            "ticks": 40,
+            "attack": "charge"
+          },
+          {
+            "do": "charge",
+            "speed": 9216
+          },
+          {
+            "do": "idle",
+            "ticks": 56
+          }
+        ],
+        "phases": [
+          {
+            "hp": 2,
+            "pattern": [
+              {
+                "do": "idle",
+                "ticks": 22
+              },
+              {
+                "do": "telegraph",
+                "ticks": 26,
+                "attack": "shoot"
+              },
+              {
+                "do": "shoot",
+                "actor": "thorn",
+                "ticks": 10
+              },
+              {
+                "do": "telegraph",
+                "ticks": 28,
+                "attack": "leap"
+              },
+              {
+                "do": "leap",
+                "speed": 18432,
+                "run": 6144
+              },
+              {
+                "do": "telegraph",
+                "ticks": 30,
+                "attack": "drop"
+              },
+              {
+                "do": "drop",
+                "actor": "acorn",
+                "spread": 2,
+                "ticks": 8
+              },
+              {
+                "do": "idle",
+                "ticks": 40
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "thorn": {
+      "box": {
+        "w": 10,
+        "h": 6
+      },
+      "speed": 8192,
+      "turnAt": "walls",
+      "stompable": false,
+      "kickable": false,
+      "harms": true,
+      "projectile": "flies"
+    },
+    "acorn": {
+      "box": {
+        "w": 10,
+        "h": 12
+      },
+      "speed": 0,
+      "turnAt": "walls",
+      "stompable": false,
+      "kickable": false,
+      "harms": true,
+      "projectile": "falls"
+    }
   }
 }

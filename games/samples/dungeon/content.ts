@@ -19,9 +19,14 @@ import { kit as topdown } from '@kits/topdown/kit';
 
 const ROOM = roomKind();
 
-/** The song the dungeon plays (`content/songs/crypt.json`), and the one for the way out. */
+/**
+ * The song the dungeon plays (`content/songs/crypt.json`; a room's own `music` wins, the warden
+ * hall's layered `warden`), the one for the way out, and the victory tune once the Bone Warden
+ * is beaten (Engine 0.16 part C T9).
+ */
 export const DUNGEON_MUSIC = 'crypt';
 export const ESCAPE_MUSIC = 'daylight';
+export const VICTORY_MUSIC = 'warden-falls';
 
 /** The sample's checked content, from `{ path: text }` pairs relative to `games/samples/dungeon`. */
 export function loadDungeon(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {

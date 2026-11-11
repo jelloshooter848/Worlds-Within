@@ -1184,45 +1184,345 @@
         },
         "color": "#000000"
       }
+    ],
+    "burrlock": [
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 26,
+          "h": 18,
+          "d": 22
+        },
+        "at": {
+          "x": 1,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 24,
+          "h": 3,
+          "d": 18
+        },
+        "at": {
+          "x": 2,
+          "y": 15,
+          "z": 0
+        },
+        "color": "#3b2160"
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 10,
+          "h": 9,
+          "d": 10
+        },
+        "at": {
+          "x": 22,
+          "y": 9,
+          "z": 0
+        },
+        "color": "#2a1838"
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 3,
+          "h": 8,
+          "d": 3
+        },
+        "at": {
+          "x": 28,
+          "y": 2,
+          "z": 0
+        },
+        "color": "#eadcb4"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2,
+          "h": 2,
+          "d": 1
+        },
+        "at": {
+          "x": 27,
+          "y": 11,
+          "z": 5
+        },
+        "color": "#e4383a"
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 3,
+          "h": 5,
+          "d": 3
+        },
+        "at": {
+          "x": 6,
+          "y": -3,
+          "z": 0
+        },
+        "color": "#4f9638"
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 3,
+          "h": 5,
+          "d": 3
+        },
+        "at": {
+          "x": 13,
+          "y": -4,
+          "z": 0
+        },
+        "color": "#4f9638"
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 3,
+          "h": 5,
+          "d": 3
+        },
+        "at": {
+          "x": 20,
+          "y": -3,
+          "z": 0
+        },
+        "color": "#4f9638"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 3,
+          "h": 4,
+          "d": 3
+        },
+        "at": {
+          "x": 5,
+          "y": 18,
+          "z": 6
+        },
+        "color": "#6c4628"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 3,
+          "h": 4,
+          "d": 3
+        },
+        "at": {
+          "x": 13,
+          "y": 18,
+          "z": 6
+        },
+        "color": "#6c4628"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 3,
+          "h": 4,
+          "d": 3
+        },
+        "at": {
+          "x": 21,
+          "y": 18,
+          "z": 6
+        },
+        "color": "#6c4628"
+      }
+    ],
+    "thorn": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 8,
+          "h": 4,
+          "d": 4
+        },
+        "at": {
+          "x": 0,
+          "y": 1,
+          "z": 0
+        }
+      },
+      {
+        "shape": "wedge",
+        "size": {
+          "w": 3,
+          "h": 4,
+          "d": 4
+        },
+        "at": {
+          "x": 7,
+          "y": 1,
+          "z": 0
+        },
+        "color": "#a6dc62"
+      }
+    ],
+    "acorn": [
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 10,
+          "h": 10,
+          "d": 10
+        },
+        "at": {
+          "x": 0,
+          "y": 2,
+          "z": 0
+        }
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 4,
+          "h": 3,
+          "d": 4
+        },
+        "at": {
+          "x": 3,
+          "y": -1,
+          "z": 0
+        },
+        "color": "#4f9638"
+      }
     ]
   },
   "kinds": {
     "runner": {
       "mesh": "runner",
       "color": "#d82800",
+      "model": "assets/quaternius-platformer/character.glb",
+      "scale": 8,
+      "rotate": {
+        "y": 62
+      },
+      "clip": {
+        "idle": "Idle",
+        "walk": "Walk",
+        "run": "Run",
+        "skid": "Duck",
+        "jump": "Jump_Idle",
+        "fall": "Jump_Idle",
+        "hurt": "HitReact",
+        "dead": "Death"
+      },
+      "clipHold": ["hurt", "dead"],
       "castShadow": true,
       "receiveShadow": true
     },
     "walker": {
       "mesh": "walker",
       "color": "#c84c0c",
-      "castShadow": true
+      "model": "assets/quaternius-platformer/enemy.glb",
+      "scale": 8.5,
+      "rotate": {
+        "y": 60
+      },
+      "clip": {
+        "idle": "Idle",
+        "walk": "Walk",
+        "run": "Walk",
+        "fall": "Jump",
+        "stomped": "Death",
+        "dead": "Death"
+      },
+      "clipHold": ["stomped", "dead"],
+      "castShadow": true,
+      "receiveShadow": true
     },
     "ledge-walker": {
       "mesh": "walker",
       "color": "#9878f8",
-      "castShadow": true
+      "model": "assets/quaternius-platformer/skull.glb",
+      "scale": 10,
+      "rotate": {
+        "y": 60
+      },
+      "clip": {
+        "idle": "Idle",
+        "walk": "Walk",
+        "run": "Walk",
+        "fall": "Jump",
+        "stomped": "Death",
+        "dead": "Death"
+      },
+      "clipHold": ["stomped", "dead"],
+      "castShadow": true,
+      "receiveShadow": true
     },
     "coin": {
       "mesh": "coin",
       "color": "#f8d800",
-      "castShadow": true
+      "model": "assets/kenney-platformer-kit/coinGold.glb",
+      "scale": 34,
+      "rotate": {
+        "y": 70
+      },
+      "tint": "#ffe070",
+      "anchor": "center",
+      "castShadow": true,
+      "spawnTween": {
+        "prop": "color",
+        "from": "#402800",
+        "to": "#c08000",
+        "frames": 40,
+        "yoyo": true,
+        "repeat": "forever",
+        "ease": "sineInOut",
+        "amount": 1
+      }
     },
     "goal": {
       "mesh": "goal",
       "color": "#00a800",
+      "model": "assets/kenney-platformer-kit/jewel.glb",
+      "scale": 42,
+      "anchor": "center",
+      "rotate": {
+        "y": 30
+      },
       "castShadow": true,
-      "receiveShadow": true
+      "light": {
+        "kind": "point",
+        "color": "#ffd860",
+        "intensity": 2200,
+        "distance": 140,
+        "decay": 1.6,
+        "offset": {
+          "x": 0,
+          "y": 0,
+          "z": 14
+        }
+      }
     },
     "bump-block": {
       "mesh": "box",
       "color": "#883c00",
       "depth": 16,
+      "model": "assets/kenney-platformer-kit/cube.glb",
+      "scale": 32,
       "byTag": [
         {
+          "tag": "used",
+          "model": "assets/kenney-platformer-kit/crateStrong.glb",
+          "scale": 30.7
+        },
+        {
           "tag": "brick",
-          "mesh": "brick",
-          "color": "#c84c0c"
+          "model": "assets/kenney-platformer-kit/crate.glb",
+          "scale": 32
         }
       ],
       "castShadow": true,
@@ -1231,58 +1531,177 @@
     "checkpoint": {
       "mesh": "checkpoint",
       "color": "#7c7c7c",
+      "model": "assets/kenney-platformer-kit/flag.glb",
+      "scale": 30,
+      "rotate": {
+        "y": 90
+      },
+      "tint": "#8a8a96",
       "castShadow": true,
       "receiveShadow": true,
       "byTag": [
         {
           "tag": "active",
-          "mesh": "checkpoint-on",
-          "color": "#00a800"
+          "model": "assets/kenney-platformer-kit/flag.glb",
+          "tint": "#ffffff"
+        }
+      ],
+      "light": {
+        "kind": "point",
+        "color": "#ffc070",
+        "intensity": 900,
+        "distance": 90,
+        "decay": 1.6,
+        "offset": {
+          "x": 0,
+          "y": -10,
+          "z": 12
+        }
+      }
+    },
+    "burrlock": {
+      "mesh": "burrlock",
+      "color": "#5d3a92",
+      "model": "assets/quaternius-platformer/crab.glb",
+      "scale": 17,
+      "rotate": {
+        "y": 55
+      },
+      "tint": "#c0a0ff",
+      "clip": {
+        "idle": "Idle",
+        "telegraph": "Bite_InPlace",
+        "charge": "Walk",
+        "leap": "Jump",
+        "shoot": "Bite_Front",
+        "drop": "Yes",
+        "hurt": "HitRecieve",
+        "defeated": "Death"
+      },
+      "clipHold": ["hurt", "defeated", "leap"],
+      "castShadow": true,
+      "receiveShadow": true,
+      "byTag": [
+        {
+          "prefix": "phase:",
+          "min": 1,
+          "max": 9,
+          "color": "#8e2a3a",
+          "tint": "#ff8070"
         }
       ]
+    },
+    "thorn": {
+      "mesh": "thorn",
+      "color": "#4f9638",
+      "castShadow": true
+    },
+    "acorn": {
+      "mesh": "acorn",
+      "color": "#6c4628",
+      "castShadow": true
     }
   },
   "tiles": {
     "#": {
-      "mesh": "ground",
-      "color": "#c84c0c",
+      "mesh": "box",
+      "color": "#8a5a2b",
+      "depth": 48,
+      "model": "assets/kenney-platformer-kit/blockDirt.glb",
+      "scale": 16,
+      "stretch": {
+        "z": 3.0
+      },
       "castShadow": true,
-      "receiveShadow": true
+      "receiveShadow": true,
+      "join": {
+        "with": ["#"],
+        "frames": {
+          "top": "grass",
+          "top right": "grass",
+          "top left": "grass",
+          "top right left": "grass",
+          "top bottom": "grass",
+          "top right bottom": "grass",
+          "top bottom left": "grass",
+          "top right bottom left": "grass"
+        }
+      },
+      "tint": "#ffffb0"
+    },
+    "grass": {
+      "mesh": "box",
+      "color": "#5cae3c",
+      "depth": 48,
+      "model": "assets/kenney-platformer-kit/block.glb",
+      "scale": 16,
+      "stretch": {
+        "x": 0.8503937007874015,
+        "z": 2.5039370078740157
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tint": "#ffffb0"
     },
     "B": {
-      "mesh": "brick",
+      "mesh": "box",
       "color": "#c84c0c",
+      "model": "assets/kenney-platformer-kit/crate.glb",
+      "scale": 32,
       "castShadow": true,
       "receiveShadow": true
     },
     "?": {
-      "mesh": "bump",
+      "mesh": "box",
       "color": "#f8d800",
+      "model": "assets/kenney-platformer-kit/cube.glb",
+      "scale": 32,
       "castShadow": true,
       "receiveShadow": true
     },
     "u": {
       "mesh": "box",
       "color": "#883c00",
+      "model": "assets/kenney-platformer-kit/crateStrong.glb",
+      "scale": 30.7,
       "castShadow": true,
       "receiveShadow": true
     },
     "=": {
       "mesh": "slab",
-      "color": "#00a800",
+      "color": "#a0703c",
+      "model": "assets/kenney-platformer-kit/platform.glb",
+      "scale": 16,
+      "stretch": {
+        "y": 5,
+        "z": 2.4
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": -0.1,
+        "z": -0.5
+      },
       "castShadow": true,
       "receiveShadow": true
     },
     "^": {
       "mesh": "spikes",
       "color": "#bcbcbc",
+      "model": "assets/kenney-platformer-kit/spikes.glb",
+      "scale": 19,
+      "stretch": {
+        "y": 2.2,
+        "z": 2.4
+      },
       "castShadow": true,
       "receiveShadow": true
     }
   },
   "events": {
-    "jump": {
-      "sound": "jump",
+    "jump:tier=0": {
+      "sound": "jump-short",
+      "pitch": [-1, 1],
+      "volume": [0.8, 1],
       "emit": "jump-dust",
       "tween": [
         {
@@ -1299,11 +1718,79 @@
           "frames": 9,
           "ease": "quadOut"
         }
-      ],
+      ]
+    },
+    "jump:tier=1": {
+      "sound": "jump",
       "pitch": [-1, 1],
-      "volume": [0.85, 1]
+      "volume": [0.85, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
+    },
+    "jump:tier=2": {
+      "sound": "jump-high",
+      "pitch": [-0.5, 0.5],
+      "volume": [0.9, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
+    },
+    "jump": {
+      "sound": "jump",
+      "pitch": [-1, 1],
+      "volume": [0.85, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
     },
     "land": {
+      "sound": "land",
+      "pitch": [-2, 1],
+      "volume": [0.6, 0.9],
+      "cooldown": 6,
       "emit": "land-dust",
       "tween": [
         {
@@ -1323,23 +1810,42 @@
       ]
     },
     "footstep": {
+      "sound": "step",
+      "pitch": [-3, 3],
+      "volume": [0.5, 0.9],
+      "cooldown": 4,
       "emit": "run-dust"
     },
     "skid-dust": {
+      "sound": "skid",
+      "pitch": [-1, 1],
+      "volume": [0.8, 1],
+      "cooldown": 10,
       "emit": "skid-dust"
     },
     "bump": {
+      "sound": "bump",
+      "pitch": [-1, 1],
+      "volume": [0.85, 1],
       "emit": "bump-bits",
       "shake": {
         "amount": 1.5,
         "ticks": 6
       }
     },
+    "block:content=life": {
+      "sound": "life",
+      "emit": "coin-burst"
+    },
     "block": {
+      "sound": "block",
+      "pitch": [-1, 1],
       "emit": "coin-burst"
     },
     "break": {
-      "sound": "stomp",
+      "sound": "break",
+      "pitch": [-2, 2],
+      "volume": [0.85, 1],
       "emit": "brick-bits",
       "shake": {
         "amount": 2,
@@ -1348,14 +1854,24 @@
     },
     "coin": {
       "sound": "coin",
-      "emit": ["coin-burst", "coin-sparkle"],
-      "pitch": [0, 2]
+      "pitch": [0, 1],
+      "volume": [0.85, 1],
+      "emit": ["coin-burst", "coin-sparkle"]
     },
     "spawn": {
+      "sound": "spawn",
       "emit": "respawn-ring"
     },
     "stomp": {
       "sound": "stomp",
+      "pitch": [-2, 2],
+      "volume": [0.9, 1],
+      "duck": {
+        "amount": 0.25,
+        "attack": 1,
+        "hold": 2,
+        "release": 12
+      },
       "emit": ["stomp-stars", "stomp-ring"],
       "shake": {
         "amount": 2.5,
@@ -1382,7 +1898,8 @@
       ]
     },
     "kick": {
-      "sound": "stomp",
+      "sound": "kick",
+      "pitch": [-1, 1],
       "emit": "stomp-ring",
       "shake": {
         "amount": 1.5,
@@ -1390,10 +1907,19 @@
       }
     },
     "defeat": {
+      "sound": "defeat",
+      "pitch": [-2, 2],
       "emit": "stomp-stars"
     },
     "hurt": {
       "sound": "hurt",
+      "pitch": [-1, 1],
+      "duck": {
+        "amount": 0.6,
+        "attack": 2,
+        "hold": 12,
+        "release": 40
+      },
       "emit": "hurt-sparks",
       "shake": {
         "amount": 3,
@@ -1407,18 +1933,33 @@
         "alpha": 0.35,
         "ticks": 6
       },
-      "tween": {
-        "prop": "alpha",
-        "from": 1,
-        "to": 0.35,
-        "frames": 4,
-        "yoyo": true,
-        "repeat": 13,
-        "delay": 12
-      }
+      "tween": [
+        {
+          "prop": "alpha",
+          "from": 1,
+          "to": 0.35,
+          "frames": 4,
+          "yoyo": true,
+          "repeat": 13,
+          "delay": 12
+        },
+        {
+          "prop": "color",
+          "from": "#ffffff",
+          "to": "#ffffff",
+          "frames": 8,
+          "amount": 0.8
+        }
+      ]
     },
     "died": {
-      "sound": "fail",
+      "sound": "death",
+      "duck": {
+        "amount": 0.85,
+        "attack": 2,
+        "hold": 50,
+        "release": 60
+      },
       "shake": {
         "amount": 4,
         "ticks": 18
@@ -1436,9 +1977,12 @@
       "emit": "hurt-sparks"
     },
     "poof": {
+      "sound": "poof",
+      "volume": [0.7, 0.9],
       "emit": "dying-burst"
     },
     "respawn": {
+      "sound": "respawn",
       "emit": "respawn-ring",
       "tween": [
         {
@@ -1457,7 +2001,13 @@
       ]
     },
     "cleared": {
-      "sound": "pass",
+      "sound": "clear",
+      "duck": {
+        "amount": 1,
+        "attack": 2,
+        "hold": 110,
+        "release": 20
+      },
       "emit": "clear-confetti",
       "zoom": {
         "to": 1.25,
@@ -1468,9 +2018,233 @@
       }
     },
     "checkpoint": {
-      "sound": "coin",
+      "sound": "checkpoint",
       "emit": "flag-confetti",
-      "pitch": [3, 3],
+      "shake": {
+        "amount": 1,
+        "ticks": 6
+      }
+    },
+    "boss-telegraph:attack=shoot": {
+      "sound": "boss-shoot-warn",
+      "emit": ["tele-glow", "tele-mark"]
+    },
+    "boss-telegraph:attack=charge": {
+      "sound": "boss-charge-warn",
+      "emit": ["paw-dust", "ground-warn", "tele-mark"],
+      "shake": {
+        "amount": 1,
+        "ticks": 20
+      }
+    },
+    "boss-telegraph:attack=leap": {
+      "sound": "boss-leap-warn",
+      "emit": ["paw-dust", "tele-mark"],
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 0.85,
+          "to": 1,
+          "frames": 8,
+          "yoyo": true,
+          "repeat": 2
+        }
+      ]
+    },
+    "boss-telegraph:attack=drop": {
+      "sound": "boss-drop-warn",
+      "emit": ["canopy-leaves", "tele-mark"],
+      "shake": {
+        "amount": 1.5,
+        "ticks": 30
+      }
+    },
+    "boss-attack:attack=shoot": {
+      "sound": "boss-shoot",
+      "pitch": [-1, 1],
+      "emit": "spit",
+      "tween": {
+        "prop": "scaleX",
+        "from": 1.15,
+        "to": 1,
+        "frames": 6,
+        "ease": "backOut"
+      }
+    },
+    "boss-attack:attack=charge": {
+      "sound": "boss-charge",
+      "emit": "charge-dust",
+      "shake": {
+        "amount": 2,
+        "ticks": 10
+      }
+    },
+    "boss-attack:attack=leap": {
+      "sound": "boss-leap",
+      "pitch": [-1, 1],
+      "emit": "charge-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        }
+      ]
+    },
+    "boss-attack:attack=drop": {
+      "sound": "boss-drop",
+      "pitch": [-1, 1],
+      "shake": {
+        "amount": 1.5,
+        "ticks": 8
+      }
+    },
+    "boss-hit": {
+      "sound": "boss-hit",
+      "pitch": [-1, 1],
+      "duck": {
+        "amount": 0.55,
+        "attack": 2,
+        "hold": 10,
+        "release": 36
+      },
+      "emit": ["boss-hit-stars", "boss-hit-ring"],
+      "shake": {
+        "amount": 4,
+        "ticks": 16
+      },
+      "hitPause": {
+        "ticks": 8
+      },
+      "flash": {
+        "color": "#ffffff",
+        "alpha": 0.4,
+        "ticks": 6
+      },
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 0.6,
+          "to": 1,
+          "frames": 12,
+          "ease": "backOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 1.3,
+          "to": 1,
+          "frames": 12,
+          "ease": "backOut"
+        },
+        {
+          "prop": "color",
+          "from": "#ffffff",
+          "to": "#ffffff",
+          "frames": 10,
+          "amount": 0.9
+        }
+      ]
+    },
+    "boss-defeat": {
+      "sound": "boss-defeat",
+      "duck": {
+        "amount": 0.9,
+        "attack": 4,
+        "hold": 120,
+        "release": 90
+      },
+      "emit": ["boss-hit-stars", "boss-hit-ring", "defeat-pop"],
+      "shake": {
+        "amount": 6,
+        "ticks": 40
+      },
+      "hitPause": {
+        "ticks": 24
+      },
+      "flash": {
+        "color": "#ffffff",
+        "alpha": 0.7,
+        "ticks": 24
+      },
+      "zoom": {
+        "to": 1.3,
+        "ticks": 18,
+        "ease": "cubicOut",
+        "hold": 60,
+        "back": 30
+      },
+      "tween": [
+        {
+          "prop": "y",
+          "from": 0,
+          "to": 10,
+          "frames": 70,
+          "delay": 84,
+          "ease": "quadIn"
+        },
+        {
+          "prop": "alpha",
+          "from": 1,
+          "to": 0,
+          "frames": 34,
+          "delay": 120
+        }
+      ]
+    },
+    "boss-pop": {
+      "sound": "boss-pop",
+      "pitch": [-3, 3],
+      "emit": "defeat-pop",
+      "shake": {
+        "amount": 2,
+        "ticks": 8
+      }
+    },
+    "boss-crack": {
+      "sound": "boss-crack",
+      "emit": "shell-chips",
+      "shake": {
+        "amount": 3,
+        "ticks": 12
+      }
+    },
+    "boss-blast": {
+      "sound": "boss-blast",
+      "duck": {
+        "amount": 0.9,
+        "attack": 2,
+        "hold": 30,
+        "release": 60
+      },
+      "emit": ["defeat-blast", "defeat-smoke"],
+      "shake": {
+        "amount": 7,
+        "ticks": 30
+      },
+      "hitPause": {
+        "ticks": 6
+      },
+      "flash": {
+        "color": "#ffe860",
+        "alpha": 0.5,
+        "ticks": 14
+      }
+    },
+    "boss-telegraph": {
+      "sound": "boss-warn",
+      "emit": "tele-mark"
+    },
+    "boss-attack": {
+      "sound": "boss-attack",
       "shake": {
         "amount": 1,
         "ticks": 6
@@ -1525,12 +2299,36 @@
       "as": "counter",
       "x": 90,
       "y": 13,
-      "sheet": "frog-fall",
-      "frame": "frog-face",
+      "sheet": "hopper-hero3d",
+      "frame": "face",
       "format": "x{value}",
       "font": "hopper-small",
       "color": "#fcfcfc",
       "shadow": "#1a1a2e"
+    },
+    {
+      "status": "bossMaxHp",
+      "as": "icon",
+      "x": 265,
+      "y": 7,
+      "sheet": "burrlock",
+      "frame": "name-plate"
+    },
+    {
+      "status": "bossHp",
+      "as": "bar",
+      "x": 210,
+      "y": 18,
+      "w": 104,
+      "h": 10,
+      "max": "bossMaxHp",
+      "color": "#a070e0",
+      "back": "#2a1a3a",
+      "border": "#1a1024",
+      "low": {
+        "below": 0.5,
+        "color": "#ff5040"
+      }
     }
   ],
   "camera": {
@@ -1546,8 +2344,8 @@
     }
   },
   "camera3d": {
-    "fov": 40,
-    "tilt": 4,
+    "fov": 32,
+    "tilt": 7,
     "layerDepth": 0.25,
     "lights": {
       "ambient": 0.65,
@@ -1556,69 +2354,41 @@
   },
   "scene3d": {
     "sun": {
-      "color": "#fff4dc",
-      "intensity": 1.4,
+      "color": "#fff1d6",
+      "intensity": 2.4,
       "direction": {
-        "x": -1.6,
-        "y": 2.4,
-        "z": 1.2
+        "x": -1.4,
+        "y": 2.6,
+        "z": 1.6
       },
       "shadow": {
-        "mapSize": 1024,
-        "radius": 2
+        "mapSize": 2048,
+        "bias": -0.0004,
+        "radius": 3
       }
     },
     "ambient": {
-      "color": "#b0c4f8",
-      "intensity": 0.35
+      "color": "#c8dcff",
+      "intensity": 0.3
     },
     "hemisphere": {
-      "sky": "#a4c8fc",
-      "ground": "#883c00",
-      "intensity": 0.45
+      "sky": "#b4dcff",
+      "ground": "#5a7a30",
+      "intensity": 0.6
     },
     "fog": {
       "kind": "linear",
-      "color": "#5c94fc",
-      "near": 0,
-      "far": 900
+      "color": "#b8def4",
+      "near": 30,
+      "far": 700
     },
     "toneMapping": {
       "kind": "aces",
-      "exposure": 1.3
+      "exposure": 1.0
     },
     "colorSpace": "srgb"
   },
   "labels": {
-    "runner": [
-      {
-        "as": "text",
-        "format": "Hopper",
-        "font": "hopper-small",
-        "color": "#fcfcfc",
-        "outline": "#000000",
-        "offset": {
-          "x": 0,
-          "y": -6
-        }
-      },
-      {
-        "from": {
-          "tag": "hp:"
-        },
-        "as": "bar",
-        "max": "maxHp",
-        "w": 16,
-        "h": 4,
-        "color": "#00a800",
-        "back": "#000000",
-        "border": "#000000",
-        "offset": {
-          "x": 0,
-          "y": -6
-        }
-      }
-    ],
     "goal": {
       "as": "text",
       "format": "GOAL",
@@ -1880,6 +2650,1447 @@
       "size": 2,
       "color": ["#ff5050", "#ffd030", "#50d0ff", "#70e070", "#ffffff"],
       "alpha": [1, 1, 0]
+    },
+    "thorn-trail": {
+      "rate": 0.5,
+      "life": [8, 14],
+      "speed": [0.05, 0.2],
+      "angle": [0, 360],
+      "size": [2, 1],
+      "color": ["#a6dc62", "#4f9638"],
+      "alpha": [0.9, 0]
+    },
+    "burr-trail": {
+      "rate": 0.4,
+      "life": [10, 16],
+      "speed": [0.1, 0.3],
+      "angle": [250, 290],
+      "size": [2, 1],
+      "color": ["#c89a5a", "#6c4628"],
+      "alpha": [0.8, 0]
+    },
+    "tele-glow": {
+      "burst": 10,
+      "life": [16, 26],
+      "speed": [0.3, 0.9],
+      "angle": [200, 340],
+      "offset": {
+        "x": 0,
+        "y": -6
+      },
+      "shape": {
+        "circle": 8
+      },
+      "gravity": -0.02,
+      "size": [2, 2, 1],
+      "color": ["#ffe860", "#ff9a30"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "tele-mark": {
+      "burst": 3,
+      "life": 26,
+      "speed": 0.25,
+      "angle": [265, 275],
+      "offset": {
+        "x": 0,
+        "y": -22
+      },
+      "size": [3, 3, 2],
+      "color": ["#ffffff", "#ffe860"],
+      "alpha": [1, 1, 0]
+    },
+    "paw-dust": {
+      "burst": 16,
+      "life": [18, 30],
+      "speed": [0.6, 1.6],
+      "angle": [190, 350],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 30,
+          "h": 1
+        }
+      },
+      "gravity": 0.02,
+      "drag": 0.06,
+      "size": [3, 4, 2],
+      "color": ["#e2c890", "#b8946a", "#8a6a48"],
+      "alpha": [1, 0.8, 0]
+    },
+    "ground-warn": {
+      "burst": 24,
+      "life": 30,
+      "speed": 0,
+      "anchor": "feet",
+      "offset": {
+        "x": 0,
+        "y": -1
+      },
+      "shape": {
+        "box": {
+          "w": 120,
+          "h": 1
+        }
+      },
+      "size": [2, 2, 1],
+      "color": ["#ff5040", "#ffb040"],
+      "alpha": [0, 1, 1, 0],
+      "blend": "add"
+    },
+    "canopy-leaves": {
+      "burst": 36,
+      "life": [40, 70],
+      "speed": [0.6, 1.4],
+      "angle": [70, 110],
+      "offset": {
+        "x": 0,
+        "y": -120
+      },
+      "shape": {
+        "box": {
+          "w": 300,
+          "h": 8
+        }
+      },
+      "gravity": 0.01,
+      "size": [2, 3, 2],
+      "color": ["#c89a5a", "#a6dc62", "#6c4628"],
+      "alpha": [1, 1, 0]
+    },
+    "charge-dust": {
+      "burst": 12,
+      "life": [14, 24],
+      "speed": [0.8, 2],
+      "angle": [200, 340],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 26,
+          "h": 1
+        }
+      },
+      "drag": 0.08,
+      "size": [3, 4, 2],
+      "color": ["#fffaf0", "#e2d2b0", "#b8a888"],
+      "alpha": [1, 0]
+    },
+    "spit": {
+      "burst": 8,
+      "life": [8, 14],
+      "speed": [0.8, 1.6],
+      "angle": [0, 360],
+      "offset": {
+        "x": 0,
+        "y": -2
+      },
+      "size": [2, 1],
+      "color": ["#a6dc62", "#ffe860"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "boss-hit-stars": {
+      "burst": 18,
+      "life": [16, 26],
+      "speed": [1.4, 3],
+      "angle": [190, 350],
+      "offset": {
+        "x": 0,
+        "y": -10
+      },
+      "gravity": 0.12,
+      "drag": 0.04,
+      "size": [3, 2, 1],
+      "color": ["#ffffff", "#ffe060", "#c8a8f4"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 1
+        },
+        {
+          "at": 0.6,
+          "value": 1
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ]
+    },
+    "boss-hit-ring": {
+      "burst": 20,
+      "life": 12,
+      "speed": 2.6,
+      "angle": [0, 360],
+      "even": true,
+      "drag": 0.18,
+      "size": [3, 1],
+      "color": "#ffffff",
+      "alpha": [0.9, 0],
+      "blend": "add"
+    },
+    "shell-chips": {
+      "burst": 14,
+      "life": [24, 40],
+      "speed": [1, 2.4],
+      "angle": [200, 340],
+      "offset": {
+        "x": 0,
+        "y": -12
+      },
+      "gravity": 0.14,
+      "drag": 0.02,
+      "size": [3, 2],
+      "color": ["#8a62c8", "#5d3a92", "#3b2160", "#a6dc62"],
+      "alpha": [1, 1, 0]
+    },
+    "defeat-pop": {
+      "burst": 12,
+      "life": [12, 22],
+      "speed": [0.8, 2],
+      "angle": [0, 360],
+      "offset": {
+        "x": 0,
+        "y": -12
+      },
+      "shape": {
+        "circle": 12
+      },
+      "drag": 0.06,
+      "size": [4, 3, 1],
+      "color": ["#ffffff", "#ffe860", "#ff9a30"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "defeat-blast": {
+      "burst": 60,
+      "life": [30, 60],
+      "speed": [1, 3.6],
+      "angle": [0, 360],
+      "offset": {
+        "x": 0,
+        "y": -12
+      },
+      "shape": {
+        "circle": 10
+      },
+      "gravity": 0.04,
+      "drag": 0.03,
+      "size": [5, 4, 2, 1],
+      "color": ["#ffffff", "#ffe860", "#ff9a30", "#c84a4a", "#5d3a92"],
+      "alpha": [1, 1, 0],
+      "blend": "add"
+    },
+    "defeat-smoke": {
+      "burst": 18,
+      "life": [50, 90],
+      "speed": [0.2, 0.7],
+      "angle": [240, 300],
+      "offset": {
+        "x": 0,
+        "y": -10
+      },
+      "shape": {
+        "box": {
+          "w": 30,
+          "h": 10
+        }
+      },
+      "gravity": -0.01,
+      "drag": 0.02,
+      "size": [5, 6, 4],
+      "color": ["#6a6070", "#8a8090", "#4a4050"],
+      "alpha": [0.8, 0.5, 0]
+    }
+  },
+  "music": {
+    "hoppers-way": {
+      "layers": {
+        "meadow": "hopper-meadow",
+        "meadow-drive": "hopper-meadow-drive",
+        "autumn": "hopper-autumn",
+        "autumn-drive": "hopper-autumn-drive",
+        "night": "hopper-night",
+        "night-drive": "hopper-night-drive",
+        "boss": "hopper-boss",
+        "boss-rage": "hopper-boss-rage"
+      },
+      "fade": 40,
+      "mix": [
+        {
+          "when": {
+            "status": "outcome",
+            "eq": "cleared"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 8
+        },
+        {
+          "when": {
+            "status": "outcome",
+            "eq": "failed"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "defeated"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 45
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "gone"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "asleep"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0.45,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossPhase",
+              "gte": 1
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 1,
+            "boss-rage": 1
+          },
+          "fade": 10
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "boss"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 1,
+            "boss-rage": 0.35
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-1"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 1,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-1"
+          },
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 0.15,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-2"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 1,
+            "autumn-drive": 1,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-2"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 1,
+            "autumn-drive": 0.15,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-3"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 1,
+            "night-drive": 1,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-3"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 1,
+            "night-drive": 0.15,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        }
+      ]
+    }
+  },
+  "parallax": [
+    {
+      "gradient": ["#3f8edc", "#5aa6e6", "#7cc0ee", "#a2d6f4", "#c8eaf8"],
+      "bands": 14,
+      "height": 150,
+      "factor": 0
+    },
+    {
+      "gradient": ["#c8eaf8"],
+      "height": 40,
+      "y": 150,
+      "factor": 0
+    },
+    {
+      "frame": "clouds",
+      "sheet": "hopper-sky",
+      "factor": {
+        "x": 0.08,
+        "y": 0
+      },
+      "y": 10,
+      "depth": 600
+    },
+    {
+      "frame": "mountains",
+      "sheet": "hopper-sky",
+      "factor": {
+        "x": 0.18,
+        "y": 0.05
+      },
+      "y": 62,
+      "depth": 470
+    },
+    {
+      "frame": "hills",
+      "sheet": "hopper-sky",
+      "factor": {
+        "x": 0.38,
+        "y": 0.1
+      },
+      "y": 96,
+      "depth": 380
+    },
+    {
+      "frame": "bushes",
+      "sheet": "hopper-sky",
+      "factor": {
+        "x": 0.62,
+        "y": 0.2
+      },
+      "y": 124,
+      "depth": 300
+    }
+  ],
+  "scenery": [
+    {
+      "model": "assets/kenney-platformer-kit/block.glb",
+      "scale": 44,
+      "stretch": {
+        "y": 0.55
+      },
+      "every": 50,
+      "from": 0,
+      "z": -170,
+      "y": 250,
+      "jitter": {
+        "y": 12,
+        "z": 14
+      },
+      "receiveShadow": true,
+      "tint": "#ffffb0"
+    },
+    {
+      "model": "assets/kenney-platformer-kit/blockLarge.glb",
+      "scale": 50,
+      "stretch": {
+        "y": 1.8
+      },
+      "every": 100,
+      "from": 30,
+      "z": -360,
+      "y": 250,
+      "jitter": {
+        "y": 28,
+        "z": 30,
+        "scale": 0.15
+      },
+      "tint": "#ffffb0"
+    },
+    {
+      "model": "assets/kenney-platformer-kit/tree.glb",
+      "scale": 24,
+      "every": 84,
+      "from": 12,
+      "z": -160,
+      "y": 216,
+      "jitter": {
+        "x": 18,
+        "y": 3,
+        "z": 14,
+        "scale": 0.3,
+        "turn": 60
+      },
+      "castShadow": true,
+      "tint": "#ffffb0"
+    },
+    {
+      "model": "assets/kenney-platformer-kit/tree.glb",
+      "scale": 34,
+      "every": 80,
+      "from": 40,
+      "z": -350,
+      "y": 160,
+      "jitter": {
+        "x": 26,
+        "y": 6,
+        "z": 20,
+        "scale": 0.3,
+        "turn": 60
+      },
+      "tint": "#ffffb0"
+    },
+    {
+      "model": "assets/kenney-platformer-kit/rocks.glb",
+      "scale": 18,
+      "every": 110,
+      "from": 50,
+      "z": -150,
+      "y": 218,
+      "jitter": {
+        "x": 30,
+        "z": 6,
+        "scale": 0.3,
+        "turn": 90
+      },
+      "castShadow": true,
+      "receiveShadow": true,
+      "tint": "#ffffb0"
+    },
+    {
+      "model": "assets/kenney-platformer-kit/flowers.glb",
+      "scale": 18,
+      "every": 52,
+      "from": 20,
+      "z": -165,
+      "y": 218,
+      "jitter": {
+        "x": 16,
+        "z": 4,
+        "scale": 0.3,
+        "turn": 90
+      },
+      "tint": "#ffffb0"
+    }
+  ],
+  "themes": {
+    "level-2": {
+      "background": "#fbe6c4",
+      "parallax": [
+        {
+          "gradient": ["#e8885a", "#f0a468", "#f5c07e", "#f8d8a0", "#fbe6c4"],
+          "bands": 14,
+          "height": 150,
+          "factor": 0
+        },
+        {
+          "gradient": ["#fbe6c4"],
+          "height": 40,
+          "y": 150,
+          "factor": 0
+        },
+        {
+          "frame": "clouds",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.08,
+            "y": 0
+          },
+          "y": 10,
+          "depth": 600
+        },
+        {
+          "frame": "mountains",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.18,
+            "y": 0.05
+          },
+          "y": 62,
+          "depth": 470
+        },
+        {
+          "frame": "hills",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.38,
+            "y": 0.1
+          },
+          "y": 96,
+          "depth": 380
+        },
+        {
+          "frame": "bushes",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.62,
+            "y": 0.2
+          },
+          "y": 124,
+          "depth": 300
+        }
+      ],
+      "tiles": {
+        "#": {
+          "mesh": "box",
+          "color": "#8a5a2b",
+          "depth": 48,
+          "model": "assets/kenney-platformer-kit/blockDirt.glb",
+          "scale": 16,
+          "stretch": {
+            "z": 3.0
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "join": {
+            "with": ["#"],
+            "frames": {
+              "top": "grass",
+              "top right": "grass",
+              "top left": "grass",
+              "top right left": "grass",
+              "top bottom": "grass",
+              "top right bottom": "grass",
+              "top bottom left": "grass",
+              "top right bottom left": "grass"
+            }
+          },
+          "tint": "#ffb070"
+        },
+        "grass": {
+          "mesh": "box",
+          "color": "#5cae3c",
+          "depth": 48,
+          "model": "assets/kenney-platformer-kit/block.glb",
+          "scale": 16,
+          "stretch": {
+            "x": 0.8503937007874015,
+            "z": 2.5039370078740157
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#ffb070"
+        },
+        "=": {
+          "mesh": "slab",
+          "color": "#a0703c",
+          "model": "assets/kenney-platformer-kit/platform.glb",
+          "scale": 16,
+          "stretch": {
+            "y": 5,
+            "z": 2.4
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": -0.1,
+            "z": -0.5
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#c0d0e8"
+        }
+      },
+      "scene3d": {
+        "sun": {
+          "color": "#ffd8a8",
+          "intensity": 2.4,
+          "direction": {
+            "x": -1.8,
+            "y": 1.8,
+            "z": 1.4
+          },
+          "shadow": {
+            "mapSize": 2048,
+            "bias": -0.0004,
+            "radius": 3
+          }
+        },
+        "ambient": {
+          "color": "#ffd0b0",
+          "intensity": 0.45
+        },
+        "hemisphere": {
+          "sky": "#ffcf9a",
+          "ground": "#6a3a20",
+          "intensity": 0.8
+        },
+        "fog": {
+          "kind": "linear",
+          "color": "#f8d8a8",
+          "near": 30,
+          "far": 700
+        },
+        "toneMapping": {
+          "kind": "aces",
+          "exposure": 1.1
+        },
+        "colorSpace": "srgb"
+      },
+      "scenery": [
+        {
+          "model": "assets/kenney-platformer-kit/block.glb",
+          "scale": 44,
+          "stretch": {
+            "y": 0.55
+          },
+          "every": 50,
+          "from": 0,
+          "z": -170,
+          "y": 250,
+          "jitter": {
+            "y": 12,
+            "z": 14
+          },
+          "receiveShadow": true,
+          "tint": "#ffb070"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/blockLarge.glb",
+          "scale": 50,
+          "stretch": {
+            "y": 1.8
+          },
+          "every": 100,
+          "from": 30,
+          "z": -360,
+          "y": 250,
+          "jitter": {
+            "y": 28,
+            "z": 30,
+            "scale": 0.15
+          },
+          "tint": "#ffb070"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/tree.glb",
+          "scale": 24,
+          "every": 84,
+          "from": 12,
+          "z": -160,
+          "y": 216,
+          "jitter": {
+            "x": 18,
+            "y": 3,
+            "z": 14,
+            "scale": 0.3,
+            "turn": 60
+          },
+          "castShadow": true,
+          "tint": "#ffb070"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/tree.glb",
+          "scale": 34,
+          "every": 80,
+          "from": 40,
+          "z": -350,
+          "y": 160,
+          "jitter": {
+            "x": 26,
+            "y": 6,
+            "z": 20,
+            "scale": 0.3,
+            "turn": 60
+          },
+          "tint": "#ffb070"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/rocks.glb",
+          "scale": 18,
+          "every": 110,
+          "from": 50,
+          "z": -150,
+          "y": 218,
+          "jitter": {
+            "x": 30,
+            "z": 6,
+            "scale": 0.3,
+            "turn": 90
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#ffb070"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/flowers.glb",
+          "scale": 18,
+          "every": 52,
+          "from": 20,
+          "z": -165,
+          "y": 218,
+          "jitter": {
+            "x": 16,
+            "z": 4,
+            "scale": 0.3,
+            "turn": 90
+          },
+          "tint": "#ffb070"
+        }
+      ]
+    },
+    "level-3": {
+      "background": "#5a4a8c",
+      "parallax": [
+        {
+          "gradient": ["#0c0f2c", "#161a44", "#24265a", "#3a336e", "#5a4a8c"],
+          "bands": 14,
+          "height": 150,
+          "factor": 0
+        },
+        {
+          "gradient": ["#5a4a8c"],
+          "height": 40,
+          "y": 150,
+          "factor": 0
+        },
+        {
+          "frame": "stars",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.03,
+            "y": 0
+          },
+          "y": 0,
+          "depth": 640
+        },
+        {
+          "frame": "clouds",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.08,
+            "y": 0
+          },
+          "y": 10,
+          "depth": 600
+        },
+        {
+          "frame": "mountains",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.18,
+            "y": 0.05
+          },
+          "y": 62,
+          "depth": 470
+        },
+        {
+          "frame": "hills",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.38,
+            "y": 0.1
+          },
+          "y": 96,
+          "depth": 380
+        },
+        {
+          "frame": "bushes",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.62,
+            "y": 0.2
+          },
+          "y": 124,
+          "depth": 300
+        }
+      ],
+      "tiles": {
+        "#": {
+          "mesh": "box",
+          "color": "#8a5a2b",
+          "depth": 48,
+          "model": "assets/kenney-platformer-kit/blockDirt.glb",
+          "scale": 16,
+          "stretch": {
+            "z": 3.0
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "join": {
+            "with": ["#"],
+            "frames": {
+              "top": "grass",
+              "top right": "grass",
+              "top left": "grass",
+              "top right left": "grass",
+              "top bottom": "grass",
+              "top right bottom": "grass",
+              "top bottom left": "grass",
+              "top right bottom left": "grass"
+            }
+          },
+          "tint": "#c890d0"
+        },
+        "grass": {
+          "mesh": "box",
+          "color": "#5cae3c",
+          "depth": 48,
+          "model": "assets/kenney-platformer-kit/block.glb",
+          "scale": 16,
+          "stretch": {
+            "x": 0.8503937007874015,
+            "z": 2.5039370078740157
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#c890d0"
+        },
+        "=": {
+          "mesh": "slab",
+          "color": "#a0703c",
+          "model": "assets/kenney-platformer-kit/platform.glb",
+          "scale": 16,
+          "stretch": {
+            "y": 5,
+            "z": 2.4
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": -0.1,
+            "z": -0.5
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#ffd050"
+        }
+      },
+      "scene3d": {
+        "sun": {
+          "color": "#a8b8ff",
+          "intensity": 1.5,
+          "direction": {
+            "x": 1.2,
+            "y": 2.6,
+            "z": 1.8
+          },
+          "shadow": {
+            "mapSize": 2048,
+            "bias": -0.0004,
+            "radius": 3
+          }
+        },
+        "ambient": {
+          "color": "#6070c0",
+          "intensity": 0.55
+        },
+        "hemisphere": {
+          "sky": "#5060b0",
+          "ground": "#301830",
+          "intensity": 0.7
+        },
+        "fog": {
+          "kind": "linear",
+          "color": "#2c2a60",
+          "near": 30,
+          "far": 650
+        },
+        "toneMapping": {
+          "kind": "aces",
+          "exposure": 1.2
+        },
+        "colorSpace": "srgb"
+      },
+      "scenery": [
+        {
+          "model": "assets/kenney-platformer-kit/block.glb",
+          "scale": 44,
+          "stretch": {
+            "y": 0.55
+          },
+          "every": 50,
+          "from": 0,
+          "z": -170,
+          "y": 250,
+          "jitter": {
+            "y": 12,
+            "z": 14
+          },
+          "receiveShadow": true,
+          "tint": "#8070c0"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/blockLarge.glb",
+          "scale": 50,
+          "stretch": {
+            "y": 1.8
+          },
+          "every": 100,
+          "from": 30,
+          "z": -360,
+          "y": 250,
+          "jitter": {
+            "y": 28,
+            "z": 30,
+            "scale": 0.15
+          },
+          "tint": "#8070c0"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/tree.glb",
+          "scale": 24,
+          "every": 84,
+          "from": 12,
+          "z": -160,
+          "y": 216,
+          "jitter": {
+            "x": 18,
+            "y": 3,
+            "z": 14,
+            "scale": 0.3,
+            "turn": 60
+          },
+          "castShadow": true,
+          "tint": "#8070c0"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/tree.glb",
+          "scale": 34,
+          "every": 80,
+          "from": 40,
+          "z": -350,
+          "y": 160,
+          "jitter": {
+            "x": 26,
+            "y": 6,
+            "z": 20,
+            "scale": 0.3,
+            "turn": 60
+          },
+          "tint": "#8070c0"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/rocks.glb",
+          "scale": 18,
+          "every": 110,
+          "from": 50,
+          "z": -150,
+          "y": 218,
+          "jitter": {
+            "x": 30,
+            "z": 6,
+            "scale": 0.3,
+            "turn": 90
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#8070c0"
+        }
+      ]
+    },
+    "boss": {
+      "background": "#e07850",
+      "parallax": [
+        {
+          "gradient": ["#2a1440", "#4a1c4c", "#7a2c50", "#b04a50", "#e07850"],
+          "bands": 14,
+          "height": 150,
+          "factor": 0
+        },
+        {
+          "gradient": ["#e07850"],
+          "height": 40,
+          "y": 150,
+          "factor": 0
+        },
+        {
+          "frame": "clouds",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.08,
+            "y": 0
+          },
+          "y": 10,
+          "depth": 600
+        },
+        {
+          "frame": "mountains",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.18,
+            "y": 0.05
+          },
+          "y": 62,
+          "depth": 470
+        },
+        {
+          "frame": "hills",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.38,
+            "y": 0.1
+          },
+          "y": 96,
+          "depth": 380
+        },
+        {
+          "frame": "bushes",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.62,
+            "y": 0.2
+          },
+          "y": 124,
+          "depth": 300
+        }
+      ],
+      "tiles": {
+        "#": {
+          "mesh": "box",
+          "color": "#8a5a2b",
+          "depth": 48,
+          "model": "assets/kenney-platformer-kit/blockDirt.glb",
+          "scale": 16,
+          "stretch": {
+            "z": 3.0
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "join": {
+            "with": ["#"],
+            "frames": {
+              "top": "grass",
+              "top right": "grass",
+              "top left": "grass",
+              "top right left": "grass",
+              "top bottom": "grass",
+              "top right bottom": "grass",
+              "top bottom left": "grass",
+              "top right bottom left": "grass"
+            }
+          },
+          "tint": "#ffc4a4"
+        },
+        "grass": {
+          "mesh": "box",
+          "color": "#5cae3c",
+          "depth": 48,
+          "model": "assets/kenney-platformer-kit/block.glb",
+          "scale": 16,
+          "stretch": {
+            "x": 0.8503937007874015,
+            "z": 2.5039370078740157
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#ffc4a4"
+        },
+        "=": {
+          "mesh": "slab",
+          "color": "#a0703c",
+          "model": "assets/kenney-platformer-kit/platform.glb",
+          "scale": 16,
+          "stretch": {
+            "y": 5,
+            "z": 2.4
+          },
+          "anchor": {
+            "x": 0.5,
+            "y": -0.1,
+            "z": -0.5
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#c0c0d0"
+        }
+      },
+      "scene3d": {
+        "sun": {
+          "color": "#ffb890",
+          "intensity": 2.3,
+          "direction": {
+            "x": -1.8,
+            "y": 1.6,
+            "z": 1.6
+          },
+          "shadow": {
+            "mapSize": 2048,
+            "bias": -0.0004,
+            "radius": 3
+          }
+        },
+        "ambient": {
+          "color": "#c090c0",
+          "intensity": 0.5
+        },
+        "hemisphere": {
+          "sky": "#e09080",
+          "ground": "#402030",
+          "intensity": 0.8
+        },
+        "fog": {
+          "kind": "linear",
+          "color": "#b85a58",
+          "near": 30,
+          "far": 700
+        },
+        "toneMapping": {
+          "kind": "aces",
+          "exposure": 1.1
+        },
+        "colorSpace": "srgb"
+      },
+      "scenery": [
+        {
+          "model": "assets/kenney-platformer-kit/block.glb",
+          "scale": 44,
+          "stretch": {
+            "y": 0.55
+          },
+          "every": 50,
+          "from": 0,
+          "z": -170,
+          "y": 250,
+          "jitter": {
+            "y": 12,
+            "z": 14
+          },
+          "receiveShadow": true,
+          "tint": "#e0a0a0"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/blockLarge.glb",
+          "scale": 50,
+          "stretch": {
+            "y": 1.8
+          },
+          "every": 100,
+          "from": 30,
+          "z": -360,
+          "y": 250,
+          "jitter": {
+            "y": 28,
+            "z": 30,
+            "scale": 0.15
+          },
+          "tint": "#e0a0a0"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/tree.glb",
+          "scale": 24,
+          "every": 84,
+          "from": 12,
+          "z": -160,
+          "y": 216,
+          "jitter": {
+            "x": 18,
+            "y": 3,
+            "z": 14,
+            "scale": 0.3,
+            "turn": 60
+          },
+          "castShadow": true,
+          "tint": "#e0a0a0"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/tree.glb",
+          "scale": 34,
+          "every": 80,
+          "from": 40,
+          "z": -350,
+          "y": 160,
+          "jitter": {
+            "x": 26,
+            "y": 6,
+            "z": 20,
+            "scale": 0.3,
+            "turn": 60
+          },
+          "tint": "#e0a0a0"
+        },
+        {
+          "model": "assets/kenney-platformer-kit/rocks.glb",
+          "scale": 18,
+          "every": 110,
+          "from": 50,
+          "z": -150,
+          "y": 218,
+          "jitter": {
+            "x": 30,
+            "z": 6,
+            "scale": 0.3,
+            "turn": 90
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "tint": "#e0a0a0"
+        }
+      ]
     }
   }
 }

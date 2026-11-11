@@ -70,6 +70,56 @@ describe('layoutHud (G33)', () => {
     ]);
   });
 
+  it('counts halves with a `half` frame: a frame per two points, then the half (Engine 0.16 part C T3)', () => {
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      sheets: { sheet: 'hero' },
+      kinds: {},
+      hud: [{ status: 'hp', as: 'hearts', x: 4, y: 2, frame: 'heart', half: 'half' }],
+    };
+    const sizes: HudFrameSize = (_s, _p, frame) =>
+      frame === 'heart' || frame === 'half' ? { w: 7, h: 7 } : null;
+    const at = (hp: number) =>
+      layoutHud(skin, { hp }, sizes).map((d) => (d.kind === 'sprite' ? `${d.frame}@${d.x}` : d.kind));
+    expect(at(5)).toEqual(['heart@4', 'heart@12', 'half@20']);
+    expect(at(4)).toEqual(['heart@4', 'heart@12']);
+    expect(at(1)).toEqual(['half@4']);
+    expect(at(0)).toEqual([]);
+  });
+
+  it('shows an item with `when` only while that status is truthy (Engine 0.16 part C T3)', () => {
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      sheets: { sheet: 'hero' },
+      kinds: {},
+      hud: [{ status: 'bombs', as: 'number', x: 1, y: 2, when: 'item' }],
+    };
+    expect(layoutHud(skin, { bombs: 0, item: '' }, SIZES)).toEqual([]);
+    expect(layoutHud(skin, { bombs: 0 }, SIZES)).toEqual([]);
+    expect(layoutHud(skin, { bombs: 3, item: 'bomb' }, SIZES)).toEqual([
+      { kind: 'text', font: 'font', text: '3', x: 1, y: 2 },
+    ]);
+    expect(hudItemShown({}, {})).toBe(true);
+  });
+
+  it("picks an icon's frame by the status value with `frames`, else `frame` (Engine 0.16 part C T9)", () => {
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      sheets: { sheet: 'items' },
+      kinds: {},
+      hud: [{ status: 'item', as: 'icon', x: 3, y: 4, frame: 'key', frames: { dash: 'boots' } }],
+    };
+    const sizes: HudFrameSize = (_s, _p, frame) =>
+      frame === 'key' || frame === 'boots' ? { w: 8, h: 8 } : null;
+    expect(layoutHud(skin, { item: 'dash' }, sizes)).toEqual([
+      { kind: 'sprite', sheet: 'items', frame: 'boots', x: 3, y: 4 },
+    ]);
+    expect(layoutHud(skin, { item: 'bomb' }, sizes)).toEqual([
+      { kind: 'sprite', sheet: 'items', frame: 'key', x: 3, y: 4 },
+    ]);
+    expect(layoutHud(skin, { item: '' }, sizes)).toEqual([]);
+  });
+
   it('splits text into glyphs 8 px apart, skipping spaces', () => {
     expect(hudGlyphs({ kind: 'text', font: 'f', text: '1 2', x: 10, y: 4 })).toEqual([
       { kind: 'sprite', sheet: 'f', frame: '1', x: 10, y: 4 },

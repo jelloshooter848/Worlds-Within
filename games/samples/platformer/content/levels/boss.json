@@ -1,6 +1,10 @@
 {
   "id": "boss",
-  "name": "The Boss",
+  "name": "Burrlock's Hollow",
   "profile": "hoppers-way",
-  "scroll": "right"
+  "scroll": "right",
+  "clear": "boss",
+  "spawns": {
+    "b": { "actor": "burrlock", "facing": "left" }
+  }
 }

@@ -1,8 +1,8 @@
 # Build log
 
 This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A (with part A2, the
-PixiJS backend) and F (the mini siege in 3D) on branch `engine/build-0.15`, for the owner's review.
-Nothing in it is merged to `master`, tagged or published.
+PixiJS backend), B, C and F (the mini siege in 3D) on branch `engine/build-0.15`, for the
+owner's review. Nothing in it is merged to `master`, tagged or published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
@@ -75,8 +75,25 @@ the API review listed (`1.0-1` to `1.0-11`).
   particles, camera effects, parallax, transitions, the UI kit, the mixer, title/pause/settings
   for every game, PNG and glTF assets, the 3D look, the 2D benchmark, `pnpm cli sheet` and the
   effects sheet; presentation proved never to change state; the PixiJS v8 2D backend (T13b,
-  item 323), the default for the RTS and tower defense. Not met: the owner's screenshot review
-  (item 339, now with the PixiJS parity sheet as well).
+  item 323, part A2, merged in 0.16 part D, D1), the default for the RTS and tower defense. Not
+  met: the owner's screenshot review (item 339, now with the PixiJS parity sheet as well).
+- **0.16 part B The flagship platformer, Hopper's Way: built, awaiting review.** Coyote time,
+  checkpoints, a jump cut and a data-driven mini-boss in the platformer kit; the level select,
+  level-clear banner and end screen in the shell; the sample rebuilt as Hopper's Way (three
+  levels and Burrlock's arena, CC0 PNG art in 2D, CC0 GLB models in a lit 2.5D view, layered MML
+  music and a sound for every action), win and loss run files for every stage and the whole
+  game, ten review screenshots in `docs/reports/screenshots/0.16-B/`; no golden hash moved (the
+  old sample is `games/platformer-classic`, hashes unchanged). Not met: the owner's playtest
+  (item 393) and screenshot review (item 394).
+- **0.16 part C The top-down dungeon, The Old Crypt: built, awaiting review.** Hopper's Way's
+  fixes from the part B review; the dungeon redrawn at 16:9 on 0x72's CC0 DungeonTileset II;
+  2D lighting and mood in skins (darkness, lights, flicker, vignette, dust); the top-down kit's
+  dash and pits and a data-driven boss; dialog boxes and an end screen in the shell; a new wing
+  (eight rooms in all), the Bone Warden's three-phase fight, win and loss run files from tick 0,
+  layered boss music and a combat-feel pass; ten review screenshots in
+  `docs/reports/screenshots/0.16-C/`. Hashes re-recorded only for T1's new Hopper's Way enemies
+  and the part's own new runs (listed in its section). Not met: the owner's playtest (item 455)
+  and screenshot review (item 456).
 - **0.16 part F The mini siege in 3D low-poly: built, awaiting review.** The siege, the dawn and
   the ridge in 3D after the mockup (CC0 Kenney and Quaternius packs, a ground view, decor, the
   time of day by the world clock), the 3D page with its HUD and the mission flow in the picture
@@ -93,36 +110,40 @@ the same paths are served from `dist/`; each page takes `?debug=step` for the st
 | Game                          | `pnpm dev` path                                        | Controls                                                                                |
 | ----------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | The Old Crypt (dungeon)       | `/games/samples/dungeon/`                              | arrows move, X or Z the sword, C the item; Z or X after the end starts a new run        |
-| Hopper's Way (platformer)     | `/games/samples/platformer/` (3D: `?backend=three`)    | arrows move, Z jumps, X runs; in the rooms arrows walk and X stabs                      |
+| Hopper's Way (platformer)     | `/games/samples/platformer/` (3D: `?backend=three`)    | arrows move, Z jumps (hold for higher), X runs; Esc or P pauses                         |
 | The River Ford (RTS)          | `/games/samples/rts-skirmish/`                         | mouse or touch: click selects, drag boxes, right click commands, wheel zooms            |
 | The Winding Road (TD)         | `/games/samples/tower-defense/`                        | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends            |
 | The mini siege (3D)           | `/games/samples/mini-siege/` (2D: `?backend=canvas2d`) | Begin, then Play or Delegate on the card; mouse pans and orders; rounds by keys or taps |
 | Platformer lab (not a sample) | `/games/platformer-lab/` (3D: `?backend=three`)        | arrows move, Z jumps, X runs                                                            |
+| Platformer classic (test)     | `/games/platformer-classic/` (3D: `?backend=three`)    | arrows move, Z jumps, X runs; in the rooms arrows walk and X stabs                      |
 | FX lab (not a sample)         | `/games/fx-lab/` (3D: `?backend=three`)                | arrows move, Z jumps, X runs                                                            |
 
 Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSON result):
 
 ```sh
 pnpm -s cli run games/samples/dungeon/runs/escape.run.json --json          # also walk-east, lost-in-the-guard-room
-pnpm -s cli run games/samples/platformer/runs/level-4.run.json --json      # also level-1..3, level-2..5-start
+pnpm -s cli run games/samples/platformer/runs/full-game.run.json --json    # also level-1..3, boss, each *-lost, level-1-hurt
 pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json     # also commands, economy, hold, lost
 pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json       # also build, leaked, tapped, target
 pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json       # also delegated, quit, fortify-*, dawn-*, ridge-raid
 pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json    # also mini-game, mini-game-start, moves, objects, shells, walkers
 pnpm -s cli run games/fx-lab/runs/level-1.run.json --json                  # also level-2, level-3
-for f in games/samples/*/runs/*.run.json games/platformer-lab/runs/*.run.json games/fx-lab/runs/*.run.json; do pnpm -s cli run "$f" > /dev/null && echo "ok $f"; done
+pnpm -s cli run games/platformer-classic/runs/level-4.run.json --json      # also level-1..3, level-2..5-start
+for f in $(git ls-files '*.run.json'); do pnpm -s cli run "$f" > /dev/null && echo "ok $f"; done
 pnpm -s cli validate games/samples/mini-siege --json                         # any game folder
 pnpm -s cli mutants games/samples/dungeon --json                             # which kit rules the runs guard
 pnpm cli debug games/samples/mini-siege/runs/ridge-raid.run.json             # the debugger page; open the URL it prints
 ```
 
 `pnpm -s cli screenshot <run file> --tick <n> --json` draws a run at a tick (`--backend three`
-for the platformer and the lab). Each game's `CLAUDE.md` lists its run files and what each checks.
+for the platformer games and the labs; `--scale 6` for 1920x1080 from Hopper's Way's 320x180;
+`--overlay title|levels|clear|end|pause|...` for a menu over it). Each game's `CLAUDE.md` lists
+its run files and what each checks.
 
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 363** (next unused 364). Awaiting the owner's answer, by release (an answer by number is
+used is 488** (next unused 489). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -134,8 +155,23 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.14: **247-277**. Engine 0.15: **278-315** (278-291 the decisions before code, 292-303
   the smaller build choices, 304-315 more choices added by the last finalize pass).
 - Engine 0.16 part A: **323** (PixiJS follow-up T13b), **324-338** (choices made), **339** (the
-  owner's screenshot review), **340-363** (smaller build choices added by the finalize pass),
-  **419-422** (the PixiJS backend's close-out, T13b-9).
+  owner's screenshot review), **340-363** (smaller build choices added by the finalize pass).
+- Engine 0.16 part A2 (the PixiJS backend, T13b, merged in part D, D1): **468-484** (the
+  track's build decisions, renumbered from its own labels), **485-488** (the close-out's questions,
+  419-422 on the track).
+- Engine 0.16 part B: **364-392** (build choices of T4-T10), **393** (the owner's playtest),
+  **394** (the owner's screenshot review), **395-399** (the close-out's choices and the looks found
+  and left in the screenshots), **400-418** (smaller build choices of T1-T3 and the build
+  process, added by the finalize pass).
+- Engine 0.16 part C: **419-424** (T1, Hopper's Way's fixes after the part B review: the title's
+  HUD, the 2.5D portrait, the levels' decoration and new enemies); **425** (T2, the CC0 pack);
+  **426-433** (T3, 16:9 on the CC0 art); **434-436** (T4, lighting; 434 the PixiJS follow-up);
+  **437-440** (T8, The Old Crypt's new wing: the layout, beat-the-warden re-recorded, props as
+  placed lights, the HUD's item icon); **441-447** (T9, the Bone Warden's fight, the win and loss
+  runs, the three ends, the hero, end music per trigger, per-value HUD icons, room music);
+  **448-454** (T10, the combat feel and polish); **455** (the owner's playtest), **456** (the
+  owner's screenshot review), **457-462** (T11: the item panel fix, two looks left, and the
+  smaller choices of T5-T7), **463-467** (the final review's five more build choices).
 - Engine 0.16 part F: **F-1 to F-22** and **T2-18 to T2-42** in its section (F-21 the owner's
   playtest and screenshot review), to be numbered into FEEDBACK-LOG.md at merge.
 
@@ -495,6 +531,503 @@ already covered by an `F-n` item above are not repeated.
   those tasks' own decision lists; the orchestrator should check them against what F1-F9
   reported.
 
+## Engine 0.16 part C
+
+The top-down dungeon, **The Old Crypt** (docs/ROADMAP.md, 0.16 part C), built on branch
+`engine/build-0.15` in eleven tasks (T1-T11; not tagged, nothing published). The top-down sample
+became a short dungeon of eight rooms at 16:9 (320x180; 6x is 1920x1080) on 0x72's CC0
+DungeonTileset II, lit by torches with darkness at the edges, with a dash that opens new paths,
+a key and a locked boss door, the Bone Warden (a three-phase boss in data), an intro and an end
+in dialog boxes, an end screen, layered boss music and a combat-feel pass. T1 first fixed three
+things the part B review screenshots showed in Hopper's Way. **Open for the owner:** the
+playtest (item 455) and the screenshot review (item 456), then the build choices 419-454 and
+457-467.
+
+### What was built
+
+- **T1 Hopper's Way fixes** (part B's sample; written up in part B's "Fixes after review",
+  below): no HUD under the title and the screens opened from it (engine: the shell's
+  `GameMenus.hudShown` and the displays' `showHud`, both backends, and the screenshot tool's
+  `title` and `levels` overlays), a 2.5D portrait of the 2.5D hero, and fuller 2D levels (the
+  platformer kit's optional presentation-only `decor` grid, original and Kenney props, seven more
+  enemies). Eight golden hash files re-recorded (below). Items 419-424.
+- **T2 the CC0 art pack:** 0x72's DungeonTileset II v1.7 in
+  `games/samples/dungeon/assets/dungeon-tileset-ii/` (its one 512x512 sheet with the tile list,
+  three autotile atlases, 65 KB), credited in `assets/CREDITS.md`, checked by `assets.test.ts`.
+  Item 425.
+- **T3 The Old Crypt at 16:9 on the CC0 art:** the 320x180 screen with the 256x176 room centred,
+  the skin on the pack's PNG plus two text sheets cut, turned and pasted from it (wall joins,
+  side doors, blades, hit-flash silhouettes, the statue, shaded floors) and a few original pieces
+  in its colours (the brazier, key, panel and padlock), particles, shakes, flashes and hit-pauses
+  on the kit's events, a framed HUD (hearts, keys, the item), the end banner and restyled menus;
+  engine additions a tile's `vary`, a hearts item's `half`, any HUD item's `when` and the kit's
+  opt-in `idle` hero state (no hash moved). Items 426-433.
+- **T4 engine: 2D lighting and mood in skins** (`engine/core/fx/lighting.ts`, drawn by Canvas2D):
+  a skin's `lighting` block with darkness per map tag or id (blended across a room slide's map
+  `parts`), lights per kind, state, tile, fixed place (with an animated sprite) and event,
+  flicker from the presentation RNG, banded falloff, a vignette and room-wide ambient dust; the
+  `Renderer.gradient` call; the fx lab's night level and The Old Crypt's torch-lit rooms. No hash
+  moved. Items 434-436 (434: the PixiJS backend's lighting pass, a follow-up).
+- **T5 top-down kit: the dash** (`kits/topdown`, `items.ts`): the kit's third item, a burst along
+  the facing tuned in data (`kitOptions.topdown.dash`: 8 ticks, 48 px, cooldown 24, guard 6),
+  unhurtable while it lasts, that crosses the new pit tile (`^`) under the new rule
+  `dash-crosses-pits`; events `dash` and `dash-end`; `hero.dash` in the snapshot only once owned,
+  so no existing hash moved. The chasm room and the `cross-the-chasm` run. Item 459.
+- **T6 top-down kit: a data-driven boss and combat-feel events:** a room's `boss` field (size,
+  hp, contact, hit invulnerability, knock resistance, a looping pattern of idle, telegraph,
+  charge, shoot (ring or spread), slam and summon steps, phases by hp, a defeat sequence and a
+  world flag), the `shutters: "boss"` room seal, six boss events and the rules `boss-patterns`,
+  `boss-phases`, `boss-hit-invuln` and `boss-seals-room`; `hit`, `kill`, `stun` and boss events
+  placed for presenters beside the event (a `WeakMap`), never in the snapshot. A first warden
+  hall and `beat-the-warden` run (both replaced by T9). Item 460.
+- **T7 engine shell: dialog boxes and the end screen for top-down games:** `game.json`'s
+  `menus.dialogs` (speaker, portrait, pages, rate, lines) and `menus.triggers` (an intro after
+  Start; end triggers, a status test each, showing their dialog and then the end screen with
+  their heading), the game's ticks held under a dialog, dialogs skipped with `?debug=step` and
+  `?record`; the kit's `time`, `roomsSeen`, `exited`, `dead` and `flag.<id>` status;
+  `screenshot --overlay dialog:<id>`; `validate` checks portraits, glyphs and trigger ids.
+  Item 461.
+- **T8 the new wing:** eight rooms in all: the five old ones unchanged, the chasm (the dash), a
+  new ossuary (a pit band, monsters and a key on a ledge only the dash reaches) and the warden
+  hall behind the chasm's now locked east door; the `to-the-boss-door` run; the chasm, ossuary
+  and hall lit and dressed with the pack's banners, fountains and skulls. Items 437-440.
+- **T9 the boss room, the win and the loss:** the Bone Warden (the pack's big demon, 6 hp, three
+  phases, every attack after a telegraph, telegraph and rage poses cut from the pack), Sir
+  Edrin's three-page intro, a victory dialog and tune on `flag.bossDefeated`, three ends,
+  layered MML boss music (calm, fight, rage) mixed from the frame status through the shell's
+  mixer, sounds for every boss action and the dash, the HUD's item icon per value and the boss
+  bar's panel; engine additions `menus.triggers.end[].music` and a HUD icon's `frames`; runs `win`
+  and `boss-lost` replace `beat-the-warden`. Items 441-447.
+- **T10 combat feel and polish, browser play test:** hit sparks and knockback dust with
+  hit-pauses, soul wisps and bone bits on kills, a sword trail, dash afterimages, chest rays and
+  pickup rings, torch embers (engine: a placed light's `emit`), the room slide with a dip to dark
+  (engine: `transitions.level: false`), fades on Start, Back to title and the fall, a sound for
+  every action with pitch variation, a danger music layer (the kit's new `enemies` status), the
+  item panel moved clear of the page's volume control; the browser test replays `win` and
+  `boss-lost` through the built page. Items 448-454.
+- **T11 close-out:** the ten review screenshots (below), one fix found in them (the item panel
+  shown only once an item is owned, item 457), this section, the restored `## Engine 0.16 part B`
+  heading below (T8 had replaced it with the in-progress note, breaking the roadmap's link), the
+  roadmap's Done when, the feedback items 455-462, the dungeon's module page and `CLAUDE.md`.
+
+### Choices made
+
+Each is built and kept unless the owner says otherwise; the full text is in
+[FEEDBACK-LOG.md](FEEDBACK-LOG.md) ("Engine 0.16 part C").
+
+1. Hopper's Way's fixes: the HUD hidden under the title only (419), the text-art 2.5D portrait
+   (420), the kit's `decor` grid for 2D props (421-423), new enemies placed so no run's input
+   changed (424).
+2. The CC0 pack kept as its one sheet with a tile list; torches and bats from it or original art
+   (425).
+3. 320x180 with HUD panels over the room's corners rather than a HUD band (426); the pack's
+   monsters for the old ones (427); pieces cut from the pack as text sheets (428, 429); four
+   small engine additions (430); the scene through the page's presenter and the old status
+   lines gone (431, 432); no step sound (433).
+4. Lighting: PixiJS left for later (434), the torches placed by the skin rather than the rooms
+   (435), the darkness levels and banded falloff (436).
+5. The wing: two ways through and counted keys (437), `beat-the-warden` re-recorded then replaced
+   (438, 442), props as placed lights (439), the item icon per value (440, 446).
+6. The Warden's fight and look (441), three ends (443), Sir Edrin (444), per-ending music (445),
+   room music and the layered boss song (447).
+7. The feel pass: its strength (448), the afterimages (449), embers (450), the slide kept for room
+   changes (451), the danger layer (452), sounds (453), the item panel's place (454).
+8. The close-out: the item panel hidden until an item is owned (457); a dialog box over the item
+   panel's corner left for the owner (458); the end screen's "Rooms seen" without the total
+   (462).
+
+### Smaller build choices
+
+Recorded by this close-out for T5-T7, which had no items of their own: the dash's default
+tuning, its invulnerability and `hero.dash` only once owned (459); the boss in a room's data and
+event places kept beside the snapshot, never in it (460); dialogs as a shell feature that holds
+the game and is skipped under the step hook and the recorder, so every run replays unchanged
+(461).
+
+The final review added five more for the owner: pits only block and the bot does not dash (463),
+the UI kit's import of the mixer's status test (464), the browser checks loosened under the
+darkness (465), the boss's immunities and knockback resistance (466), and the red death fade
+and the new fallback colour (467).
+
+### Golden hashes
+
+Re-recorded with the repo's tools (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`), never by hand:
+
+- **T1, Hopper's Way** (the new enemies are in every snapshot's `actors` from tick 0; no run
+  file's steps or checks changed): `level-1`, `level-1-lost`, `level-1-hurt`, `level-2`,
+  `level-2-lost`, `level-3`, `level-3-lost` and `full-game`. The decoration, the portrait and the
+  title's HUD moved no hash.
+- **T8, `beat-the-warden`** (T6's own run): the chasm's east door became locked, so its input
+  fetches the ossuary's key first (1502 ticks). Removed in T9.
+- **T9, `to-the-boss-door`** (T8's own run): the warden hall gained two hearts, which its last
+  ticks' snapshots list.
+- **New runs got their first hashes:** `cross-the-chasm` (T5), `beat-the-warden` (T6, gone),
+  `to-the-boss-door` (T8), `win` and `boss-lost` (T9).
+- **Unchanged through the whole part:** the dungeon's `walk-east`, `escape` and
+  `lost-in-the-guard-room` (no change to `escape`'s file or hashes: the five old rooms were never
+  edited, the dash's snapshot field appears only once owned and the boss and dialog work moved
+  no state), every other game's run files and the world fixtures. T2-T4, T7 and T10-T11 are
+  presentation or shell only (`tests/runs/presentation-invariance.test.ts` and
+  `stepped-shell-invariance.test.ts` pass unchanged).
+
+### How to try it
+
+```sh
+pnpm dev   # then http://localhost:5173/games/samples/dungeon/
+           # arrows walk, X (or Z) the sword, C the item (bombs, the dash); Escape or P pauses
+pnpm -s cli run games/samples/dungeon/runs/win.run.json --json        # tick 0 to the Warden beaten
+pnpm -s cli run games/samples/dungeon/runs/boss-lost.run.json --json  # also escape, walk-east, lost-in-the-guard-room, cross-the-chasm, to-the-boss-door
+pnpm -s cli mutants games/samples/dungeon --json                      # every top-down kit rule guarded
+pnpm -s cli validate games/samples/dungeon --json
+pnpm -s cli screenshot games/samples/dungeon/runs/win.run.json --tick 1085 --scale 6 --json
+pnpm test games/samples/dungeon tests/runs tests/browser/dungeon.test.ts tests/browser/menus.test.ts
+```
+
+### Done when
+
+- **The dungeon plays from the title to the boss's defeat, with run files for a win and a loss
+  that pass in CI: met.** `win` plays the whole dungeon from tick 0 (the courtyard) through the
+  chasm's dash, the ossuary's key and the locked door to the Bone Warden beaten
+  (`flags` `["bossDefeated"]` at 1879); `boss-lost` dies in the fight; both exit 0 through
+  `pnpm -s cli run`, match their golden hashes in `tests/runs/run-files.test.ts` and
+  `backend-parity.test.ts`, and replay through the built page in `tests/browser/dungeon.test.ts`;
+  `tests/browser/menus.test.ts` plays from the title by keyboard through the intro to the Warden
+  beaten, the victory dialog and the end screen. The old ends keep their runs (`escape`,
+  `lost-in-the-guard-room`).
+- **Every existing dungeon run file passes, or its hashes were re-recorded for a listed rule
+  change: met.** `walk-east`, `escape` and `lost-in-the-guard-room` pass with their hashes from
+  before the part; the part's own `beat-the-warden` and `to-the-boss-door` were re-recorded for
+  the changes listed above; `mutants` exits 0 for the dungeon.
+- **Owner playtest and screenshot review of the dungeon: open (items 455 and 456).** The
+  screenshots are below.
+
+### Review screenshots (item 456)
+
+Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-C/`](reports/screenshots/0.16-C/), each
+320x180 at `--scale 6`, the picture's state hash matching the headless run's
+(`matchesHeadless: true`):
+
+| File                                                                        | What it shows                                                                                      |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [01-title.png](reports/screenshots/0.16-C/01-title.png)                     | The title: name, subtitle, the knight and the orc, the menu over the dimmed courtyard (no HUD)     |
+| [02-intro-dialog.png](reports/screenshots/0.16-C/02-intro-dialog.png)       | Sir Edrin's intro dialog over the courtyard: speaker tab, portrait, typed page, the more mark      |
+| [03-lit-crypt.png](reports/screenshots/0.16-C/03-lit-crypt.png)             | The crypt lit by two braziers, darkness at the edges, dust, the hero raising the relic             |
+| [04-combat-hurt.png](reports/screenshots/0.16-C/04-combat-hurt.png)         | The guard room's fight: the knight hit by the orc (white flash, red screen flash), the bats about  |
+| [05-dash-over-chasm.png](reports/screenshots/0.16-C/05-dash-over-chasm.png) | The dash over the chasm's pits: the afterimage, the flask in the item panel, the locked door ahead |
+| [06-key-locked-door.png](reports/screenshots/0.16-C/06-key-locked-door.png) | Back in the chasm with the ossuary's key (x1), at the warden hall's locked door                    |
+| [07-boss-telegraph.png](reports/screenshots/0.16-C/07-boss-telegraph.png)   | The Bone Warden's charge telegraph (burning eyes, red glow), the boss bar, the hall's four torches |
+| [08-boss-hit.png](reports/screenshots/0.16-C/08-boss-hit.png)               | A sword hit on the Warden: its white flash, the warm screen flash, the bar down a point            |
+| [09-victory-dialog.png](reports/screenshots/0.16-C/09-victory-dialog.png)   | The victory dialog after the Warden's defeat                                                       |
+| [10-end-screen.png](reports/screenshots/0.16-C/10-end-screen.png)           | The end screen: "The Warden is at rest", the art credit, time, rooms seen, health, Back to title   |
+
+Made with (from the repo root):
+
+```sh
+R=games/samples/dungeon/runs; O=docs/reports/screenshots/0.16-C
+pnpm -s cli screenshot $R/win.run.json --tick 3 --overlay title --scale 6 --out $O/01-title.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 0 --overlay dialog:intro --scale 6 --out $O/02-intro-dialog.png --json
+pnpm -s cli screenshot $R/escape.run.json --tick 950 --scale 6 --out $O/03-lit-crypt.png --json
+pnpm -s cli screenshot $R/lost-in-the-guard-room.run.json --tick 408 --scale 6 --out $O/04-combat-hurt.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 368 --scale 6 --out $O/05-dash-over-chasm.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 936 --scale 6 --out $O/06-key-locked-door.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1085 --scale 6 --out $O/07-boss-telegraph.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1196 --scale 6 --out $O/08-boss-hit.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1880 --overlay dialog:victory --scale 6 --out $O/09-victory-dialog.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1900 --overlay end --scale 6 --out $O/10-end-screen.png --json
+```
+
+Each was looked at in full. **Fixed:** the item panel showed as an empty frame before an item is
+owned (04) and its edge peeked out past the intro dialog's corner (02); it now shows only once an
+item is owned (`when: "item"`, item 457), and 02 and 04 were retaken. **Recorded, not fixed:**
+once an item is owned the panel's right edge and bottom still show past a dialog box's
+lower-right corner (09; item 458); the end screen's "Rooms seen 4" has no total (the win's route
+sees four of eight rooms; item 462); no run has the hero striking an ordinary monster, so the
+monsters' white flash is shown on the Warden (08) and the guard room's shot is the hero's own
+hurt (04); `pnpm cli screenshot` draws only the effects alive at the shot tick, so a hit's sparks
+and dust, which start on the hit's tick, show only as their first frame (as T10 noted).
+
+### Deviations from the roadmap
+
+- **Assets:** the named pack (0x72's DungeonTileset II) has no torches, bats or sounds: the
+  brazier, the key, the panel and the padlock are original art in its colours, the bat is the
+  pack's imp, and the sound stays our MML (items 425, 427, 428).
+- **PixiJS lighting:** the PixiJS backend (part A's T13b, item 323) does not draw a skin's
+  `lighting` yet; it needs the same pass when that backend is built (item 434). The game plays on
+  Canvas2D, which draws it.
+- **Binary files:** the CC0 pack in the dungeon's `assets/` (allowed by item 322) and the ten
+  review screenshots (allowed since part B, item 395).
+
+### Finalize pass (checks)
+
+Run on the T11 tree before committing: `pnpm lint`, `pnpm typecheck`, `pnpm docs:check`,
+`pnpm test` (261 files, 3226 tests passed and 1 skipped: the opt-in every-tick save check of
+0.8) and `pnpm build` all pass; all 75 run files in the repo (`git ls-files '*.run.json'`) exit 0
+through `pnpm -s cli run`; `pnpm -s cli validate` passes for all eight game folders and the
+tower-defense kit's good fixture (`kits/towerdefense/__fixtures__/bad` fails, as it must);
+`pnpm -s cli mutants games/samples/dungeon` exits 0 (all seven run files pass as they are, no
+rule unguarded, no run weak on its `guards`). The agent-docs test passes: the touched modules
+(the dungeon sample) keep their `CLAUDE.md`, `AGENTS.md` and `llms.txt` page.
+
+Rerun by the final review on the committed tree (the same results: lint, typecheck, docs:check,
+3226 tests passed and 1 skipped, build, all 75 run files exit 0, dungeon mutants exit 0), with
+only the build log and the feedback log changed.
+
+### Outstanding issues
+
+- **The owner's playtest and screenshot review:** items 455 and 456.
+- The build choices of part C (items 419-454, 457-467) wait for the owner's answers.
+- A dialog box over the item panel's corner (458); the end screen's rooms without a total (462).
+- The PixiJS backend's lighting pass (434), with part A's PixiJS backend (T13b, item 323).
+- From part B: the owner's playtest and screenshot review (393, 394), which parts C-F wait for,
+  and the looks recorded there (398, 399).
+
+## Engine 0.16 part B
+
+The flagship platformer, **Hopper's Way** (docs/ROADMAP.md, 0.16 part B), built on branch
+`engine/build-0.15` in eleven tasks (T1-T11; not tagged, nothing published). The platformer
+sample became a short side-scroller of three levels and a mini-boss, in 2D (Canvas2D) and a lit
+2.5D view (Three.js), at a 16:9 screen (320x180; 6x is 1920x1080). Its old content is the test
+game `games/platformer-classic`. **Open for the owner:** the playtest (item 393) and the
+screenshot review (item 394), then the build choices 364-392 and 395-418.
+
+### What was built
+
+- **T1 platformer kit, movement feel as data** (`kits/platformer`): a profile's `coyote` (rule
+  `coyote-time`) and `jumpCut` (under `variable-jump`), the `K` checkpoint cell (rule
+  `checkpoints`, event `checkpoint`, respawn there with lives left); the lab's `lab-6-feel` and
+  `feel.run.json`. New fields default off, so no hash moved.
+- **T2 platformer kit, a data-driven mini-boss:** a boss form on profile actor types (hp,
+  `hitInvuln`, `defeatTicks`, a looping pattern of idle, telegraph, charge, leap, shoot and drop
+  steps, phases by hp), projectile actor types, stomp hits, a defeat sequence and `"clear":
+"boss"` levels; six named rules (`boss-*`); the lab's `lab-7-boss` and `boss.run.json`.
+- **T3 engine shell and tools:** the level select (title item `levels`, stored progress, locks and
+  marks), the level-clear banner and the end screen with stat lines from the frame status, the
+  respawn transition slot, the kit's level names and time, deaths and checkpoint status, and
+  `screenshot --scale` and `--overlay` (found finished but uncommitted and committed as found).
+- **T4 the CC0 packs** in `games/samples/platformer/assets/` (about 1.8 MB, credited in
+  `CREDITS.md`): Pixel Frog's Pixel Adventure 1 and Kenney's Pixel Platformer (2D), Kenney's
+  Platformer Kit 1.1 and Quaternius' Ultimate Platformer Pack (2.5D) (items 364, 365).
+- **T5 room for the flagship:** the old five levels and two doors moved with `git mv` to
+  `games/platformer-classic` (hashes unchanged), the 320x180 screen, the tuned `hoppers-way`
+  profile (coyote 6, jump buffer 6, jump cut, quicker acceleration, a fall cap), the campaign and
+  level 1 with win and loss run files (items 366-369).
+- **T6 the 2D art and feel pass:** the 2D skin on the PNG packs (terrain joined by neighbour, the
+  Ninja Frog in every state, Kenney's critters, a waving checkpoint flag, a trophy goal, four
+  original text-art parallax layers, squash and stretch, dust and run particles, shakes, flashes,
+  hit-pauses, a wood-panel HUD and menus); engine: neighbour-based tile frames, a cycle's own
+  sheet, menu art from skin images (items 370-374).
+- **T7 levels 2 and 3:** Autumn Hills (one-way planks, ledge-walkers, an off-path cache with a
+  life) and Starlit Ridge (spikes, buffered and coyote jumps, a tunnel cache), each with its own
+  sky and ground through skin `themes` (engine: `themedSkin`), win and loss run files (items
+  375-378).
+- **T8 the mini-boss, level clear and end:** Burrlock, the bramble beetle (original text pixel
+  art, profile data on the kit's boss form: a thorn shot and a charge, then a faster red second
+  phase of shot, leap and acorn drop), Burrlock's Hollow behind a checkpoint, telegraph poses,
+  white hit flashes, hit-pause, a boss bar and a defeat sequence; the banner, the end screen and
+  the respawn iris in `game.json`; run files `boss`, `boss-lost` and `full-game` (items 379-383).
+- **T9 music and sound:** one layered MML song (a calm and a drive layer per level, the boss's
+  fight and rage layers) mixed from the frame status, a title tune, an end fanfare, 39 varied
+  sound effects and ducking; engine: a mix rule's `when` as a list, `menus.end.music` (items
+  384-387).
+- **T10 the 2.5D view:** the 3D skin on the CC0 GLB packs (blocks with grass tops by a 3D tile
+  join, crates, planks, spikes, coins, a jewel goal, the flag, Quaternius' character and enemies,
+  the crab as Burrlock), a sun with soft shadows, hemisphere light, ACES and fog per level
+  through 3D themes, seeded scenery rows, the 2D camera tilted 7 degrees; engine: tweens in 3D
+  (item 340), 3D themes and scenery, tag-look models, a model's `tint`, `stretch` and `clipHold`
+  (items 388-392).
+- **T11 close-out:** the review screenshots (below), two fixes found in them (the framed menu
+  screens widen to fit their heading, `engine/core/ui/menus.ts` `headedWidth`, item 396; the title
+  font's `W`, item 397), review screenshots allowed as binary files
+  (`tests/architecture/no-content.test.ts`, DESIGN.md, item 395), this section, the roadmap's
+  Done when, `llms.txt`, the sample's module page and `CLAUDE.md`, the UI kit's `CLAUDE.md`.
+
+### Fixes after review (0.16 part C T1)
+
+Three issues seen in the review screenshots below were fixed before the dungeon work (items
+419-424): **no HUD under the title** (an engine fix: the shell's `GameMenus.hudShown` is false
+while the title or a screen opened from it shows, and the boot hands it to the display's new
+`showHud` before each draw, both backends; the screenshot tool does the same under its `title`
+and `levels` overlays; guarded by `game-menus.test.ts`, `shell.test.ts` and the presenter
+tests); **a 2.5D portrait of the 2.5D hero** (`three.json`'s lives counter shows original text
+art of Quaternius' blue long-eared character, `sprites/hopper-hero3d.txt`; the 2D HUD keeps the
+frog); and **fuller 2D levels**: a presentation-only decoration grid per level (the platformer
+kit's new optional `decor`, a `.decor.txt` part presented as the map layer `decor`; the Canvas2D
+presenter places a layer's anchored frames on their cells) with original text-art grass,
+flowers, rocks, bushes, trees, night crystals and stones and fossils in the dirt, and Kenney Pixel
+Platformer signs, fences, mushrooms, sprouts and pines, themed per level; and seven more enemies
+(two in level-1, three in level-2, three in level-3, each placed where the existing winning and
+losing inputs still pass, so no run file's steps changed). Screenshots 01-03 and 05-09 were
+retaken with the same commands and ticks (below) and looked at.
+
+### Choices made
+
+Items 364-392 and 395-399 in [FEEDBACK-LOG.md](FEEDBACK-LOG.md) (Engine 0.16 part B, T4-T11);
+each is built and kept unless the owner says otherwise. T1-T3's choices are items 400-418 (below). In short: the CC0
+substitutes for the packs' missing enemies and 3D characters (364, 365); the old content as
+`games/platformer-classic`, the 320x180 screen, the `hoppers-way` profile, the placeholder skin
+(366-369); the Ninja Frog, Kenney's critters, the parallax art, the engine's tile joins, the hurt
+run (370-374); the two levels, skin themes, caches and their run files (375-378); Burrlock, the
+arena, its look, the banner and end screen, the boss runs (379-383); the layered song, the two
+engine additions, the sounds and the ducking (384-387); the 2.5D models, look, engine additions,
+no runner label in 3D and no depth of field (388-392); the review screenshot folder (395), the
+heading-width fix (396), the `W` (397), and two looks found and left for the owner (398, 399).
+
+### Smaller build choices
+
+The finalize pass recorded the builders' smaller choices that the owner should check as items
+400-418 in [FEEDBACK-LOG.md](FEEDBACK-LOG.md) ("Engine 0.16 part B, finalize"): the checkpoint
+respawn policy and which checkpoint is current (400, 401); new snapshot fields only when used, so
+no hash moved (402); `jumpCut` under the `variable-jump` rule and the coyote count (403, 404);
+`checkLevel`'s ground rule for checkpoints (405); the boss's `clear: "boss"` header, phases,
+stomp grace, projectiles and its one seeded random spread (406-408); what the `boss` run guards
+(409); the level-clear banner painted over the game, the end screen's summed stats, when the
+respawn transition plays, level locks and stored progress (410-413); the browser tests holding
+`run` as X (414); vitest's 30 s timeout (415); committing two found, finished tasks (T3, T7) as
+their own commits (416); generators not committed (417); a HUD text item drawn without its status
+(418).
+
+### Golden hashes
+
+**Re-recorded in 0.16 part C T1** (with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`; the new
+enemies are in every snapshot's `actors` from tick 0; no run file's steps or checks changed):
+`level-1`, `level-1-lost`, `level-1-hurt` (level-1's third walker and ledge-walker), `level-2`,
+`level-2-lost` (level-2's walker and two ledge-walkers), `level-3`, `level-3-lost` (level-3's
+walker and two ledge-walkers) and `full-game` (it plays all three). The decoration, the HUD
+portrait and the title's HUD moved no hash. `mutants` exits 0 for every one of the sample's ten
+run files.
+
+**None re-recorded in part B.** T1 and T2 added kit fields and rules that default off; T5 moved
+the eight old run files to `games/platformer-classic` with `git mv`, changing only each hashes
+file's `run` path, never a hash; T6, T9 and T10 are presentation only, and T11 changed only menus
+and a font. The new run files got their first hashes from the repo's tools
+(`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`): the sample's `level-1`, `level-1-lost`,
+`level-1-hurt` (T5, T6), `level-2`, `level-2-lost`, `level-3`, `level-3-lost` (T7), `boss`,
+`boss-lost`, `full-game` (T8), and the lab's `feel` (T1) and `boss` (T2).
+
+### How to try it
+
+```sh
+pnpm dev   # then http://localhost:5173/games/samples/platformer/ (2D)
+           # and   http://localhost:5173/games/samples/platformer/?backend=three (2.5D)
+           # arrows (or the touch pad) walk, Z jumps (hold for higher), X runs; Escape, P, gamepad
+           # Start or the II button pause; the title's Levels opens the level select
+pnpm -s cli run games/samples/platformer/runs/full-game.run.json --json   # the whole game, headless
+pnpm -s cli run games/samples/platformer/runs/boss.run.json --json        # also level-1..3, *-lost, level-1-hurt, boss-lost
+pnpm -s cli mutants games/samples/platformer/runs/boss.run.json --json    # what a run guards (exit 0 for each run file)
+pnpm -s cli validate games/samples/platformer --json
+pnpm -s cli screenshot games/samples/platformer/runs/boss.run.json --tick 325 --scale 6 --json
+pnpm -s cli screenshot games/samples/platformer/runs/boss.run.json --tick 318 --scale 6 --backend three --allow-software-gl --json
+pnpm test games/samples/platformer tests/runs tests/browser/menus.test.ts
+```
+
+### Done when
+
+- **All levels and the mini-boss play from start to end in 2D and in 2.5D, with run files for a
+  win and a loss that pass in CI: met.** Win and loss run files for every stage (`level-1` and
+  `level-1-lost`, `level-2` and `level-2-lost`, `level-3` and `level-3-lost`, `boss` and
+  `boss-lost`) and `full-game`, from the first level's first tick to the arena cleared at 3645,
+  all exit 0 through `pnpm -s cli run` and match their golden hashes in `pnpm test tests/runs`.
+  2.5D: `platformer.test.ts` ("the 2.5D view (T10)") and `tests/runs/backend-parity.test.ts` draw
+  every tick of every run file in 3D with the models loaded and get the golden state hashes; the
+  browser tests play level 3 and the arena through the page by keyboard and gamepad
+  (`tests/browser/menus.test.ts`).
+- **Every existing platformer run file passes, or its hashes were re-recorded for a listed rule
+  change: met, nothing re-recorded.** The classic game's eight run files and the platformer lab's
+  run files pass with their old hashes; `mutants` exits 0 on each of them.
+- **Owner playtest with keyboard and gamepad: open (item 393).**
+- **Owner screenshot review (2D and 2.5D, in play and in menus): open (item 394).** The
+  screenshots are below.
+
+### Review screenshots (item 394)
+
+Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-B/`](reports/screenshots/0.16-B/), each
+320x180 at `--scale 6`, the picture's state hash matching the headless run's
+(`matchesHeadless: true`):
+
+| File                                                                                      | What it shows                                                                                   |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [01-2d-level-1-stomp.png](reports/screenshots/0.16-B/01-2d-level-1-stomp.png)             | 2D, level 1 (the meadow): the frog bouncing off the first walker it stomped, among the props    |
+| [02-2d-level-2-plank-stomp.png](reports/screenshots/0.16-B/02-2d-level-2-plank-stomp.png) | 2D, level 2 (Autumn Hills): a ledge-walker stomped on its plank over a pit, the checkpoint flag |
+| [03-2d-level-3-coyote-jump.png](reports/screenshots/0.16-B/03-2d-level-3-coyote-jump.png) | 2D, level 3 (Starlit Ridge): the coyote jump off the ledge over the spike field, coins above    |
+| [04-2d-boss-hit.png](reports/screenshots/0.16-B/04-2d-boss-hit.png)                       | 2D, the arena: Burrlock stomped (white flash, ring, dust), the boss bar down, a thorn in flight |
+| [05-3d-level-1.png](reports/screenshots/0.16-B/05-3d-level-1.png)                         | 2.5D, level 1: the hero over the ledge's coins, the checkpoint flag, scenery and fog behind     |
+| [06-3d-boss-telegraph.png](reports/screenshots/0.16-B/06-3d-boss-telegraph.png)           | 2.5D, the arena at dusk: Burrlock's charge telegraph, the hero jumping in, the boss bar         |
+| [07-title.png](reports/screenshots/0.16-B/07-title.png)                                   | The title screen: name, subtitle, the frog and a critter, the menu and key hints (no HUD)       |
+| [08-level-select.png](reports/screenshots/0.16-B/08-level-select.png)                     | The level select ("Pick a level", the four stages, locked ones greyed, Back; no HUD)            |
+| [09-level-clear.png](reports/screenshots/0.16-B/09-level-clear.png)                       | The level-clear banner at Autumn Hills' trophy: coins, time, deaths                             |
+| [10-end-screen.png](reports/screenshots/0.16-B/10-end-screen.png)                         | The end screen after Burrlock's defeat: heading, credits, stats, Back to title and Levels       |
+
+Made with (from the repo root; the 3D ones on SwiftShader, no GPU here):
+
+```sh
+R=games/samples/platformer/runs; O=docs/reports/screenshots/0.16-B
+pnpm -s cli screenshot $R/level-1.run.json   --tick 214 --scale 6 --out $O/01-2d-level-1-stomp.png --json
+pnpm -s cli screenshot $R/level-2.run.json   --tick 504 --scale 6 --out $O/02-2d-level-2-plank-stomp.png --json
+pnpm -s cli screenshot $R/level-3.run.json   --tick 545 --scale 6 --out $O/03-2d-level-3-coyote-jump.png --json
+pnpm -s cli screenshot $R/boss.run.json      --tick 325 --scale 6 --out $O/04-2d-boss-hit.png --json
+pnpm -s cli screenshot $R/level-1.run.json   --tick 400 --scale 6 --backend three --allow-software-gl --out $O/05-3d-level-1.png --json
+pnpm -s cli screenshot $R/boss.run.json      --tick 318 --scale 6 --backend three --allow-software-gl --out $O/06-3d-boss-telegraph.png --json
+pnpm -s cli screenshot $R/level-1.run.json   --tick 3 --overlay title  --scale 6 --out $O/07-title.png --json
+pnpm -s cli screenshot $R/level-1.run.json   --tick 3 --overlay levels --scale 6 --out $O/08-level-select.png --json
+pnpm -s cli screenshot $R/level-2.run.json   --tick 975 --overlay clear --scale 6 --out $O/09-level-clear.png --json
+pnpm -s cli screenshot $R/full-game.run.json --tick 3648 --overlay end --scale 6 --out $O/10-end-screen.png --json
+```
+
+Retaken in 0.16 part C T1 with the same commands and ticks (the runs' inputs did not change):
+01-03 (the decoration and new enemies), 05 and 06 (the 2.5D HUD's blue-hero portrait), 07 and
+08 (no HUD under the title and the level select, the meadow's props behind) and 09 (Autumn
+Hills' props behind the banner); 04 and 10 are unchanged. Each was looked at in full.
+
+Each was looked at in full. **Fixed:** the end screen's heading ran over its panel's frame (the
+panel now widens to fit it, item 396; the level select's heading, which touched the frame, got
+the same room), and the title font's `W` read as an `M` ("Hopper's May", item 397). **Recorded,
+not fixed:** in 2.5D Burrlock reads dark maroon, not violet, in phase 1 under the dusk light, and
+the 3D arena's grass is olive where the 2D arena's ground is autumn orange (item 398); the HUD
+panel covers the level's top two rows, so the frog at Autumn Hills' high life block (tick 631) is
+half behind it (item 399, so that tick was not used); the 2.5D hero is Quaternius' blue character,
+not a frog (item 388); the screenshot's end-screen stats are the arena's alone (0 coins, 0:13),
+where the page sums the levels cleared in a session (T3's design: the screenshot page sees one
+frame's status).
+
+### Deviations from the roadmap
+
+- **No CC0 enemies or 3D characters in the named packs:** Kenney's Pixel Platformer critters and
+  Quaternius' characters were added as substitutes (items 364, 365); the 2.5D hero is not a frog
+  (item 388).
+- **No depth of field** in 2.5D: fog does that job (item 392).
+- **Binary files:** the four CC0 packs in the sample's `assets/` (allowed by item 322) and the ten
+  review screenshots, a new allowance (`docs/reports/screenshots/<release>/*.png`, item 395).
+- **The folder-wide `mutants` check** of the sample and of `games/platformer-classic` exits 4, as
+  their `CLAUDE.md` files say: the sample has no bricks, shells, mini games or wall-turning
+  walkers, and the classic game has no checkpoint or boss; every run file of both exits 0, and
+  the platformer lab's folder check guards every kit rule (exit 0).
+
+### Finalize pass (checks)
+
+Run on the T11 tree before committing: `pnpm lint`, `pnpm typecheck`, `pnpm docs:check`,
+`pnpm test` (257 files, 3080 tests passed and 1 skipped: the opt-in every-tick save check of 0.8) and `pnpm build` all pass; all 71 run files in the repo (`git ls-files
+'*.run.json'`: the sim fixtures and every game's) exit 0 through `pnpm -s cli run`;
+`pnpm -s cli validate` passes for all eight game folders (`kits/towerdefense/__fixtures__/bad`
+fails, as it must); `pnpm -s cli mutants` exits 0 for the dungeon, mini siege, RTS skirmish and
+tower-defense samples and the platformer lab, and for each run file of Hopper's Way and of the
+classic game (the folder checks of those two and the fx lab exit 4 as documented, above and in
+0.16 part A).
+
+Run again by the second finalize pass on the committed T11 tree (nothing red, nothing to fix):
+`pnpm lint`, `pnpm typecheck`, `pnpm docs:check`, `pnpm test` (257 files, 3080 passed, 1
+skipped) and `pnpm build` pass; all 71 run files exit 0 through `pnpm -s cli run`; `pnpm -s cli
+validate games/samples/platformer` passes and `mutants` exits 0 for each of its ten run files.
+That pass added items 400-418 (above) and changed only the docs.
+
+### Outstanding issues
+
+- **The owner's playtest and screenshot review:** items 393 and 394; parts C-F wait for 394.
+- The build choices of part B (items 364-392, 395-418) wait for the owner's answers.
+- 2.5D Burrlock's colour and the arena's 3D grass (item 398); the HUD over the top rows (399).
+- 3D pictures are drawn on SwiftShader here (no GPU in the build container), as every 3D
+  screenshot since 0.6.
+- From part A: the PixiJS 2D backend (T13b, item 323) and the effects sheet review (item 339).
+
 ## Engine 0.16 part A2: the PixiJS v8 2D backend (T13b, item 323)
 
 The second part of 0.16 part A, built on branch `engine/0.16-track2` (T13b-1 to T13b-9, not
@@ -564,17 +1097,17 @@ adds.
 
 - **PixiJS is the default for RTS and TD without holding the bar.** On this container's software
   GL neither backend holds 16.7 ms p95 with every feature on; PixiJS's draw call does. A check
-  on a machine with a GPU is open (item 419).
+  on a machine with a GPU is open (item 485).
 - **Glow is a halo sprite, not a PixiJS filter** (the roadmap says filters). It is cheaper and is
-  the one visible difference from Canvas2D (item 421).
+  the one visible difference from Canvas2D (item 487).
 - **Hopper's Way (`games/samples/platformer`) is not wired to PixiJS**: another track owns it
-  (item 420).
+  (item 486).
 - **`pnpm cli sheet` grammar extended** with run paths relative to the main run file's folder,
-  for the parity sheet (item 422).
+  for the parity sheet (item 488).
 
 ### Outstanding issues
 
-- Frame times on a machine with a GPU are not measured (item 419). The final benchmark table
+- Frame times on a machine with a GPU are not measured (item 485). The final benchmark table
   was made on a heavily loaded machine (load 14-17 on 4 cores).
 - The owner's screenshot review of both sheets (item 339).
 - Old map `RenderTexture`s are not freed when a map's version changes (one texture per map
@@ -593,53 +1126,88 @@ adds.
 eight files pass when run alone. All 68 run files exit 0 through `pnpm -s cli run`, and all eight
 game folders pass `pnpm -s cli validate`.
 
-### Build decisions to review (track 2)
+### The merge into engine/build-0.15 (Engine 0.16 part D, D1)
 
-- **T2-1.** `pixi.js` is pinned at 8.22.0, the newest stable release, published 2026-10-01.
-- **T2-2.** Glow is a pre-made soft halo texture, tinted and stretched behind each glowing box,
+The track was merged (a merge commit, no rebase) after part C had changed the same files. What
+the merge had to decide:
+
+- **Part C's 2D lighting moved into the shared walk.** Part C added the skin's `lighting`
+  (darkness, lights, flicker, vignette, dust), `showHud` and anchored decoration frames to
+  Canvas2D's presenter while the track moved that presenter into `engine/core/draw`. They now
+  live in the core `SkinnedPresenter` (a `lightSurface` option beside `mapSurface`; Canvas2D's
+  wrapper passes an offscreen canvas, so every Canvas2D picture is drawn by the same calls as
+  before), and `skinSetPresenter` and `pixiDisplay` hand `showHud` on. PixiJS runs the same walk:
+  `PixiRenderer.gradient` draws each radial fill as one sprite of a cached gradient texture
+  (made from bytes, tinted, `add` and `erase` blending) and `PixiPresenter` passes a live
+  `RenderTexture` surface (`PixiSurfaces.makeLive`, rendered every frame) as the light map, so a
+  lit skin shows its darkness, light pools, glows and vignette there too (the follow-up of item
+  434). The parity test's fx lab (which has lighting since part C) passes within its tolerance.
+  The dungeon page's default is still Canvas2D, so The Old Crypt's pictures are unchanged.
+- **Two `vary` fields became one.** Part C's 2D tile `vary` (`{ frames, weights?, period? }`)
+  and part F's 3D model tile `vary` (`{ turn?, height?, tint? }`) share the field: the schema
+  takes either shape, and the shape not of the skin's backend is `wrong_backend_field`.
+- **Two HUD `when`s became one.** Part C's `when` (a status key, shown while truthy) and part
+  F's (a status test `{ status, eq?, ... }`) are both accepted (`hudItemShown`).
+- **Model fields.** Part B's `tint`, `stretch` and `clipHold` and part F's `materials` sit
+  together on kinds, tiles and tag looks (`SkinModel` has `stretch`, `materials` and `tint`);
+  part F's `recolorMaterials` applies both colours. `SkinParticles.update` takes the map shown
+  (part C's room-wide particles) and part F's fixed emitters.
+- **The 3D scene** keeps part B's themes, tweens and scenery and part F's ground view, time of
+  day and decor; tweens are laid on in both views. A skin's `themes` and a `timeOfDay` are not
+  combined (no skin has both): with a time of day the clock's look wins.
+- **Numbering.** The track's build decisions and its four owner questions (419-422 on the
+  track, which part C had used) became items 468-488.
+
+No golden hash moved in the merge; every run file and the checks were run on the merged tree.
+
+### Build decisions to review (track 2; items 468-484)
+
+- **468.** `pixi.js` is pinned at 8.22.0, the newest stable release, published 2026-10-01.
+- **469.** Glow is a pre-made soft halo texture, tinted and stretched behind each glowing box,
   sprite or line, instead of a PixiJS filter (one sprite in the same batch, no extra pass). It
   is an oval over the shape's box, not its outline, so it is softer than Canvas2D's glow on
   large sprites.
-- **T2-3.** The shared drawing code went into a new folder, `engine/core/draw`, not into
+- **470.** The shared drawing code went into a new folder, `engine/core/draw`, not into
   `engine/core/present`, because kits import `present` and the drawing code must be blocked
   for kits and the sim. It is on `PURE_CORE` and has its own agent docs.
-- **T2-4.** In the core the map and glyph surfaces default to none (redrawn every frame);
+- **471.** In the core the map and glyph surfaces default to none (redrawn every frame);
   Canvas2D's wrappers default them to an offscreen canvas, so Canvas2D behaves exactly as
   before. Canvas2D's exported names are unchanged.
-- **T2-5.** A new optional core option, `tintGlyphs`, lets PixiJS draw HUD glyphs once in white
+- **472.** A new optional core option, `tintGlyphs`, lets PixiJS draw HUD glyphs once in white
   and tint them. Off, Canvas2D is unchanged.
-- **T2-6.** `pixiDisplay` asks for WebGL only (`preference: ['webgl']`, not `'webgl'`, which
+- **473.** `pixiDisplay` asks for WebGL only (`preference: ['webgl']`, not `'webgl'`, which
   would fall back to WebGPU or canvas) and allows software WebGL (SwiftShader), as the 3D view
   does.
-- **T2-7.** When PixiJS cannot start, Canvas2D runs on a fresh copy of the canvas. A page that
+- **474.** When PixiJS cannot start, Canvas2D runs on a fresh copy of the canvas. A page that
   asks for a backend the game does not have runs Canvas2D. `backendFromQuery` gained an
   optional `fallback`.
-- **T2-8.** The dungeon page now draws through the display's presenter (so it works on any 2D
+- **475.** The dungeon page now draws through the display's presenter (so it works on any 2D
   backend) and plays the skin's sounds through the display; its view and tests keep their own
   Canvas2D presenter, so screenshots and hashes are unchanged.
-- **T2-9.** PixiJS screenshots always use software WebGL (SwiftShader), even on a machine with a
+- **476.** PixiJS screenshots always use software WebGL (SwiftShader), even on a machine with a
   GPU, so PNGs and the parity test repeat exactly.
-- **T2-10.** Parity tolerance: threshold 8 and at most 0.1% of pixels where nothing glows (RTS,
+- **477.** Parity tolerance: threshold 8 and at most 0.1% of pixels where nothing glows (RTS,
   TD, the fx lab's top half); threshold 32 and at most 1% for the whole fx lab. The iris is not
   compared, because the screenshot page's Canvas2D tile closes it on the picture's centre.
-- **T2-11.** `pixiDisplay` lets the page do the whole-number upscale by default
+- **478.** `pixiDisplay` lets the page do the whole-number upscale by default
   (`upscale: 'page'`, `image-rendering: pixelated`), the largest saving on software GL. The
   picture can sit up to s-1 device pixels from where Canvas2D puts it; `upscale: 'gl'` keeps
   the old path.
-- **T2-12.** Tuning changed how the display list is built: a top-level opaque `clear` becomes the
+- **479.** Tuning changed how the display list is built: a top-level opaque `clear` becomes the
   GL clear colour, `alpha` and `blend` scopes are set on each object instead of making
   containers, and the renderer culls off-picture objects (with the glow radius as margin).
-- **T2-13.** `engine/core/fx` was made allocation-free (`lerpColor` keeps a cache of up to 1024
+- **480.** `engine/core/fx` was made allocation-free (`lerpColor` keeps a cache of up to 1024
   parsed colours; `keyframeAt` reads in place). Output is the same on every backend.
-- **T2-14.** To let the bench reach the game's presenter, `PixiDisplayOptions` gained `seed` and
+- **481.** To let the bench reach the game's presenter, `PixiDisplayOptions` gained `seed` and
   `maxParticles`, and `pixiDisplay` returns `PixiDisplay` (a `BrowserDisplay` plus `main`).
-- **T2-15.** The RTS, tower-defense and menus browser tests now run on the PixiJS default
+- **482.** The RTS, tower-defense and menus browser tests now run on the PixiJS default
   instead of being pinned to Canvas2D, so they check pointer input through the PixiJS display.
-- **T2-16.** Old map `RenderTexture`s are not destroyed when a new map version arrives (the core
+- **483.** Old map `RenderTexture`s are not destroyed when a new map version arrives (the core
   gives no signal); noted in the backend's `CLAUDE.md`.
-- **T2-17.** The BUILD-LOG summary line "the last number used is 363" was already out of date
-  and was left for the feedback-numbering owner. The track's owner questions are 419-422; the
-  orchestrator copies them into FEEDBACK-LOG.md at merge.
+- **484.** The BUILD-LOG summary line "the last number used is 363" was already out of date
+  and was left for the feedback-numbering owner. The track's owner questions (419-422 on the
+  track, which part C had used meanwhile) are 485-488; the orchestrator copied them and these
+  decisions (468-484) into FEEDBACK-LOG.md at the merge (Engine 0.16 part D, D1).
 
 ## Engine 0.16 part A
 
@@ -648,7 +1216,7 @@ Engine presentation features (docs/ROADMAP.md, 0.16 part A), built on branch
 engine (core, backends or the shell), driven by skins and other text, and none can change a run's
 state: two invariance tests play every run file of every game with every effect on and get the
 golden hashes. **Open for the owner:** the screenshot review of the effects sheet and the PixiJS
-parity sheet (item 339) and the PixiJS close-out choices (items 419-422). The PixiJS follow-up
+parity sheet (item 339) and the PixiJS close-out choices (items 485-488). The PixiJS follow-up
 (item 323, T13b) is built (nine tasks T13b-1 to T13b-9, below).
 
 ### What was built
@@ -866,7 +1434,7 @@ size) are included. Nothing needed fixing in this pass.
 
 - **T13b, the PixiJS 2D backend:** built. Open: frame times on a machine with a GPU (this
   container has none: on SwiftShader PixiJS misses the 16.7 ms p95 bar with the features on, and
-  even plain on a loaded machine; item 419); Hopper's Way is not wired to it (item 420).
+  even plain on a loaded machine; item 485); Hopper's Way is not wired to it (item 486).
 - **The owner's screenshot review:** item 339 (the effects sheet and the PixiJS parity sheet).
 - A 3D tile is drawn on SwiftShader here (no GPU in the build container), as every 3D screenshot
   since 0.6.
@@ -874,7 +1442,7 @@ size) are included. Nothing needed fixing in this pass.
   and `EXIT` labels overlap when Pip stands in the door.
 - The 3D backend ignores tweens, and the lab's own `ui` screens (its lab menu and dialog) draw in
   2D only (items 340, 329).
-- The build choices of part A (items 323-363 and 419-422) wait for the owner's answers.
+- The build choices of part A (items 323-363 and 485-488) wait for the owner's answers.
 
 ### T13: the 2D feature benchmark and the Canvas2D/PixiJS decision (item 320)
 
@@ -1244,14 +1812,14 @@ golden hash moved.
   by default and the headless tools stay Canvas2D.
 - **T13b-9 close-out:** the parity sheet, this section, the roadmap. `sheet` tiles may now name a
   run file in another folder by a path relative to the positional run file's folder
-  (`../../samples/rts-skirmish/runs/battle/141`), so one sheet tiles several games (item 422;
+  (`../../samples/rts-skirmish/runs/battle/141`), so one sheet tiles several games (item 488;
   `engine/tools/sheet.test.ts`).
 
 **Parity: the tolerance and where the backends differ.** `tests/browser/pixi-parity.test.ts`
 plays the fx lab's `level-1`, the RTS `battle` and the TD `won` once per backend (both plays give
 the headless run's state hashes) and compares each tick's pictures (particles, flashes, tints,
 shake, parallax, the HUD, a fade, a wipe, the pause menu). A pixel differs when one of R, G, B
-differs by more than the threshold (item 421):
+differs by more than the threshold (item 487):
 
 - RTS and tower defense (no glow, no additive blending): threshold 8, at most 0.1% of the pixels.
   On SwiftShader they are equal to the bit; the margin is for another GPU's rounding.
@@ -1324,9 +1892,9 @@ Plain, Canvas2D is faster here (its plain scenes need no GL fill), and PixiJS's 
 dominated by SwiftShader's fill and the load (T13b-7's quieter run had them at 8-15 ms p50).
 PixiJS's draw call alone, the part a GPU does not take over, is inside the budget in every case
 at p50. Whether PixiJS holds the bar on real hardware is an estimate until someone measures it
-on a machine with a GPU (item 419).
+on a machine with a GPU (item 485).
 
-**Defaults chosen** (item 419): PixiJS is the default 2D backend of the RTS skirmish and the
+**Defaults chosen** (item 485): PixiJS is the default 2D backend of the RTS skirmish and the
 tower defense, the two maps the bar is about, falling back to Canvas2D where WebGL does not start
 (and `?backend=canvas2d`); every other 2D page stays Canvas2D with PixiJS opt-in
 (`?backend=pixi`); Node tests, `screenshot` and `sheet` default to Canvas2D. The roadmap's "only
@@ -1335,35 +1903,36 @@ numbers and T13b-7's estimate for a GPU.
 
 **Deviations.**
 
-- **The bar is not shown to be met** on any machine yet (software GL only, above; item 419).
+- **The bar is not shown to be met** on any machine yet (software GL only, above; item 485).
 - **Hopper's Way (`games/samples/platformer`) is not wired to PixiJS:** another build track owns
   that game during 0.16 part B, so its page has no `pixi` display (the old Hopper's Way, now
   `games/platformer-classic`, is wired). Wiring it is the same few lines as the other pages
-  (item 420). Its part B `themes` are drawn by the shared core walk, so they should draw on
+  (item 486). Its part B `themes` are drawn by the shared core walk, so they should draw on
   PixiJS too, but that is not tested.
 - **Glow is not a PixiJS filter**, as the roadmap's scope line says, but a pre-made halo sprite
   (filters cost a pass each and were the slowest path on software GL); it is the one visible
-  difference from Canvas2D (item 421).
-- **`sheet` grammar extended** (relative run paths) for the parity sheet (item 422).
+  difference from Canvas2D (item 487).
+- **`sheet` grammar extended** (relative run paths) for the parity sheet (item 488).
 
-**Owner questions** (numbered after the last number in the shared FEEDBACK-LOG.md on
-engine/build-0.15, 418, as part B used 379-418; this track does not edit that log, so the
-orchestrator copies 419-422 there and moves its next unused number to 423 at merge time):
+**Owner questions** (numbered 419-422 on the track, after the last number it saw in the shared
+FEEDBACK-LOG.md, 418; part C had used 419-424 on `engine/build-0.15` meanwhile, so the merge in
+Engine 0.16 part D, D1 renumbered them 485-488 and the track's build decisions (under their own
+labels on the track) 468-484, all copied into FEEDBACK-LOG.md):
 
-- **419.** PixiJS is the default 2D backend for the RTS skirmish and the tower defense (Canvas2D
+- **485.** PixiJS is the default 2D backend for the RTS skirmish and the tower defense (Canvas2D
   the fallback without WebGL), although on this container's software GL it does not hold 16.7 ms
   p95 with every feature on; its draw call does, and T13b-7 estimates a GPU makes the rest
   small. Keep it the default until someone measures frame times on a machine with a GPU
   (`pnpm bench:features`), or go back to Canvas2D by default until then?
-- **420.** Hopper's Way (`games/samples/platformer`) is not wired to PixiJS (another track owns it
+- **486.** Hopper's Way (`games/samples/platformer`) is not wired to PixiJS (another track owns it
   in part B); every other 2D page is, opt-in by `?backend=pixi`. Wire Hopper's Way after part B,
   and should any other page default to PixiJS?
-- **421.** The parity tolerance: threshold 8 and 0.1% of the pixels for pictures without glow or
+- **487.** The parity tolerance: threshold 8 and 0.1% of the pixels for pictures without glow or
   additive blending (RTS, tower defense: equal to the bit here), threshold 32 and 1% where glow
   shows (the fx lab), glow drawn as a halo sprite in PixiJS against `shadowBlur` on the canvas
   (the coins' and the door's halo differ a little, as the parity sheet shows), the iris not
   compared. OK?
-- **422.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
+- **488.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
   positional run file's folder (`../../samples/rts-skirmish/runs/battle/141`), added so the
   parity sheet tiles three games. OK?
 

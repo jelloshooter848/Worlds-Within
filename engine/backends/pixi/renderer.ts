@@ -11,7 +11,7 @@ import {
   Texture,
   TextureSource,
 } from 'pixi.js';
-import type { BlendMode, Renderer, Rotation } from '@engine/core/gfx/renderer';
+import type { BlendMode, RadialFill, Renderer, Rotation } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 
@@ -132,6 +132,72 @@ export function glowHalo(): Texture {
   });
   haloTexture = new Texture({ source });
   return haloTexture;
+}
+
+/** Side of a radial gradient's texture, in texels (stretched over the circle's bounds). */
+export const GRADIENT_SIZE = 64;
+
+/** How finely a gradient's stops are rounded for its cached texture (1/256: a byte of alpha). */
+const GRADIENT_STEP = 256;
+
+/** The most gradient textures kept; the oldest is let go past it. */
+const GRADIENT_CACHE = 64;
+
+const gradientTextures = new Map<string, Texture>();
+
+/**
+ * A radial gradient's texture (Engine 0.16 part D, D1: the skin's lighting on PixiJS): white, its
+ * alpha the stops' (each clamped to 0-1 and divided by the largest, so lights of one shape at
+ * different strengths share a texture and the strength is the sprite's alpha) from the centre to
+ * the edge of the inscribed circle, the last stop's outside it. Made from bytes, so it needs no
+ * canvas; cached by the rounded stops.
+ */
+export function radialTexture(stops: readonly { at: number; alpha: number }[]): Texture {
+  const peak = Math.max(1e-6, ...stops.map((s) => Math.min(1, Math.max(0, s.alpha))));
+  const norm = stops.map((s) => ({
+    at: Math.min(1, Math.max(0, s.at)),
+    alpha: Math.round((Math.min(1, Math.max(0, s.alpha)) / peak) * GRADIENT_STEP) / GRADIENT_STEP,
+  }));
+  const key = norm.map((s) => `${s.at.toFixed(4)}:${s.alpha}`).join(',');
+  const hit = gradientTextures.get(key);
+  if (hit) return hit;
+  const alphaAt = (d: number): number => {
+    if (norm.length === 0) return 0;
+    if (d <= norm[0]!.at) return norm[0]!.alpha;
+    for (let i = 1; i < norm.length; i++) {
+      const a = norm[i - 1]!;
+      const b = norm[i]!;
+      if (d <= b.at)
+        return b.at === a.at ? b.alpha : a.alpha + ((d - a.at) / (b.at - a.at)) * (b.alpha - a.alpha);
+    }
+    return norm[norm.length - 1]!.alpha;
+  };
+  const n = GRADIENT_SIZE;
+  const px = new Uint8Array(n * n * 4);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const u = ((x + 0.5) / n) * 2 - 1;
+      const v = ((y + 0.5) / n) * 2 - 1;
+      const a = Math.round(alphaAt(Math.hypot(u, v)) * 255);
+      const i = (y * n + x) * 4;
+      px[i] = px[i + 1] = px[i + 2] = px[i + 3] = a;
+    }
+  }
+  const source = new BufferImageSource({
+    resource: px,
+    width: n,
+    height: n,
+    alphaMode: 'premultiplied-alpha',
+    scaleMode: 'linear',
+  });
+  const texture = new Texture({ source });
+  if (gradientTextures.size >= GRADIENT_CACHE) {
+    const oldest = gradientTextures.keys().next().value as string;
+    gradientTextures.get(oldest)?.destroy(true);
+    gradientTextures.delete(oldest);
+  }
+  gradientTextures.set(key, texture);
+  return texture;
 }
 
 interface Tint {
@@ -434,6 +500,46 @@ export class PixiRenderer implements Renderer {
     } finally {
       this.glowDepth = depth;
     }
+  }
+
+  /**
+   * A radial gradient (Engine 0.16 part D, D1; what a skin's lighting draws): one sprite of
+   * {@link radialTexture} over the circle's bounds, tinted `g.color`, its alpha the stops' peak,
+   * blended `add` (brightens), `erase` (takes alpha away: a hole in a light map) or normally.
+   * Clipped to `g.box` when the box is smaller than the circle's bounds and does not cover the
+   * picture; outside the circle it draws nothing (a vignette's circle reaches the picture's
+   * corners).
+   */
+  gradient(g: RadialFill): void {
+    if (!(g.radius > 0)) return;
+    const peak = Math.max(0, ...g.stops.map((s) => Math.min(1, Math.max(0, s.alpha))));
+    if (peak <= 0 && g.mode !== 'normal') return;
+    const x = g.x - g.radius;
+    const y = g.y - g.radius;
+    const d = g.radius * 2;
+    if (this.culled(x, y, d, d)) return;
+    const put = (): void => {
+      const s = this.sprites.take();
+      s.texture = radialTexture(g.stops);
+      s.anchor.set(0, 0);
+      s.rotation = 0;
+      s.position.set(x, y);
+      s.scale.set(d / GRADIENT_SIZE, d / GRADIENT_SIZE);
+      tintSprite(s, this.tint(g.color).rgb);
+      s.alpha = peak * this.opacity;
+      s.blendMode = g.mode === 'erase' ? 'erase' : g.mode === 'add' ? 'add' : this.mode;
+      this.parent.addChild(s);
+    };
+    const b = g.box;
+    const inside = b !== undefined && (b.x > x || b.y > y || b.x + b.w < x + d || b.y + b.h < y + d);
+    const coversPicture =
+      b !== undefined &&
+      b.x <= 0 &&
+      b.y <= 0 &&
+      b.x + b.w >= this.size.width &&
+      b.y + b.h >= this.size.height;
+    if (b !== undefined && inside && !coversPicture) this.clip(b.x, b.y, b.w, b.h, put);
+    else put();
   }
 
   transform(

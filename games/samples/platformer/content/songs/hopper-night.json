@@ -1,0 +1,8 @@
+{
+  "id": "hopper-night",
+  "bpm": 150,
+  "loop": true,
+  "pulse1": "v7 @0 q8 x1 L o4b4 o5e4 o5g2 | o5e4 o5g4 o5e2 | o5a4. o5g8 o5e2 | o5f+4 o5d+4 o4b2 | o5g4 o5f+8 o5e8 o4b2 | o5c4 o5e4 o5g2 | o5f+4 o5a4 o6d4 o5a4 | o5b2 o5f+2 | o5e4 o5g4 o6c4 o5g4 | o5f+4 o5a4 o6d2 | o6d4 o5b4 o5f+4 o5d4 | o5e2. r4 | o6c4 o5b8 o5a8 o5e2 | o5d+4 o5f+4 o5b2 | o5b4 o5g4 o5e2 | o5e1",
+  "pulse2": "v3 @1 q8 L o4g2 o4b2 | o4e2 o4g2 | o4c2 o4e2 | o4d+2 o4f+2 | o4g2 o4b2 | o4e2 o4g2 | o4f+2 o4a2 | o4d+2 o4f+2 | o4e2 o4g2 | o4f+2 o4a2 | o4d2 o4f+2 | o4g2 o4b2 | o4c2 o4e2 | o4d+2 o4f+2 | o4g2 o4b2 | o4g2 o4b2",
+  "triangle": "q8 L o2e2 o2b4 o3e4 | o3c2 o3g4 o4c4 | o2a2 o3e4 o3a4 | o2b2 o3f+4 o3b4 | o2e2 o2b4 o3e4 | o3c2 o3g4 o4c4 | o2d2 o2a4 o3d4 | o2b2 o3f+4 o3b4 | o3c2 o3g4 o4c4 | o2d2 o2a4 o3d4 | o2b2 o3f+4 o3b4 | o2e2 o2b4 o3e4 | o2a2 o3e4 o3a4 | o2b2 o3f+4 o3b4 | o2e2 o2b4 o3e4 | o2e2 o2b4 o3e4"
+}

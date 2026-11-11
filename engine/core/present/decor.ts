@@ -502,17 +502,18 @@ export const NO_TILE_VARIATION: TileVariation = { turns: 0, height: 1, tint: 1 }
 /**
  * A model tile cell's variation (`vary`, Engine 0.16 F3), drawn from
  * `fxRng(seed, 0, "tile:<map>:<layer>:<col>,<row>")` in a fixed order (turn, height, tint); a
- * field left out draws nothing. Pure.
+ * field left out draws nothing; a 2D `vary` (`{ frames }`) gives none. Pure.
  */
 export function tileVariation(
-  vary: DeepReadonly<SkinTileVary> | undefined,
+  vary: DeepReadonly<SkinTileVary> | { readonly frames: readonly string[] } | undefined,
   seed: number,
   map: string,
   layer: string,
   col: number,
   row: number,
 ): TileVariation {
-  if (vary === undefined) return NO_TILE_VARIATION;
+  // A 2D tile's `vary` (`{ frames, ... }`, Engine 0.16 part C T3) picks frames, not a variation.
+  if (vary === undefined || 'frames' in vary) return NO_TILE_VARIATION;
   const rng = fxRng(seed, 0, `tile:${map}:${layer}:${col},${row}`);
   const turns = vary.turn === true ? rng.int(4) : 0;
   const height = vary.height ? 1 + (rng.float() * 2 - 1) * vary.height : 1;

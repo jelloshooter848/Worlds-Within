@@ -2,15 +2,18 @@ import type { SheetLookup } from '../assets/sheet-lookup';
 import {
   CameraFx,
   layoutParallax,
+  lightStops,
   REST_STATE,
+  SkinLighting,
   SkinParticles,
   TweenSet,
   type CameraFxSettings,
   type CameraFxState,
+  type LightingLayout,
   type ParticleView,
   type TweenState,
 } from '../fx';
-import { blended, glowing, transformed, translucent, type Renderer } from '../gfx/renderer';
+import { blended, glowing, radialFilled, transformed, translucent, type Renderer } from '../gfx/renderer';
 import type { ScreenSize } from '../gfx/screen';
 import { anchorOffset, type SpriteSheet } from '../gfx/spritesheet';
 import {
@@ -42,7 +45,7 @@ import {
   type SoundCue,
 } from '../present';
 import { layoutLabels, paintUi, SkinHud, type FontLookup, type UiDraw } from '../ui';
-import type { SurfaceFactory } from './surface';
+import type { MapSurface, SurfaceFactory } from './surface';
 import { RendererUiPainter, type GlyphTint } from './ui-painter';
 
 type Skin = DeepReadonly<SkinFile>;
@@ -109,6 +112,13 @@ export interface SkinnedPresenterOptions {
    * where the browser has one).
    */
   mapSurface?: SurfaceFactory;
+  /**
+   * Makes the picture-sized surface the skin's `lighting` darkness is drawn on (the light map,
+   * Engine 0.16 part C T4), or null for none: the darkness is then a flat translucent box and the
+   * lights only glow. Default none; Canvas2D's `SkinnedCanvasPresenter` passes an offscreen canvas
+   * where the browser has one (null in Node).
+   */
+  lightSurface?: SurfaceFactory;
 }
 
 /** Ticks an effect lasts when the skin gives none. */
@@ -191,6 +201,12 @@ export class SkinnedPresenter implements Presenter {
   /** The skin's HUD through the UI kit (Engine 0.16 T6), used when it has a UI item. */
   private readonly hud: SkinHud;
   private readonly uiPainter: RendererUiPainter;
+  /** Whether the HUD is drawn (`showHud`; the shell hides it under the title). */
+  private hudShown = true;
+  /** The skin's `lighting` (Engine 0.16 part C T4): darkness, lights, flicker, vignette. */
+  private readonly lighting: SkinLighting;
+  /** The light map's surface and its size (made on the first lit frame, again on a resize). */
+  private lightMap: { surface: MapSurface | null; w: number; h: number } | null = null;
 
   constructor(
     target: Renderer,
@@ -214,6 +230,7 @@ export class SkinnedPresenter implements Presenter {
       ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
       ...(opts.shakeScale !== undefined && { shakeScale: opts.shakeScale }),
     };
+    this.lighting = new SkinLighting(skin, opts.seed !== undefined ? { seed: opts.seed } : {});
     this.hud = new SkinHud(skin, {
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.font !== undefined && { font: opts.font }),
@@ -236,6 +253,14 @@ export class SkinnedPresenter implements Presenter {
     this.settings = { ...this.settings, ...settings };
   }
 
+  /**
+   * Whether the skin's HUD is drawn from the next frame (Engine 0.16 part C T1: the shell hides it
+   * while the title, or a screen opened from it, shows over the waiting game).
+   */
+  showHud(shown: boolean): void {
+    this.hudShown = shown;
+  }
+
   /** How many particles are alive now (after the last `present`; Engine 0.16 T13). */
   get particleCount(): number {
     return this.particles.system.count;
@@ -256,7 +281,7 @@ export class SkinnedPresenter implements Presenter {
     this.fxClock++;
     this.restartOnNewLevel(frame);
     this.takeEvents(frame);
-    this.particles.update(frame.frame, frame.entities);
+    this.particles.update(frame.frame, frame.entities, this.shownMap(frame));
     this.updateTweens(frame);
     this.updateMap(frame);
     this.cameraFx.update(this.fxClock);
@@ -273,12 +298,15 @@ export class SkinnedPresenter implements Presenter {
     r.clear(this.opts.background ?? skinBackground(look));
     this.drawParallax(look, view, size);
     this.drawMap(view);
+    this.drawLightProps(view, frame.frame);
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
     this.drawParticles(view);
+    // The light map darkens the world; the world labels go over it, readable in the dark.
+    this.drawLighting(frame, view, size);
     this.drawLabels(frame, view, size);
     this.drawEffects(frame.frame, size);
     for (const f of fx.flashes) translucent(r, f.alpha, () => r.rect(0, 0, size.width, size.height, f.color));
-    this.drawHud(frame);
+    if (this.hudShown) this.drawHud(frame);
   }
 
   // ---- Events ----
@@ -293,6 +321,7 @@ export class SkinnedPresenter implements Presenter {
     // The frame's events, then the skin's frame events (a footstep on a run cycle's frame),
     // which run through the same `events` entries but never go into the frame.
     for (const ev of [...frame.events, ...this.frameEvents.next(this.skin, frame.entities)]) {
+      this.lighting.event(ev, frame.entities, frame.frame);
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound, skinSoundCue(entry, frame.frame));
@@ -428,6 +457,121 @@ export class SkinnedPresenter implements Presenter {
     );
   }
 
+  // ---- Lighting (Engine 0.16 part C T4) ----
+
+  /** The full map the presenter shows this frame, or null. */
+  private shownMap(frame: Frame): DeepReadonly<PresentMap> | null {
+    if (frame.map === undefined) return null;
+    if (isFullMap(frame.map)) return frame.map;
+    const shown = this.shown?.map;
+    return shown !== undefined && shown.id === frame.map.id && shown.version === frame.map.version
+      ? shown
+      : null;
+  }
+
+  /** The placed lights' sprites (a wall torch), in world space, over the map and under the entities. */
+  private drawLightProps(view: View, tick: number): void {
+    if (this.lighting.spec?.maps === undefined || !this.mapVisible) return;
+    const r = this.r;
+    const map = this.shown?.map ?? null;
+    for (const d of this.lighting.props(map, tick)) {
+      const id = d.sheet ?? this.skin.sheets?.sheet;
+      const sheet = id === undefined ? null : this.sheet(id, this.skin.sheets?.palette);
+      if (!sheet) continue;
+      const x = Math.round(d.x * view.zoom) - view.x;
+      const y = Math.round(d.y * view.zoom) - view.y;
+      if (view.zoom === 1) r.sprite(sheet, d.frame, x, y);
+      else r.sprite(sheet, d.frame, x, y, false, false, 0, view.zoom);
+    }
+  }
+
+  /**
+   * The skin's lighting over the picture (after the entities and particles, before effects and
+   * the HUD): the darkness drawn on the light map with each light erased out of it as a radial
+   * gradient (`lightStops`: smooth or in `bands`), the map laid over the picture at the darkness
+   * level, then each light's colour added (`add`), then the vignette.
+   */
+  private drawLighting(frame: Frame, view: View, size: ScreenSize): void {
+    if (this.lighting.spec === undefined) return;
+    const map = this.mapVisible ? (this.shown?.map ?? null) : null;
+    const layout = this.lighting.layout({
+      frame: frame.frame,
+      entities: frame.entities,
+      map,
+      view,
+      size,
+      ...(this.settings.reduceFlashing !== undefined && { reduceFlashing: this.settings.reduceFlashing }),
+    });
+    if (layout === null) return;
+    const r = this.r;
+    if (layout.darkness !== null) this.drawDarkness(layout, size);
+    for (const l of layout.lights) {
+      if (l.glow <= 0) continue;
+      radialFilled(r, {
+        x: l.x,
+        y: l.y,
+        radius: l.radius,
+        color: l.color,
+        stops: lightStops(l.glow, layout.bands),
+        mode: 'add',
+      });
+    }
+    const v = layout.vignette;
+    if (v !== null) {
+      const cx = size.width / 2;
+      const cy = size.height / 2;
+      radialFilled(r, {
+        x: cx,
+        y: cy,
+        radius: Math.hypot(cx, cy),
+        color: v.color,
+        stops: [
+          { at: 0, alpha: 0 },
+          { at: v.inner, alpha: 0 },
+          { at: 1, alpha: v.strength },
+        ],
+        mode: 'normal',
+        box: { x: 0, y: 0, w: size.width, h: size.height },
+      });
+    }
+  }
+
+  /** The darkness with the lights cut out of it, on the light map (or a flat box without one). */
+  private drawDarkness(layout: LightingLayout, size: ScreenSize): void {
+    const r = this.r;
+    const dark = layout.darkness!;
+    let lm = this.lightMap;
+    if (lm === null || lm.w !== size.width || lm.h !== size.height) {
+      const surface = this.opts.lightSurface?.(size.width, size.height) ?? null;
+      lm = { surface, w: size.width, h: size.height };
+      this.lightMap = lm;
+    }
+    const surface = lm.surface;
+    if (surface === null) {
+      translucent(r, dark.level, () => r.rect(0, 0, size.width, size.height, dark.color));
+      return;
+    }
+    const s = surface.renderer;
+    s.clear(dark.color);
+    for (const l of layout.lights) {
+      if (l.intensity <= 0) continue;
+      radialFilled(s, {
+        x: l.x,
+        y: l.y,
+        radius: l.radius,
+        color: '#000000',
+        stops: lightStops(l.intensity, layout.bands),
+        mode: 'erase',
+      });
+    }
+    const sheet: SpriteSheet = {
+      id: 'light-map',
+      image: surface.image,
+      frames: new Map([['light', { x: 0, y: 0, w: size.width, h: size.height }]]),
+    };
+    translucent(r, dark.level, () => r.sprite(sheet, 'light', 0, 0));
+  }
+
   // ---- Camera ----
 
   /**
@@ -525,7 +669,8 @@ export class SkinnedPresenter implements Presenter {
   /**
    * Draws the map's tiles and then its layers; a tile the skin does not list is left empty. Each
    * tile spans from its own corner to the next one's (both rounded), so tiles meet without gaps
-   * at any zoom.
+   * at any zoom. A layer's tile whose frame has an `anchor` is placed by it on its cell (a
+   * decoration prop larger than a tile; Engine 0.16 part C T1).
    */
   private drawTiles(r: Renderer, map: DeepReadonly<PresentMap>, view: View): void {
     const tiles = this.look(map.id).tiles ?? {};
@@ -533,7 +678,8 @@ export class SkinnedPresenter implements Presenter {
     const ts = map.tileSize;
     const { zoom } = view;
     const at = (n: number) => Math.round(n * ts * zoom);
-    for (const grid of [map.tiles, ...(map.layers ?? []).map((l) => l.tiles)]) {
+    const grids = [map.tiles, ...(map.layers ?? []).map((l) => l.tiles)];
+    for (const [g, grid] of grids.entries()) {
       for (let row = 0; row < grid.length; row++) {
         const line = grid[row]!;
         for (let col = 0; col < line.length; col++) {
@@ -546,9 +692,16 @@ export class SkinnedPresenter implements Presenter {
           const sheet = sheetId === undefined ? null : this.sheet(sheetId, defaults?.palette);
           // A `join` entry (Engine 0.16 part B) picks its frame by the neighbours it joins.
           const frame = resolveTileFrame(entry, key, grid, col, row);
-          if (frame !== undefined && sheet?.frames.has(frame)) {
-            if (zoom === 1) r.sprite(sheet, frame, x, y);
-            else r.sprite(sheet, frame, x, y, false, false, 0, zoom);
+          const rect = frame === undefined ? undefined : sheet?.frames.get(frame);
+          if (frame !== undefined && sheet && rect) {
+            // On a layer (decoration, Engine 0.16 part C T1) a frame's anchor places it on its cell,
+            // so a prop taller or wider than a tile stands on the cell's bottom centre.
+            const a =
+              g > 0 && rect.anchor !== undefined ? anchorOffset(rect.anchor, rect, { w: ts, h: ts }) : null;
+            const ax = a === null ? x : Math.round((col * ts + a.x) * zoom) - view.x;
+            const ay = a === null ? y : Math.round((row * ts + a.y) * zoom) - view.y;
+            if (zoom === 1) r.sprite(sheet, frame, ax, ay);
+            else r.sprite(sheet, frame, ax, ay, false, false, 0, zoom);
           } else {
             const color = entry.fallbackColor ?? entry.color ?? defaults?.fallbackColor;
             if (color !== undefined) r.rect(x, y, at(col + 1) - view.x - x, at(row + 1) - view.y - y, color);

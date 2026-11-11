@@ -173,8 +173,10 @@ hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be
   or `no_canvas2d_skin` when the view or skin is missing). Engine 0.16 part B: `--scale N` (1-16) writes the picture N times as large,
   each pixel an exact N x N block (a 320x180 game at `--scale 6` is exactly 1920x1080), and
   `--overlay <o>` draws one of `sheet`'s overlays over it (`title`, `pause`, `settings`,
-  `controls`, `levels`, `clear`, `end`, `ui=<file>[.<widget>]`, a transition), through the same
-  job; the result adds `scale` and `overlay`. Example: `pnpm -s cli screenshot
+  `controls`, `levels`, `clear`, `end`, `ui=<file>[.<widget>]`, from Engine 0.16 part C
+  `dialog:<id>` (a `menus.dialogs` box, its first page typed out), a transition), through the same
+  job; the result adds `scale` and `overlay`. Under `title` and `levels` the game picture is drawn
+  without its HUD, as the shell draws it (Engine 0.16 part C T1, `ViewGame.showHud`). Example: `pnpm -s cli screenshot
 games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear --out x.png --json`.
   Needs `pnpm exec playwright install --with-deps chromium`. Details: `engine/tools/CLAUDE.md`
   (Screenshots).
@@ -184,7 +186,8 @@ games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear --out x.
   run file (or of another run file in its folder, `level-3/120`, or relative to it, `../../samples/rts-skirmish/runs/battle/141`), drawn as `screenshot` draws it,
   with an optional overlay drawn by the engine's own code (`title`, `pause`, `settings`,
   `controls` from `game.json`'s `menus`, and from Engine 0.16 part B `levels`, `clear` and `end`,
-  the stat screens reading the tick's frame status; `ui=<file>[.<widget>]`; a transition slot or
+  the stat screens reading the tick's frame status (`end` with the heading of the end trigger
+  that holds there); `dialog:<id>` (Engine 0.16 part C); `ui=<file>[.<widget>]`; a transition slot or
   kind with `*<age>`, `respawn` among the slots) and an optional backend of its own (`@3d`, or `@pixi` for PixiJS: `120@canvas2d,120@pixi` puts
   the two 2D backends side by side, labelled `[2D]` and `[PixiJS]`). One Chromium per backend plays each run
   file once and checks its state hashes against the headless run's; the tiles are tiled with

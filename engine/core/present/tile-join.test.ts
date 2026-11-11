@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { checkSkinRefs, skinSchema } from './skin';
-import { resolveTileFrame, tileJoinKeyProblem, tileJoinKeys, type TileJoin } from './tile-join';
+import {
+  resolveTileFrame,
+  tileJoinKeyProblem,
+  tileJoinKeys,
+  variedTileFrame,
+  type TileJoin,
+} from './tile-join';
 
 // Neighbour-based tile frames (Engine 0.16 part B, T6): a tile entry's `join` picks its frame by
 // which neighbours it joins, so one map character draws grass tops, edges and corners.
@@ -114,9 +120,30 @@ describe('join in skins', () => {
     });
   });
 
-  it('is a 2D field', () => {
-    const three = skin({ frames: { top: 'top' } }, 'three');
-    expect(three.error?.issues.some((i) => i.path.join('.') === 'tiles.#.join')).toBe(true);
+  it('in a 3D skin picks another tile entry by key (Engine 0.16 part B, T10)', () => {
+    const three = (frames: Record<string, string>) =>
+      skinSchema.safeParse({
+        backend: 'three',
+        kinds: {},
+        tiles: {
+          '#': { mesh: 'box', color: '#000', join: { frames } },
+          top: { mesh: 'box', color: '#0f0' },
+        },
+        themes: {
+          night: { tiles: { '#': { mesh: 'box', color: '#000', join: { frames: { left: 'nope' } } } } },
+        },
+      });
+    const bad = three({ top: 'top', left: 'side' });
+    expect(bad.success).toBe(false);
+    expect(
+      bad.error?.issues.map((i) => [i.path.join('.'), (i as { params?: { code?: string } }).params?.code]),
+    ).toEqual([
+      ['tiles.#.join.frames.left', 'missing_ref'],
+      ['themes.night.tiles.#.join.frames.left', 'missing_ref'],
+    ]);
+    expect(three({ top: 'top' }).error?.issues.map((i) => i.path.join('.'))).toEqual([
+      'themes.night.tiles.#.join.frames.left',
+    ]);
   });
 
   it('checks the join frames against the sheet', () => {
@@ -128,6 +155,75 @@ describe('join in skins', () => {
         code: 'missing_frame',
         message: 'sprite "ground" has no frame "side"',
       }),
+    ]);
+  });
+});
+
+describe('floor variety (`vary`, Engine 0.16 part C T3)', () => {
+  const vary = { frames: ['a', 'b', 'c'], weights: [6, 1, 1] };
+  const grid = ['........', '........', '........', '........'];
+
+  it('picks a frame per cell: the same cell always the same, by the weights', () => {
+    const picked = grid.map((line, row) =>
+      [...line].map((_, col) => resolveTileFrame({ frame: 'a', vary }, '.', grid, col, row)),
+    );
+    const again = grid.map((line, row) => [...line].map((_, col) => variedTileFrame(vary, col, row)));
+    expect(picked).toEqual(again);
+    const all = picked.flat();
+    expect(new Set(all)).toEqual(new Set(['a', 'b', 'c']));
+    expect(all.filter((f) => f === 'a').length).toBeGreaterThan(all.length / 2);
+    // Over a long run every frame shows near its share.
+    const many = Array.from({ length: 4000 }, (_, i) => variedTileFrame(vary, i % 64, i >> 6));
+    expect(many.filter((f) => f === 'a').length / 4000).toBeCloseTo(0.75, 1);
+  });
+
+  it('repeats every `period`, so a room keeps its look beside another in one map', () => {
+    const period = { ...vary, period: { cols: 16, rows: 11 } };
+    for (let col = 0; col < 16; col++)
+      for (let row = 0; row < 11; row++) {
+        expect(variedTileFrame(period, col + 16, row)).toBe(variedTileFrame(period, col, row));
+        expect(variedTileFrame(period, col, row + 11)).toBe(variedTileFrame(period, col, row));
+      }
+  });
+
+  it('gives way to a join key, and is checked in skins', () => {
+    const join = { frames: { top: 'edge' } };
+    expect(resolveTileFrame({ frame: 'a', join, vary }, '.', ['#', '.'], 0, 1)).toBe('edge');
+    expect(resolveTileFrame({ frame: 'a', join, vary }, '.', ['.', '.'], 0, 1)).toBe(
+      variedTileFrame(vary, 0, 1),
+    );
+    const bad = skinSchema.safeParse({
+      backend: 'canvas2d',
+      kinds: {},
+      tiles: {
+        '.': {
+          sheet: 'ground',
+          frame: 'fill',
+          fallbackColor: '#000',
+          vary: { frames: ['fill'], weights: [1, 2] },
+        },
+      },
+    });
+    expect(bad.error?.issues[0]).toMatchObject({
+      path: ['tiles', '.', 'vary', 'weights'],
+      params: { code: 'bad_weights' },
+    });
+    const three = skinSchema.safeParse({
+      backend: 'three',
+      kinds: {},
+      tiles: { '.': { mesh: 'box', color: '#000', vary: { frames: ['x'] } } },
+    });
+    expect(three.success).toBe(false);
+    const parsed = skinSchema.safeParse({
+      backend: 'canvas2d',
+      kinds: {},
+      tiles: {
+        '.': { sheet: 'ground', frame: 'fill', fallbackColor: '#000', vary: { frames: ['fill', 'crack'] } },
+      },
+    });
+    const sprites = [{ name: 'ground', value: { frames: { fill: [] } } }];
+    expect(checkSkinRefs('canvas2d', parsed.data!, (kind) => (kind === 'sprite' ? sprites : []))).toEqual([
+      expect.objectContaining({ path: ['tiles', '.', 'vary', 'frames', 1], code: 'missing_frame' }),
     ]);
   });
 });

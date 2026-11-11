@@ -1,0 +1,173 @@
+{
+  "run": "games/samples/dungeon/runs/boss-lost.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d29e6b40530102ce"
+    },
+    {
+      "tick": 60,
+      "hash": "733f85465c1a3fb6"
+    },
+    {
+      "tick": 120,
+      "hash": "b3b605bbfa6b53ec"
+    },
+    {
+      "tick": 180,
+      "hash": "8999a1c0e7ec299d"
+    },
+    {
+      "tick": 240,
+      "hash": "078096f4e7730cde"
+    },
+    {
+      "tick": 300,
+      "hash": "4bd6bded29c481e9"
+    },
+    {
+      "tick": 360,
+      "hash": "3c085af74962ed15"
+    },
+    {
+      "tick": 420,
+      "hash": "f82012893a767289"
+    },
+    {
+      "tick": 480,
+      "hash": "410ce9a09c8acb78"
+    },
+    {
+      "tick": 540,
+      "hash": "44d27f679efaabc6"
+    },
+    {
+      "tick": 600,
+      "hash": "728712a76b913a9d"
+    },
+    {
+      "tick": 660,
+      "hash": "5bf640a70edd2e82"
+    },
+    {
+      "tick": 720,
+      "hash": "e4f2e3ef6f5f2762"
+    },
+    {
+      "tick": 780,
+      "hash": "f217855b278df3c9"
+    },
+    {
+      "tick": 840,
+      "hash": "b93a88132ab36a11"
+    },
+    {
+      "tick": 900,
+      "hash": "c2a91cf26da84d49"
+    },
+    {
+      "tick": 960,
+      "hash": "d59ccca93e8f8fe7"
+    },
+    {
+      "tick": 1020,
+      "hash": "bb99acbbf9d2e0dc"
+    },
+    {
+      "tick": 1080,
+      "hash": "b4ff5e8436d350ab"
+    },
+    {
+      "tick": 1140,
+      "hash": "7a19c0409b7953f5"
+    },
+    {
+      "tick": 1200,
+      "hash": "62f6a06cc313edcc"
+    },
+    {
+      "tick": 1260,
+      "hash": "1d1beb7b53bbfcda"
+    },
+    {
+      "tick": 1320,
+      "hash": "1f2a4d4a9d89f605"
+    },
+    {
+      "tick": 1380,
+      "hash": "63829a8299c48805"
+    },
+    {
+      "tick": 1440,
+      "hash": "4612fa8abd100bfd"
+    },
+    {
+      "tick": 1500,
+      "hash": "c63173c9f448eb50"
+    },
+    {
+      "tick": 1560,
+      "hash": "8008a6c76f559e90"
+    },
+    {
+      "tick": 1620,
+      "hash": "414059dc802371ff"
+    },
+    {
+      "tick": 1680,
+      "hash": "697f356eb9d8804b"
+    },
+    {
+      "tick": 1740,
+      "hash": "c31850215bed0583"
+    },
+    {
+      "tick": 1800,
+      "hash": "703bd70b50f1db74"
+    },
+    {
+      "tick": 1860,
+      "hash": "f0b47e8b62999396"
+    },
+    {
+      "tick": 1920,
+      "hash": "fa9b2e93dad7111a"
+    },
+    {
+      "tick": 1980,
+      "hash": "3773de526e9992ce"
+    },
+    {
+      "tick": 2040,
+      "hash": "ae5e8d500ad237a4"
+    },
+    {
+      "tick": 2100,
+      "hash": "c0c677fd223f427e"
+    },
+    {
+      "tick": 2160,
+      "hash": "e90a189540d4a253"
+    },
+    {
+      "tick": 2220,
+      "hash": "a9e62ca7c0732c8f"
+    },
+    {
+      "tick": 2280,
+      "hash": "90aa1dddaee51f02"
+    },
+    {
+      "tick": 2340,
+      "hash": "21d7e44f46242812"
+    },
+    {
+      "tick": 2400,
+      "hash": "4cb7a5dc16d5986c"
+    },
+    {
+      "tick": 2429,
+      "hash": "8a10bbc4c27fe783"
+    }
+  ]
+}

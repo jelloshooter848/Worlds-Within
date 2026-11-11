@@ -1,0 +1,9 @@
+{
+  "id": "hopper-fanfare",
+  "bpm": 140,
+  "loop": false,
+  "pulse1": "v9 @2 o4g8 o5c8 o5e8 o5g8 o5e8 o5g8 o6c4 r8 o5a8 o6c8 o6d8 o6e2.",
+  "pulse2": "v6 @1 o4e8 o4g8 o5c8 o5e8 o5c8 o5e8 o5g4 r8 o5f8 o5a8 o5b8 o6c2.",
+  "triangle": " o3c4 o3g4 o3c4 o3c8 o3f4 o3g8 o3c2.",
+  "noise": "v5 l8 k h s h k h s4 r8 k k s s4."
+}

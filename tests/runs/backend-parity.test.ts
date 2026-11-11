@@ -21,7 +21,7 @@ import { createWorld } from '../../games/samples/dungeon/headless';
 import { contentPixelSheets } from '@engine/core/assets/content-sheets';
 import { DungeonPicture, dungeonLook } from '../../games/samples/dungeon/picture';
 import { createGame as createLab, type LabGame } from '../../games/platformer-lab/headless';
-import { threeScenePresenter } from '@engine/backends/three';
+import { ModelLibrary, threeScenePresenter } from '@engine/backends/three';
 import { labCanvasPicture, labLook, labPicture } from '../../games/platformer-lab/picture';
 import { labLook3d } from '../../games/platformer-lab/picture3d';
 import { loadRun, playView, viewMaker } from './view-play';
@@ -290,7 +290,12 @@ describe('backend parity: every other game with a view, through null, canvas2d a
     const skins3d = skinSet(content, 'three');
     if (skins3d.main === null) return;
     const background = make().background;
+    // The skins' glTF models (Engine 0.16 T11), loaded first as the page and the screenshot tool
+    // load them (from Engine 0.16 part B, T10: Hopper's Way's 2.5D view is built from them).
+    const models = new ModelLibrary(content.assets ?? {});
+    await models.preload([skins3d.main, ...Object.values(skins3d.rounds)]);
     const presenter3d = threeScenePresenter(skins3d.main, {
+      models,
       screen: content.manifest.screen,
       rounds: skins3d.rounds,
       // The skins' PNG sheets decoded as the page decodes them (Engine 0.16 part B: HUD icons).
@@ -342,7 +347,8 @@ describe('backend parity: every other game with a view, through null, canvas2d a
       if (quads.length > 0) hudShown.add(round ? id : 'main');
       for (const eid of scene.entityIds()) {
         const root = scene.entity(eid)!;
-        if (root.userData['fallback'] === true)
+        // A fallback box (a kind without a mesh) or a model that never loaded is a missing mesh.
+        if (root.userData['fallback'] === true || root.userData['loading'] === true)
           fallbacks.push(`frame ${frame.frame}: ${eid} (${String(root.userData['kind'])})`);
       }
     });

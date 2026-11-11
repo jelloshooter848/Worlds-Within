@@ -1,0 +1,8 @@
+{
+  "id": "hopper-autumn",
+  "bpm": 150,
+  "loop": true,
+  "pulse1": "v8 @1 q7 L o4a8 o5c8 o5e4 o5d8 o5c8 o4b4 | o4a4 o4f8 o4a8 o5c4 o4a4 | o4g8 o5c8 o5e8 o5g8 o5e4 o5c4 | o5d4. o4b8 o4g2 | o4a8 o5c8 o5e4 o5a4 o5g8 o5e8 | o5f4 o5e8 o5c8 o4a4 o5c4 | o4b8 o5d8 o5g8 o5d8 o4b4 o5d4 | o5e2 o4g+4 o4b4 | o5c8 o4a8 o4f8 o4a8 o5c4 o5f4 | o5d8 o4b8 o4g8 o4b8 o5d4 o5g4 | o5e4 o5a4 o5g8 o5e8 o5c4 | o4a4. o5c8 o5f4 o5e4 | o5d8 o5f8 o5a8 o5f8 o5d4 o4a4 | o4b8 o4g+8 o4e8 o4g+8 o4b4 o5e4 | o4a2 o5c4 o5e4 | o5a2 r2",
+  "pulse2": "v4 @2 q8 L o4c2 o4e2 | o4a2 o5c2 | o4e2 o4g2 | o4b2 o5d2 | o4c2 o4e2 | o4a2 o5c2 | o4b2 o5d2 | o4g+2 o4b2 | o4a2 o5c2 | o4b2 o5d2 | o4c2 o4e2 | o4a2 o5c2 | o4f2 o4a2 | o4g+2 o4b2 | o4c2 o4e2 | o4c2 o4e2",
+  "triangle": "q6 L o2a4. o2a8 o3e4 o4c4 | o2f4. o2f8 o3c4 o3a4 | o3c4. o3c8 o3g4 o3e4 | o2g4. o2g8 o3d4 o3b4 | o2a4. o2a8 o3e4 o4c4 | o2f4. o2f8 o3c4 o3a4 | o2g4. o2g8 o3d4 o3b4 | o2e4. o2e8 o2b4 o3g+4 | o2f4. o2f8 o3c4 o3a4 | o2g4. o2g8 o3d4 o3b4 | o2a4. o2a8 o3e4 o4c4 | o2f4. o2f8 o3c4 o3a4 | o3d4. o3d8 o3a4 o3f4 | o2e4. o2e8 o2b4 o3g+4 | o2a4. o2a8 o3e4 o4c4 | o2a4. o2a8 o3e4 o4c4"
+}

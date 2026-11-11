@@ -35,7 +35,8 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   effects) as two `Points` buffers, normal and additive, of at most `PARTICLE_POOL` each
   (`particles`, `particleViews()`). Camera effects (Engine 0.16 T4) as in 2D: trauma shake on x
   and y, zoom punches by distance, event flashes on the overlay (skipped with `reduceFlashing`),
-  `onHitPause`, `shakeScale`, `effectSettings`; from Engine 0.16 F2 a ground view (the skin's
+  `onHitPause`, `shakeScale`, `effectSettings`, `showHud(shown)` on `ThreePresenter` and the
+  display (Engine 0.16 part C T1: the HUD pass is skipped under the shell's title); from Engine 0.16 F2 a ground view (the skin's
   `camera3d.view: "ground"`, `pitch`, `yaw`): the map on the floor, entities standing on their
   box centres turned to their facing about the vertical, the camera from the core
   `groundProjection` that `RtsCamera` picks through (`groundProjection` read-out; labels at
@@ -53,6 +54,15 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   nine-slice piece, a `glyph` texture per font, character and colour; the `fonts` option on the
   scene, `ThreePresenter`, `threeDisplay` and `threeScenePresenter`); every HUD material is
   transparent, so `renderOrder` alone stacks them.
+- From Engine 0.16 part B (T10, Hopper's Way's 2.5D view) `ThreeScene` also plays a skin's
+  **tweens** (item 340: an event's `tween` and a kind's `spawnTween`, laid on the entity root's
+  position, scale, turn and opacity, a colour tween as the materials' emissive colour;
+  `tweenState(id, frame)`), draws **per-map looks** (`themes`: sky, parallax, tiles and, in 3D, a
+  theme's own `scene3d` lights and fog and its `scenery`; `look` and `hemisphere` follow the
+  shown map), lets a tile's **`join`** pick another tile entry (grass on top, dirt inside), builds
+  **`scenery`** rows of models along the map behind the blocks with a seeded jitter
+  (`sceneryObjects()`), and takes a tag look's own `model` and a model's `tint`, `stretch` and
+  `clipHold` (`ModelInstance.pose(clip, time, hold)`). Tested in `look.test.ts`.
 - `ThreePresenter`, `ThreePresenterOptions` (`presenter.ts`, browser only):
   `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing, sheets })`
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a

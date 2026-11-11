@@ -1,0 +1,49 @@
+{
+  "run": "games/samples/dungeon/runs/cross-the-chasm.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d29e6b40530102ce"
+    },
+    {
+      "tick": 40,
+      "hash": "2476ceb1d86e0026"
+    },
+    {
+      "tick": 80,
+      "hash": "06f8de4272a852ef"
+    },
+    {
+      "tick": 120,
+      "hash": "b3b605bbfa6b53ec"
+    },
+    {
+      "tick": 160,
+      "hash": "f0b8b227db141265"
+    },
+    {
+      "tick": 200,
+      "hash": "07da9a6f186bbeed"
+    },
+    {
+      "tick": 240,
+      "hash": "078096f4e7730cde"
+    },
+    {
+      "tick": 280,
+      "hash": "e2ff644b10a0ef6f"
+    },
+    {
+      "tick": 320,
+      "hash": "ef243ccd04b18b1c"
+    },
+    {
+      "tick": 360,
+      "hash": "3c085af74962ed15"
+    },
+    {
+      "tick": 400,
+      "hash": "04eaeafa90b96947"
+    }
+  ]
+}

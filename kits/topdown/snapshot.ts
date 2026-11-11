@@ -1,5 +1,6 @@
 import type { HeadlessGame, JsonObject, JsonValue } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
+import { TdBoss } from './boss';
 import type { TdEntity } from './entity';
 import { typeNameOf } from './type-names';
 import type { TopDownWorld } from './world';
@@ -12,10 +13,14 @@ import type { TopDownWorld } from './world';
  * - `frame`, `room` (the room on screen), `rng` (the RNG's state), `keys`, `found`, `visited`,
  *   `sliding` (the side of a room slide in progress, or null), `sealed`, `exited`;
  * - `hero.room`, `hero.x`, `hero.y` (room pixels), `hero.facing`, `hero.hp`, `hero.maxHp` (half
- *   hearts), `hero.attacking`, `hero.invuln`, `hero.dying`, `hero.dead`;
+ *   hearts), `hero.attacking`, `hero.invuln`, `hero.dying`, `hero.dead`, and (Engine 0.16 part C
+ *   T5) only once he owns the dash, `hero.dash` (`t` ticks left in a dash, `cooldown`, `guard`):
+ *   a world without the dash keeps every hash it had;
  * - `inventory.owned`, `inventory.current` (the item in the slot, or null), `inventory.ammo.<id>`;
  * - `entities` (the room's things, in update order): `{ kind, x, y, key, hp? }`, where `kind` is
  *   the enemy or pickup kind when it has one and the class name otherwise (`PushBlock`);
+ *   a boss's entry (Engine 0.16 part C T6) adds `boss`: `{ mode, phase, step, tick, invuln }`;
+ * - `flags`: the world flags set (a beaten boss's `flag`), only once there is one;
  * - `enemies`: how many living enemies are in the room;
  * - `events`: what happened on the last step (`TdEvent`s), when the snapshot comes from
  *   {@link topdownGame}.
@@ -41,9 +46,18 @@ export interface TdSnapshot extends JsonObject {
     invuln: number;
     dying: boolean;
     dead: boolean;
+    dash?: { t: number; cooldown: number; guard: number };
   };
   inventory: { owned: string[]; current: string | null; ammo: { [id: string]: number } };
-  entities: { kind: string; x: number; y: number; key: string | null; hp?: number }[];
+  entities: {
+    kind: string;
+    x: number;
+    y: number;
+    key: string | null;
+    hp?: number;
+    boss?: { mode: string; phase: number; step: number; tick: number; invuln: number };
+  }[];
+  flags?: string[];
   enemies: number;
   events: JsonObject[];
 }
@@ -69,7 +83,7 @@ export function snapshotWorld(world: TopDownWorld, events: readonly object[] = [
   const inv = world.inv;
   const ammo: { [id: string]: number } = {};
   for (const item of inv.withAmmo()) ammo[item.id] = inv.count(item.id);
-  return {
+  const snap: TdSnapshot = {
     frame: world.frame,
     room: world.room.id,
     rng: world.rng.state(),
@@ -96,11 +110,18 @@ export function snapshotWorld(world: TopDownWorld, events: readonly object[] = [
       const entry: TdSnapshot['entities'][number] = { kind: kindOf(e), x: e.x, y: e.y, key: e.key };
       const hp = (e as { hp?: unknown }).hp;
       if (typeof hp === 'number') entry.hp = hp;
+      if (e instanceof TdBoss)
+        entry.boss = { mode: e.mode, phase: e.phase, step: e.step, tick: e.tick, invuln: e.invuln };
       return entry;
     }),
     enemies: world.enemies().length,
     events: events.map(plainEvent),
   };
+  // New fields only when used (part B's rule): the dash's state once the hero owns it.
+  if (inv.has('dash') || hero.dashing)
+    snap.hero.dash = { t: hero.dashT, cooldown: hero.dashCd, guard: hero.dashGuard };
+  if (world.flags.size > 0) snap.flags = [...world.flags].sort();
+  return snap;
 }
 
 /**

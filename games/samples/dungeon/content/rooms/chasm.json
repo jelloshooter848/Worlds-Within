@@ -1,0 +1,6 @@
+{
+  "id": "chasm",
+  "at": [0, 2],
+  "chests": ["dash"],
+  "hint": "A chasm splits the hall. A chest waits on the near side; a heart lies beyond the drop."
+}

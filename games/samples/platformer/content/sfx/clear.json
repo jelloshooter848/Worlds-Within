@@ -1,0 +1,8 @@
+{
+  "id": "clear",
+  "bpm": 180,
+  "pulse": "v10 @2 l16 o5 c e g > c8 < g8 > c e g4.",
+  "pulse2": "v6 @1 l16 o4 e g > c e8 c8 e g > c4.",
+  "triangle": "l8 o3 c g c g c4.",
+  "noise": "v4 l8 k h s h k4."
+}

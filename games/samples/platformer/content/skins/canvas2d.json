@@ -680,6 +680,46 @@
           "h": 24
         }
       }
+    },
+    "props": {
+      "image": "assets/kenney-pixel-platformer/tiles-packed.png",
+      "frames": {
+        "sign": {
+          "x": 90,
+          "y": 72,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "fence": {
+          "x": 108,
+          "y": 90,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "sprout": {
+          "x": 72,
+          "y": 108,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "mushroom-tan": {
+          "x": 162,
+          "y": 108,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "pine": {
+          "x": 108,
+          "y": 108,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        }
+      }
     }
   },
   "kinds": {
@@ -1012,6 +1052,304 @@
           }
         }
       ]
+    },
+    "burrlock": {
+      "sheet": "burrlock",
+      "fallbackColor": "#ff00ff",
+      "flipFacing": true,
+      "offset": {
+        "x": -6,
+        "y": -8
+      },
+      "frames": {
+        "idle": {
+          "right": {
+            "frames": ["idle-0", "idle-1"],
+            "ticks": [24, 18]
+          }
+        },
+        "telegraph": {
+          "right": {
+            "frames": ["idle-0", "white-idle"],
+            "ticks": 4
+          }
+        },
+        "charge": {
+          "right": {
+            "frames": ["charge-0", "charge-1"],
+            "ticks": 4
+          }
+        },
+        "leap": {
+          "right": "leap"
+        },
+        "shoot": {
+          "right": "shoot"
+        },
+        "drop": {
+          "right": "drop"
+        },
+        "hurt": {
+          "right": {
+            "frames": ["white", "hurt"],
+            "ticks": 3
+          }
+        },
+        "defeated": {
+          "right": {
+            "frames": [
+              "white",
+              "hurt",
+              "white",
+              "hurt",
+              "white",
+              "hurt",
+              "white",
+              "hurt",
+              "white",
+              "hurt",
+              "white",
+              "hurt",
+              "white",
+              "hurt",
+              "white",
+              "hurt",
+              "crack-0",
+              "crack-1",
+              "upturned",
+              "upturned-1",
+              "upturned",
+              "upturned-1",
+              "upturned",
+              "upturned-1",
+              "upturned",
+              "upturned-1"
+            ],
+            "ticks": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 18, 18, 8, 8, 8, 8, 8, 8, 8, 8],
+            "loop": false,
+            "events": {
+              "0": "boss-pop",
+              "4": "boss-pop",
+              "8": "boss-pop",
+              "12": "boss-pop",
+              "16": "boss-crack",
+              "17": "boss-blast"
+            }
+          }
+        }
+      },
+      "byTag": [
+        {
+          "prefix": "phase:",
+          "min": 1,
+          "max": 9,
+          "palette": "burrlock-angry",
+          "frames": {
+            "idle": {
+              "right": {
+                "frames": ["idle-0", "idle-1"],
+                "ticks": [24, 18]
+              }
+            },
+            "telegraph": {
+              "right": {
+                "frames": ["tele-drop-0", "tele-drop-1"],
+                "ticks": 4
+              }
+            },
+            "charge": {
+              "right": {
+                "frames": ["charge-0", "charge-1"],
+                "ticks": 4
+              }
+            },
+            "leap": {
+              "right": "leap"
+            },
+            "shoot": {
+              "right": "shoot"
+            },
+            "drop": {
+              "right": "drop"
+            },
+            "hurt": {
+              "right": {
+                "frames": ["white", "hurt"],
+                "ticks": 3
+              }
+            },
+            "defeated": {
+              "right": {
+                "frames": [
+                  "white",
+                  "hurt",
+                  "white",
+                  "hurt",
+                  "white",
+                  "hurt",
+                  "white",
+                  "hurt",
+                  "white",
+                  "hurt",
+                  "white",
+                  "hurt",
+                  "white",
+                  "hurt",
+                  "white",
+                  "hurt",
+                  "crack-0",
+                  "crack-1",
+                  "upturned",
+                  "upturned-1",
+                  "upturned",
+                  "upturned-1",
+                  "upturned",
+                  "upturned-1",
+                  "upturned",
+                  "upturned-1"
+                ],
+                "ticks": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 18, 18, 8, 8, 8, 8, 8, 8, 8, 8],
+                "loop": false,
+                "events": {
+                  "0": "boss-pop",
+                  "4": "boss-pop",
+                  "8": "boss-pop",
+                  "12": "boss-pop",
+                  "16": "boss-crack",
+                  "17": "boss-blast"
+                }
+              }
+            }
+          }
+        },
+        {
+          "tag": "telegraph:shoot",
+          "frames": {
+            "telegraph": {
+              "right": {
+                "frames": ["tele-shoot-0", "tele-shoot-1"],
+                "ticks": 5
+              }
+            }
+          }
+        },
+        {
+          "tag": "telegraph:charge",
+          "frames": {
+            "telegraph": {
+              "right": {
+                "frames": ["tele-charge-0", "tele-charge-1"],
+                "ticks": 4
+              }
+            }
+          }
+        },
+        {
+          "tag": "telegraph:leap",
+          "frames": {
+            "telegraph": {
+              "right": {
+                "frames": ["tele-leap-0", "tele-leap-1"],
+                "ticks": 4
+              }
+            }
+          }
+        },
+        {
+          "tag": "telegraph:drop",
+          "frames": {
+            "telegraph": {
+              "right": {
+                "frames": ["tele-drop-0", "tele-drop-1"],
+                "ticks": 5
+              }
+            }
+          }
+        }
+      ]
+    },
+    "thorn": {
+      "sheet": "burrlock",
+      "fallbackColor": "#ff00ff",
+      "flipFacing": true,
+      "offset": {
+        "x": -1,
+        "y": -1
+      },
+      "emit": "thorn-trail",
+      "frames": {
+        "idle": {
+          "right": {
+            "frames": ["thorn-0", "thorn-1"],
+            "ticks": 3
+          }
+        },
+        "walk": {
+          "right": {
+            "frames": ["thorn-0", "thorn-1"],
+            "ticks": 3
+          }
+        },
+        "run": {
+          "right": {
+            "frames": ["thorn-0", "thorn-1"],
+            "ticks": 3
+          }
+        },
+        "fall": {
+          "right": {
+            "frames": ["thorn-0", "thorn-1"],
+            "ticks": 3
+          }
+        },
+        "stomped": {
+          "right": {
+            "frames": ["thorn-0", "thorn-1"],
+            "ticks": 3
+          }
+        },
+        "dead": {
+          "right": {
+            "frames": ["thorn-0", "thorn-1"],
+            "ticks": 3
+          }
+        }
+      }
+    },
+    "acorn": {
+      "sheet": "burrlock",
+      "fallbackColor": "#ff00ff",
+      "offset": {
+        "x": -1,
+        "y": 0
+      },
+      "emit": "burr-trail",
+      "frames": {
+        "idle": {
+          "frames": ["burr-0", "burr-1"],
+          "ticks": 4
+        },
+        "walk": {
+          "frames": ["burr-0", "burr-1"],
+          "ticks": 4
+        },
+        "run": {
+          "frames": ["burr-0", "burr-1"],
+          "ticks": 4
+        },
+        "fall": {
+          "frames": ["burr-0", "burr-1"],
+          "ticks": 4
+        },
+        "stomped": {
+          "frames": ["burr-0", "burr-1"],
+          "ticks": 4
+        },
+        "dead": {
+          "frames": ["burr-0", "burr-1"],
+          "ticks": 4
+        }
+      }
     }
   },
   "tiles": {
@@ -1079,11 +1417,103 @@
       "sheet": "spikes",
       "frame": "spikes",
       "fallbackColor": "#ff00ff"
+    },
+    "g": {
+      "sheet": "hopper-props",
+      "frame": "tuft",
+      "fallbackColor": "#ff00ff"
+    },
+    "G": {
+      "sheet": "hopper-props",
+      "frame": "tuft-tall",
+      "fallbackColor": "#ff00ff"
+    },
+    "f": {
+      "sheet": "hopper-props",
+      "frame": "flowers",
+      "fallbackColor": "#ff00ff"
+    },
+    "F": {
+      "sheet": "hopper-props",
+      "frame": "flowers-pink",
+      "fallbackColor": "#ff00ff"
+    },
+    "r": {
+      "sheet": "hopper-props",
+      "frame": "rock-small",
+      "fallbackColor": "#ff00ff"
+    },
+    "R": {
+      "sheet": "hopper-props",
+      "frame": "rock",
+      "fallbackColor": "#ff00ff"
+    },
+    "b": {
+      "sheet": "hopper-props",
+      "frame": "bush",
+      "fallbackColor": "#ff00ff"
+    },
+    "c": {
+      "sheet": "hopper-props",
+      "frame": "crystal",
+      "fallbackColor": "#ff00ff"
+    },
+    "s": {
+      "sheet": "props",
+      "frame": "sign",
+      "fallbackColor": "#ff00ff"
+    },
+    "n": {
+      "sheet": "props",
+      "frame": "fence",
+      "fallbackColor": "#ff00ff"
+    },
+    "M": {
+      "sheet": "props",
+      "frame": "mushroom-tan",
+      "fallbackColor": "#ff00ff"
+    },
+    "k": {
+      "sheet": "props",
+      "frame": "sprout",
+      "fallbackColor": "#ff00ff"
+    },
+    "p": {
+      "sheet": "props",
+      "frame": "pine",
+      "fallbackColor": "#ff00ff"
+    },
+    "T": {
+      "sheet": "hopper-props",
+      "frame": "tree",
+      "fallbackColor": "#ff00ff"
+    },
+    "1": {
+      "sheet": "hopper-props",
+      "frame": "stones",
+      "fallbackColor": "#ff00ff"
+    },
+    "2": {
+      "sheet": "hopper-props",
+      "frame": "fossil",
+      "fallbackColor": "#ff00ff"
+    },
+    "3": {
+      "sheet": "hopper-props",
+      "frame": "pebbles",
+      "fallbackColor": "#ff00ff"
+    },
+    "4": {
+      "sheet": "hopper-props",
+      "frame": "roots",
+      "fallbackColor": "#ff00ff"
     }
   },
   "events": {
-    "jump": {
-      "sound": "jump",
+    "jump:tier=0": {
+      "sound": "jump-short",
+      "pitch": [-1, 1],
+      "volume": [0.8, 1],
       "emit": "jump-dust",
       "tween": [
         {
@@ -1100,11 +1530,79 @@
           "frames": 9,
           "ease": "quadOut"
         }
-      ],
+      ]
+    },
+    "jump:tier=1": {
+      "sound": "jump",
       "pitch": [-1, 1],
-      "volume": [0.85, 1]
+      "volume": [0.85, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
+    },
+    "jump:tier=2": {
+      "sound": "jump-high",
+      "pitch": [-0.5, 0.5],
+      "volume": [0.9, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
+    },
+    "jump": {
+      "sound": "jump",
+      "pitch": [-1, 1],
+      "volume": [0.85, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
     },
     "land": {
+      "sound": "land",
+      "pitch": [-2, 1],
+      "volume": [0.6, 0.9],
+      "cooldown": 6,
       "emit": "land-dust",
       "tween": [
         {
@@ -1124,23 +1622,42 @@
       ]
     },
     "footstep": {
+      "sound": "step",
+      "pitch": [-3, 3],
+      "volume": [0.5, 0.9],
+      "cooldown": 4,
       "emit": "run-dust"
     },
     "skid-dust": {
+      "sound": "skid",
+      "pitch": [-1, 1],
+      "volume": [0.8, 1],
+      "cooldown": 10,
       "emit": "skid-dust"
     },
     "bump": {
+      "sound": "bump",
+      "pitch": [-1, 1],
+      "volume": [0.85, 1],
       "emit": "bump-bits",
       "shake": {
         "amount": 1.5,
         "ticks": 6
       }
     },
+    "block:content=life": {
+      "sound": "life",
+      "emit": "coin-burst"
+    },
     "block": {
+      "sound": "block",
+      "pitch": [-1, 1],
       "emit": "coin-burst"
     },
     "break": {
-      "sound": "stomp",
+      "sound": "break",
+      "pitch": [-2, 2],
+      "volume": [0.85, 1],
       "emit": "brick-bits",
       "shake": {
         "amount": 2,
@@ -1149,14 +1666,24 @@
     },
     "coin": {
       "sound": "coin",
-      "emit": ["coin-burst", "coin-sparkle"],
-      "pitch": [0, 2]
+      "pitch": [0, 1],
+      "volume": [0.85, 1],
+      "emit": ["coin-burst", "coin-sparkle"]
     },
     "spawn": {
+      "sound": "spawn",
       "emit": "respawn-ring"
     },
     "stomp": {
       "sound": "stomp",
+      "pitch": [-2, 2],
+      "volume": [0.9, 1],
+      "duck": {
+        "amount": 0.25,
+        "attack": 1,
+        "hold": 2,
+        "release": 12
+      },
       "emit": ["stomp-stars", "stomp-ring"],
       "shake": {
         "amount": 2.5,
@@ -1183,7 +1710,8 @@
       ]
     },
     "kick": {
-      "sound": "stomp",
+      "sound": "kick",
+      "pitch": [-1, 1],
       "emit": "stomp-ring",
       "shake": {
         "amount": 1.5,
@@ -1191,10 +1719,19 @@
       }
     },
     "defeat": {
+      "sound": "defeat",
+      "pitch": [-2, 2],
       "emit": "stomp-stars"
     },
     "hurt": {
       "sound": "hurt",
+      "pitch": [-1, 1],
+      "duck": {
+        "amount": 0.6,
+        "attack": 2,
+        "hold": 12,
+        "release": 40
+      },
       "emit": "hurt-sparks",
       "shake": {
         "amount": 3,
@@ -1219,7 +1756,13 @@
       }
     },
     "died": {
-      "sound": "fail",
+      "sound": "death",
+      "duck": {
+        "amount": 0.85,
+        "attack": 2,
+        "hold": 50,
+        "release": 60
+      },
       "shake": {
         "amount": 4,
         "ticks": 18
@@ -1237,9 +1780,12 @@
       "emit": "hurt-sparks"
     },
     "poof": {
+      "sound": "poof",
+      "volume": [0.7, 0.9],
       "emit": "dying-burst"
     },
     "respawn": {
+      "sound": "respawn",
       "emit": "respawn-ring",
       "tween": [
         {
@@ -1258,7 +1804,13 @@
       ]
     },
     "cleared": {
-      "sound": "pass",
+      "sound": "clear",
+      "duck": {
+        "amount": 1,
+        "attack": 2,
+        "hold": 110,
+        "release": 20
+      },
       "emit": "clear-confetti",
       "zoom": {
         "to": 1.25,
@@ -1269,9 +1821,226 @@
       }
     },
     "checkpoint": {
-      "sound": "coin",
+      "sound": "checkpoint",
       "emit": "flag-confetti",
-      "pitch": [3, 3],
+      "shake": {
+        "amount": 1,
+        "ticks": 6
+      }
+    },
+    "boss-telegraph:attack=shoot": {
+      "sound": "boss-shoot-warn",
+      "emit": ["tele-glow", "tele-mark"]
+    },
+    "boss-telegraph:attack=charge": {
+      "sound": "boss-charge-warn",
+      "emit": ["paw-dust", "ground-warn", "tele-mark"],
+      "shake": {
+        "amount": 1,
+        "ticks": 20
+      }
+    },
+    "boss-telegraph:attack=leap": {
+      "sound": "boss-leap-warn",
+      "emit": ["paw-dust", "tele-mark"],
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 0.85,
+          "to": 1,
+          "frames": 8,
+          "yoyo": true,
+          "repeat": 2
+        }
+      ]
+    },
+    "boss-telegraph:attack=drop": {
+      "sound": "boss-drop-warn",
+      "emit": ["canopy-leaves", "tele-mark"],
+      "shake": {
+        "amount": 1.5,
+        "ticks": 30
+      }
+    },
+    "boss-attack:attack=shoot": {
+      "sound": "boss-shoot",
+      "pitch": [-1, 1],
+      "emit": "spit",
+      "tween": {
+        "prop": "scaleX",
+        "from": 1.15,
+        "to": 1,
+        "frames": 6,
+        "ease": "backOut"
+      }
+    },
+    "boss-attack:attack=charge": {
+      "sound": "boss-charge",
+      "emit": "charge-dust",
+      "shake": {
+        "amount": 2,
+        "ticks": 10
+      }
+    },
+    "boss-attack:attack=leap": {
+      "sound": "boss-leap",
+      "pitch": [-1, 1],
+      "emit": "charge-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        }
+      ]
+    },
+    "boss-attack:attack=drop": {
+      "sound": "boss-drop",
+      "pitch": [-1, 1],
+      "shake": {
+        "amount": 1.5,
+        "ticks": 8
+      }
+    },
+    "boss-hit": {
+      "sound": "boss-hit",
+      "pitch": [-1, 1],
+      "duck": {
+        "amount": 0.55,
+        "attack": 2,
+        "hold": 10,
+        "release": 36
+      },
+      "emit": ["boss-hit-stars", "boss-hit-ring"],
+      "shake": {
+        "amount": 4,
+        "ticks": 16
+      },
+      "hitPause": {
+        "ticks": 8
+      },
+      "flash": {
+        "color": "#ffffff",
+        "alpha": 0.4,
+        "ticks": 6
+      },
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 0.6,
+          "to": 1,
+          "frames": 12,
+          "ease": "backOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 1.3,
+          "to": 1,
+          "frames": 12,
+          "ease": "backOut"
+        }
+      ]
+    },
+    "boss-defeat": {
+      "sound": "boss-defeat",
+      "duck": {
+        "amount": 0.9,
+        "attack": 4,
+        "hold": 120,
+        "release": 90
+      },
+      "emit": ["boss-hit-stars", "boss-hit-ring", "defeat-pop"],
+      "shake": {
+        "amount": 6,
+        "ticks": 40
+      },
+      "hitPause": {
+        "ticks": 24
+      },
+      "flash": {
+        "color": "#ffffff",
+        "alpha": 0.7,
+        "ticks": 24
+      },
+      "zoom": {
+        "to": 1.3,
+        "ticks": 18,
+        "ease": "cubicOut",
+        "hold": 60,
+        "back": 30
+      },
+      "tween": [
+        {
+          "prop": "y",
+          "from": 0,
+          "to": 10,
+          "frames": 70,
+          "delay": 84,
+          "ease": "quadIn"
+        },
+        {
+          "prop": "alpha",
+          "from": 1,
+          "to": 0,
+          "frames": 34,
+          "delay": 120
+        }
+      ]
+    },
+    "boss-pop": {
+      "sound": "boss-pop",
+      "pitch": [-3, 3],
+      "emit": "defeat-pop",
+      "shake": {
+        "amount": 2,
+        "ticks": 8
+      }
+    },
+    "boss-crack": {
+      "sound": "boss-crack",
+      "emit": "shell-chips",
+      "shake": {
+        "amount": 3,
+        "ticks": 12
+      }
+    },
+    "boss-blast": {
+      "sound": "boss-blast",
+      "duck": {
+        "amount": 0.9,
+        "attack": 2,
+        "hold": 30,
+        "release": 60
+      },
+      "emit": ["defeat-blast", "defeat-smoke"],
+      "shake": {
+        "amount": 7,
+        "ticks": 30
+      },
+      "hitPause": {
+        "ticks": 6
+      },
+      "flash": {
+        "color": "#ffe860",
+        "alpha": 0.5,
+        "ticks": 14
+      }
+    },
+    "boss-telegraph": {
+      "sound": "boss-warn",
+      "emit": "tele-mark"
+    },
+    "boss-attack": {
+      "sound": "boss-attack",
       "shake": {
         "amount": 1,
         "ticks": 6
@@ -1527,6 +2296,257 @@
       "size": 2,
       "color": ["#ff5050", "#ffd030", "#50d0ff", "#70e070", "#ffffff"],
       "alpha": [1, 1, 0]
+    },
+    "thorn-trail": {
+      "rate": 0.5,
+      "life": [8, 14],
+      "speed": [0.05, 0.2],
+      "angle": [0, 360],
+      "size": [2, 1],
+      "color": ["#a6dc62", "#4f9638"],
+      "alpha": [0.9, 0]
+    },
+    "burr-trail": {
+      "rate": 0.4,
+      "life": [10, 16],
+      "speed": [0.1, 0.3],
+      "angle": [250, 290],
+      "size": [2, 1],
+      "color": ["#c89a5a", "#6c4628"],
+      "alpha": [0.8, 0]
+    },
+    "tele-glow": {
+      "burst": 10,
+      "life": [16, 26],
+      "speed": [0.3, 0.9],
+      "angle": [200, 340],
+      "offset": {
+        "x": 0,
+        "y": -6
+      },
+      "shape": {
+        "circle": 8
+      },
+      "gravity": -0.02,
+      "size": [2, 2, 1],
+      "color": ["#ffe860", "#ff9a30"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "tele-mark": {
+      "burst": 3,
+      "life": 26,
+      "speed": 0.25,
+      "angle": [265, 275],
+      "offset": {
+        "x": 0,
+        "y": -22
+      },
+      "size": [3, 3, 2],
+      "color": ["#ffffff", "#ffe860"],
+      "alpha": [1, 1, 0]
+    },
+    "paw-dust": {
+      "burst": 16,
+      "life": [18, 30],
+      "speed": [0.6, 1.6],
+      "angle": [190, 350],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 30,
+          "h": 1
+        }
+      },
+      "gravity": 0.02,
+      "drag": 0.06,
+      "size": [3, 4, 2],
+      "color": ["#e2c890", "#b8946a", "#8a6a48"],
+      "alpha": [1, 0.8, 0]
+    },
+    "ground-warn": {
+      "burst": 24,
+      "life": 30,
+      "speed": 0,
+      "anchor": "feet",
+      "offset": {
+        "x": 0,
+        "y": -1
+      },
+      "shape": {
+        "box": {
+          "w": 120,
+          "h": 1
+        }
+      },
+      "size": [2, 2, 1],
+      "color": ["#ff5040", "#ffb040"],
+      "alpha": [0, 1, 1, 0],
+      "blend": "add"
+    },
+    "canopy-leaves": {
+      "burst": 36,
+      "life": [40, 70],
+      "speed": [0.6, 1.4],
+      "angle": [70, 110],
+      "offset": {
+        "x": 0,
+        "y": -120
+      },
+      "shape": {
+        "box": {
+          "w": 300,
+          "h": 8
+        }
+      },
+      "gravity": 0.01,
+      "size": [2, 3, 2],
+      "color": ["#c89a5a", "#a6dc62", "#6c4628"],
+      "alpha": [1, 1, 0]
+    },
+    "charge-dust": {
+      "burst": 12,
+      "life": [14, 24],
+      "speed": [0.8, 2],
+      "angle": [200, 340],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 26,
+          "h": 1
+        }
+      },
+      "drag": 0.08,
+      "size": [3, 4, 2],
+      "color": ["#fffaf0", "#e2d2b0", "#b8a888"],
+      "alpha": [1, 0]
+    },
+    "spit": {
+      "burst": 8,
+      "life": [8, 14],
+      "speed": [0.8, 1.6],
+      "angle": [0, 360],
+      "offset": {
+        "x": 0,
+        "y": -2
+      },
+      "size": [2, 1],
+      "color": ["#a6dc62", "#ffe860"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "boss-hit-stars": {
+      "burst": 18,
+      "life": [16, 26],
+      "speed": [1.4, 3],
+      "angle": [190, 350],
+      "offset": {
+        "x": 0,
+        "y": -10
+      },
+      "gravity": 0.12,
+      "drag": 0.04,
+      "size": [3, 2, 1],
+      "color": ["#ffffff", "#ffe060", "#c8a8f4"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 1
+        },
+        {
+          "at": 0.6,
+          "value": 1
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ]
+    },
+    "boss-hit-ring": {
+      "burst": 20,
+      "life": 12,
+      "speed": 2.6,
+      "angle": [0, 360],
+      "even": true,
+      "drag": 0.18,
+      "size": [3, 1],
+      "color": "#ffffff",
+      "alpha": [0.9, 0],
+      "blend": "add"
+    },
+    "shell-chips": {
+      "burst": 14,
+      "life": [24, 40],
+      "speed": [1, 2.4],
+      "angle": [200, 340],
+      "offset": {
+        "x": 0,
+        "y": -12
+      },
+      "gravity": 0.14,
+      "drag": 0.02,
+      "size": [3, 2],
+      "color": ["#8a62c8", "#5d3a92", "#3b2160", "#a6dc62"],
+      "alpha": [1, 1, 0]
+    },
+    "defeat-pop": {
+      "burst": 12,
+      "life": [12, 22],
+      "speed": [0.8, 2],
+      "angle": [0, 360],
+      "offset": {
+        "x": 0,
+        "y": -12
+      },
+      "shape": {
+        "circle": 12
+      },
+      "drag": 0.06,
+      "size": [4, 3, 1],
+      "color": ["#ffffff", "#ffe860", "#ff9a30"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "defeat-blast": {
+      "burst": 60,
+      "life": [30, 60],
+      "speed": [1, 3.6],
+      "angle": [0, 360],
+      "offset": {
+        "x": 0,
+        "y": -12
+      },
+      "shape": {
+        "circle": 10
+      },
+      "gravity": 0.04,
+      "drag": 0.03,
+      "size": [5, 4, 2, 1],
+      "color": ["#ffffff", "#ffe860", "#ff9a30", "#c84a4a", "#5d3a92"],
+      "alpha": [1, 1, 0],
+      "blend": "add"
+    },
+    "defeat-smoke": {
+      "burst": 18,
+      "life": [50, 90],
+      "speed": [0.2, 0.7],
+      "angle": [240, 300],
+      "offset": {
+        "x": 0,
+        "y": -10
+      },
+      "shape": {
+        "box": {
+          "w": 30,
+          "h": 10
+        }
+      },
+      "gravity": -0.01,
+      "drag": 0.02,
+      "size": [5, 6, 4],
+      "color": ["#6a6070", "#8a8090", "#4a4050"],
+      "alpha": [0.8, 0.5, 0]
     }
   },
   "parallax": [
@@ -1637,6 +2657,30 @@
       "font": "hopper-small",
       "color": "#fcfcfc",
       "shadow": "#1a1a2e"
+    },
+    {
+      "status": "bossMaxHp",
+      "as": "icon",
+      "x": 265,
+      "y": 7,
+      "sheet": "burrlock",
+      "frame": "name-plate"
+    },
+    {
+      "status": "bossHp",
+      "as": "bar",
+      "x": 210,
+      "y": 18,
+      "w": 104,
+      "h": 10,
+      "max": "bossMaxHp",
+      "color": "#a070e0",
+      "back": "#2a1a3a",
+      "border": "#1a1024",
+      "low": {
+        "below": 0.5,
+        "color": "#ff5040"
+      }
     }
   ],
   "camera": {
@@ -1748,6 +2792,41 @@
               "right": "metal-plank-right"
             }
           }
+        },
+        "g": {
+          "sheet": "hopper-props",
+          "frame": "tuft-autumn",
+          "fallbackColor": "#ff00ff"
+        },
+        "G": {
+          "sheet": "hopper-props",
+          "frame": "tuft-autumn-tall",
+          "fallbackColor": "#ff00ff"
+        },
+        "f": {
+          "sheet": "hopper-props",
+          "frame": "flowers-autumn",
+          "fallbackColor": "#ff00ff"
+        },
+        "F": {
+          "sheet": "hopper-props",
+          "frame": "leaves",
+          "fallbackColor": "#ff00ff"
+        },
+        "R": {
+          "sheet": "hopper-props",
+          "frame": "rock-autumn",
+          "fallbackColor": "#ff00ff"
+        },
+        "b": {
+          "sheet": "hopper-props",
+          "frame": "bush-autumn",
+          "fallbackColor": "#ff00ff"
+        },
+        "T": {
+          "sheet": "hopper-props",
+          "frame": "tree-autumn",
+          "fallbackColor": "#ff00ff"
         }
       }
     },
@@ -1857,8 +2936,431 @@
               "right": "gold-plank-right"
             }
           }
+        },
+        "g": {
+          "sheet": "hopper-props",
+          "frame": "tuft-night",
+          "fallbackColor": "#ff00ff"
+        },
+        "G": {
+          "sheet": "hopper-props",
+          "frame": "tuft-night-tall",
+          "fallbackColor": "#ff00ff"
+        },
+        "f": {
+          "sheet": "hopper-props",
+          "frame": "glowflowers",
+          "fallbackColor": "#ff00ff"
+        },
+        "F": {
+          "sheet": "hopper-props",
+          "frame": "crystal-cyan",
+          "fallbackColor": "#ff00ff"
+        },
+        "c": {
+          "sheet": "hopper-props",
+          "frame": "crystal",
+          "fallbackColor": "#ff00ff"
+        },
+        "R": {
+          "sheet": "hopper-props",
+          "frame": "rock-night",
+          "fallbackColor": "#ff00ff"
+        },
+        "r": {
+          "sheet": "hopper-props",
+          "frame": "rock-night",
+          "fallbackColor": "#ff00ff"
+        },
+        "b": {
+          "sheet": "hopper-props",
+          "frame": "bush-night",
+          "fallbackColor": "#ff00ff"
+        },
+        "T": {
+          "sheet": "hopper-props",
+          "frame": "tree-night",
+          "fallbackColor": "#ff00ff"
         }
       }
+    },
+    "boss": {
+      "background": "#e07850",
+      "parallax": [
+        {
+          "gradient": ["#2a1440", "#4a1c4c", "#7a2c50", "#b04a50", "#e07850"],
+          "bands": 14,
+          "height": 150,
+          "factor": 0
+        },
+        {
+          "gradient": ["#e07850"],
+          "height": 40,
+          "y": 150,
+          "factor": 0
+        },
+        {
+          "frame": "clouds",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.08,
+            "y": 0
+          },
+          "y": 10,
+          "depth": 1000
+        },
+        {
+          "frame": "mountains",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.18,
+            "y": 0.05
+          },
+          "y": 62,
+          "depth": 700
+        },
+        {
+          "frame": "hills",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.38,
+            "y": 0.1
+          },
+          "y": 96,
+          "depth": 420
+        },
+        {
+          "frame": "bushes",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.62,
+            "y": 0.2
+          },
+          "y": 124,
+          "depth": 220
+        }
+      ],
+      "tiles": {
+        "#": {
+          "sheet": "terrain",
+          "frame": "autumn-dirt",
+          "fallbackColor": "#ff00ff",
+          "join": {
+            "with": ["#"],
+            "frames": {
+              "top": "autumn-grass-top",
+              "top left": "autumn-grass-top-left",
+              "top right": "autumn-grass-top-right",
+              "left": "autumn-dirt-left",
+              "right": "autumn-dirt-right",
+              "bottom": "autumn-dirt-bottom",
+              "bottom left": "autumn-dirt-bottom-left",
+              "right bottom": "autumn-dirt-bottom-right",
+              "top right bottom": "autumn-grass-top-right",
+              "top bottom left": "autumn-grass-top-left",
+              "inner-top-left": "autumn-notch-top-left",
+              "inner-top-right": "autumn-notch-top-right",
+              "inner-bottom-right": "autumn-notch-bottom-right",
+              "inner-bottom-left": "autumn-notch-bottom-left",
+              "top right left": "autumn-grass-top",
+              "right left": "autumn-dirt",
+              "top bottom": "autumn-grass-top",
+              "top right bottom left": "autumn-grass-top"
+            }
+          }
+        }
+      }
+    }
+  },
+  "music": {
+    "hoppers-way": {
+      "layers": {
+        "meadow": "hopper-meadow",
+        "meadow-drive": "hopper-meadow-drive",
+        "autumn": "hopper-autumn",
+        "autumn-drive": "hopper-autumn-drive",
+        "night": "hopper-night",
+        "night-drive": "hopper-night-drive",
+        "boss": "hopper-boss",
+        "boss-rage": "hopper-boss-rage"
+      },
+      "fade": 40,
+      "mix": [
+        {
+          "when": {
+            "status": "outcome",
+            "eq": "cleared"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 8
+        },
+        {
+          "when": {
+            "status": "outcome",
+            "eq": "failed"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "defeated"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 45
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "gone"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "asleep"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0.45,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossPhase",
+              "gte": 1
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 1,
+            "boss-rage": 1
+          },
+          "fade": 10
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "boss"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 1,
+            "boss-rage": 0.35
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-1"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 1,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-1"
+          },
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 0.15,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-2"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 1,
+            "autumn-drive": 1,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-2"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 1,
+            "autumn-drive": 0.15,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-3"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 1,
+            "night-drive": 1,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-3"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 1,
+            "night-drive": 0.15,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        }
+      ]
     }
   }
 }

@@ -157,7 +157,9 @@ describe('model tiles as InstancedMeshes (Engine 0.16 F3)', () => {
       castShadow: true,
       clip: null,
       time: 0,
+      hold: false,
       offset: { x: 0, y: 0, z: 0 },
+      stretch: { x: 1, y: 1, z: 1 },
       materials: {},
       tint: null,
     };

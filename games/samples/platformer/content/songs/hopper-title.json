@@ -1,0 +1,9 @@
+{
+  "id": "hopper-title",
+  "bpm": 120,
+  "loop": true,
+  "pulse1": "v8 @2 q7 L o4g4 o5c4 o5e4. o5d8 | o5c4 o4a4 o5f2 | o5d4 o5g4 o5f4 o5e8 o5d8 | o5e2. o4g4 | o4a4 o5c4 o5e4 o5a4 | o5f4. o5e8 o5c4 o4a4 | o4b4 o5d4 o5g4 o5a8 o5b8 | o6c2 o5b4 o5g4",
+  "pulse2": "v4 @1 q8 L o4e2 o4g2 | o4a2 o5c2 | o4b2 o5d2 | o4e2 o4g2 | o5c2 o5e2 | o4a2 o5c2 | o4b2 o5d2 | o4b2 o5d2",
+  "triangle": "q6 L o3c4 o3g4 o4c4 o3g4 | o2f4 o3c4 o3f4 o3c4 | o2g4 o3d4 o3g4 o3d4 | o3c4 o3g4 o4c4 o3g4 | o2a4 o3e4 o3a4 o3e4 | o2f4 o3c4 o3f4 o3c4 | o2g4 o3d4 o3g4 o3d4 | o2g4 o3d4 o3g4 o3d4",
+  "noise": "v3 L [k4 h8 h8 s4 h4]8"
+}

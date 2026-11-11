@@ -94,6 +94,22 @@ export function titleFromQuery(search: string): boolean {
   return !manualFromQuery(search) && !recordFromQuery(search);
 }
 
+/** The query value that shows (`dialogs=show`) or skips (`dialogs=skip`) the shell's dialogs. */
+export const DIALOGS_QUERY = 'dialogs';
+
+/**
+ * Whether the shell shows `menus.triggers`' dialogs and opens the end screen at the game's end
+ * (Engine 0.16 part C): `?dialogs=show` or `?dialogs=skip` when given, else as the title
+ * (`titleFromQuery`): skipped in manual-loop mode and when recording, so run files and replays
+ * play straight through, and shown with `?title=show` (the menus' browser tests).
+ */
+export function dialogsFromQuery(search: string): boolean {
+  const asked = new URLSearchParams(search).get(DIALOGS_QUERY);
+  if (asked === 'show') return true;
+  if (asked === 'skip') return false;
+  return titleFromQuery(search);
+}
+
 /** The keyboard keys that pause (`KeyboardEvent.code`); gamepad Start (button 9) and the button too. */
 export const PAUSE_CODES: readonly string[] = ['Escape', 'KeyP'];
 /** The standard gamepad's Start button. */
@@ -302,6 +318,12 @@ export interface BootPage {
    * own start. The scene factory reads it each time it builds the first scene.
    */
   start: RunStart | null;
+  /**
+   * Whether the shell shows the game's end itself (Engine 0.16 part C): `menus.triggers.end` is
+   * given and dialogs are on (`dialogsFromQuery`), so the game's scene need not draw its own end
+   * banner. False without menus, in manual-loop mode and when recording.
+   */
+  endings: boolean;
 }
 
 /** What a booted page holds, for a game that wants to reach in (audio, debugging). */
@@ -455,7 +477,13 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
 
   const scenes = new SceneStack();
   const uiSound = (id: string) => mixer?.uiSound(id);
-  const page: BootPage = { pointer, uiSound, start: null };
+  const dialogs = dialogsFromQuery(search);
+  const page: BootPage = {
+    pointer,
+    uiSound,
+    start: null,
+    endings: menusWanted && dialogs && opts.menus?.spec?.triggers?.end !== undefined,
+  };
   scenes.push(opts.scene(scenes, shown, page));
 
   // The menus (Engine 0.16 T9): the title over the first scene, the pause menu on the pause keys.
@@ -523,6 +551,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       pointer: pointer ?? menuPointer,
       keys: () => keyHintMap(input.bindings[0]?.keyboard),
       settings: host,
+      dialogs,
       ...(boot.colourModes !== undefined && { colourModes: boot.colourModes }),
       ...(boot.canContinue !== undefined && { canContinue: () => boot.canContinue!() }),
       ...(boot.onContinue !== undefined && { onContinue: () => boot.onContinue!() }),
@@ -632,6 +661,8 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       },
       render() {
         display.transition?.(transitions.view());
+        // No HUD on the picture under the title or a screen opened from it (Engine 0.16 part C T1).
+        display.showHud?.(menus?.hudShown ?? true);
         scenes.render(display.renderer);
         // The level-clear banner (Engine 0.16 part B) over the game, under no scene.
         const banner = menus?.bannerDraws() ?? [];
@@ -664,6 +695,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     get start() {
       return page.start;
     },
+    endings: page.endings,
     backend,
     display: shown,
     scenes,
@@ -689,12 +721,28 @@ function menusView(menus: GameMenus): MenusView {
     state: menus.state,
     screen: menus.screen,
     banner: menus.bannerShown,
+    dialog: dialogView(menus),
     focused: menu?.focused ?? null,
     items: (menu?.items ?? []).map((item) => ({
       id: item.id,
       value: menu!.value(item.id) ?? null,
       ...menu!.itemBox(item.id)!,
     })),
+  };
+}
+
+/** The dialog box `__ww.menus()` reports, or null. */
+function dialogView(menus: GameMenus): MenusView['dialog'] {
+  const d = menus.dialog;
+  if (d === null) return null;
+  return {
+    id: d.id,
+    page: d.box.page,
+    pages: d.box.pageCount,
+    shown: d.box.shown,
+    typed: d.box.typed,
+    text: d.box.pageText(),
+    ...d.box.box,
   };
 }
 

@@ -32,6 +32,8 @@ export {
   tapsOf,
   TITLE_QUERY,
   titleFromQuery,
+  dialogsFromQuery,
+  DIALOGS_QUERY,
   type BootAudio,
   type BootMenus,
   type BootedGame,

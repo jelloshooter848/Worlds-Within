@@ -5,36 +5,60 @@ Folder: `games/samples/dungeon`. Detailed rules and how it was built: [`games/sa
 ## Purpose
 
 The top-down kit's sample game, **The Old Crypt** (the old engine demo, moved into the samples in
-Engine 0.15 T2 and finished in T12): a short, complete dungeon of five rooms (the courtyard start,
+Engine 0.15 T2 and finished in T12): a short dungeon of eight rooms (the courtyard start,
 a guard room of monsters, a store room with the bombs, a bat hall with the key, and the crypt with
-the relic and the exit), with two end states (escaped through the exit, or fallen), in data files
-checked by schemas: rooms, original NES-style pixel art as text (`hero` and `dungeon` sheets), two
-MML songs, thirteen sound effects and a Canvas2D skin. A thin scene runs the kit's world, hands the
-kit's presentation frames to the page's display presenter (Canvas2D by default, PixiJS with
-`?backend=pixi`; the view's own `SkinnedCanvasPresenter` for screenshots), plays the skin's
-sounds, shows the end and starts a new run on Z or X. Its `CLAUDE.md` is a worked example of
+the relic and the exit; from Engine 0.16 part C T5-T8 the new wing: the chasm with the dash, the
+ossuary whose key only the dash reaches across its pits, and the warden hall, the boss room behind
+the chasm's locked door, where the Bone Warden waits: a three-phase boss in data, T9), with three
+end states (the Warden beaten, escaped through the exit, or fallen), in data files checked by
+schemas: rooms, MML songs (the dungeon's, the way out's, the boss's three layers and its victory
+tune), twenty-two sound effects and a Canvas2D skin that draws it
+at 16:9 (320x180, 6x is 1920x1080) on 0x72's CC0 DungeonTileset II (Engine 0.16 part C T3: the
+pack's PNG plus two text sheets cut from it, walls and doors joined by neighbours, varied floors,
+an animated knight, monsters with white hit flashes, particles, a framed HUD and restyled menus;
+from T4 lighting and mood: dark rooms with brazier pools, the hero's small light, the bat hall and
+crypt darker, blasts lighting the room, a vignette and dust in the air, all in the skin's
+`lighting` block).
+A thin scene runs the kit's world, hands the kit's presentation frames to the page display's
+presenter (Canvas2D by default, PixiJS with `?backend=pixi`; or its own `SkinnedCanvasPresenter` for the view and screenshots), shows the end banner and starts a new run on Z
+or X where the shell does not show the end itself; from Engine 0.16 part C T7 `game.json`'s
+`menus.dialogs` and `triggers` give an intro dialog after Start and, when the hero escapes or
+falls, a dialog and the end screen (`menus.end`: time, rooms seen and health); from T9 the hero
+Sir Edrin's intro, the victory dialog and tune when the Warden falls (`flag.bossDefeated`), the
+room's own music (the warden hall's layered `warden`, mixed by the shell's mixer from the frame
+status) and a HUD with hearts, keys, the selected item (its panel shown once an item is owned, T11) and the boss bar; T10 the combat feel (sparks, knockback dust, soul wisps, hit-pauses, dash afterimages, torch embers, a danger music layer). The part's review screenshots are in `docs/reports/screenshots/0.16-C/` (docs/BUILD-LOG.md, Engine 0.16 part C). Its `CLAUDE.md` is a worked example of
 building a top-down game on the engine.
 
 ## Public API entry points
 
 - `game.json`: the game manifest (id `dungeon`, kit `topdown`, content globs by kind, start seed,
-  headless and view entries).
-- `content/`: `rooms/*.json` + `*.map.txt` (five rooms), `songs/` (`crypt`, `daylight`), `sfx/`,
-  `palettes/` (`hero`, `dungeon`), `sprites/` (`hero.txt`, `dungeon.txt`), `skins/canvas2d.json`
-  (every kind, tile, event and HUD value the kit presents, a `background`, no per-kind fallback).
+  the 320x180 screen, the menus, headless and view entries).
+- `content/`: `rooms/*.json` + `*.map.txt` (eight rooms), `songs/` (`crypt`, `daylight`,
+  `warden-calm`, `warden-fight`, `warden-rage`, `warden-falls`), `sfx/`,
+  `palettes/` and `sprites/` (`crypt-art`, `crypt-floor`: pieces cut from the CC0 pack),
+  `fonts/`, `skins/canvas2d.json` (the pack's PNG as `images`; every kind, tile, event and HUD value
+  the kit presents, a `background`, no per-kind fallback).
+- `assets/`: 0x72's CC0 DungeonTileset II (Engine 0.16 part C, T2) in `dungeon-tileset-ii/`
+  (`sheet.png` with every frame, `tile-list.txt` naming each frame's rectangle, three autotile
+  atlases, 65 KB), credited in `assets/CREDITS.md`; checked by `assets.test.ts`. The skin draws
+  from `sheet.png` (T3).
 - `content.ts`: `loadDungeon(files)` (the kit hook's kinds), `dungeonRooms`, `dungeonSkin`
-  (the engine's `mustSkinSet`), `mustLoad`, `DUNGEON_MUSIC`, `ESCAPE_MUSIC`; songs and sfx are the
+  (the engine's `mustSkinSet`), `mustLoad`, `DUNGEON_MUSIC`, `ESCAPE_MUSIC`, `VICTORY_MUSIC`; songs and sfx are the
   engine's `contentSongs` and `contentSfx`.
-- `picture.ts`: `dungeonLook(content)`, `DungeonPicture` (`draw(world, events)`), `dungeonEnd(world)`
-  (`escaped`, `fallen` or null) and `drawStatusLines`.
+- `picture.ts`: `dungeonLook(content)`, `HUD_TOP`, `DungeonPicture` (`draw(world, events)`,
+  `showHud`), `dungeonEnd(world)` (`won`, `escaped`, `fallen` or null), `bossBeaten(world)`, `endLines` and `endBanner`.
 - `headless.ts`: `createWorld(content, seed?)` and `createGame(content, seed)` (the engine's
   `HeadlessGame` contract), the headless entry named in `game.json`.
 - `view.ts`: `createView(content, seed, opts?)` (the engine's `ViewGame` contract), for
   `pnpm cli screenshot games/samples/dungeon/runs/escape.run.json --tick 950`.
 - `scene.ts`: `DungeonScene` (with `headless()` for the page's step hook) and `END_HOLD`;
-  `main.ts` boots it with the shell's `bootBrowserGame` (audio, volume control, `?debug=step`).
+  `main.ts` decodes the PNG (`withContentImages`) and boots it with the shell's `bootBrowserGame`
+  (audio, volume control, menus, `?debug=step`), the scene drawing through the display's presenter.
 - `runs/`: `walk-east` (into the guard room; unchanged since the demo), `escape` (the path to the
-  exit) and `lost-in-the-guard-room` (the fall), each with golden hashes in `<name>.hashes.json`,
+  exit), `lost-in-the-guard-room` (the fall), `cross-the-chasm` (the dash), `to-the-boss-door`
+  (Engine 0.16 part C T8: the dash, the ossuary's key and the locked door into the boss room),
+  `win` (T9: the whole dungeon from tick 0 to the Bone Warden beaten) and `boss-lost` (T9: the
+  hero dies in the fight), each with golden hashes in `<name>.hashes.json`,
   checked by `tests/runs/run-files.test.ts` and `tests/runs/backend-parity.test.ts`; together
   they guard every top-down kit rule (`tests/runs/dungeon-mutants.test.ts`).
 - Any picture size: change only `screen` in `game.json`.
@@ -46,8 +70,8 @@ building a top-down game on the engine.
 
 ## How to test
 
-`pnpm test` runs `dungeon.test.ts` (content, rooms, songs, sounds, every run file's ticks drawn
-with no fallback box, the end states, the scene against the headless game), the run files and
+`pnpm test` runs `assets.test.ts` (the CC0 pack's credits, sizes and tile list, the skin's frames inside the sheet), `dungeon.test.ts` (content, rooms, songs, sounds, every run file's ticks drawn
+with no fallback box, the end states, the scene against the headless game (T9: the win with its music), the boss's data, poses, sounds, HUD, layered music and ducking, the 16:9 screen, the CC0 sheets, joins, hero states, hit flashes, the HUD hidden and the end banner), the run files and
 `tests/runs/dungeon-mutants.test.ts`; `tests/browser/dungeon.test.ts` opens it from the built
 games index and plays it (headless Chromium, skipped without one). `pnpm -s cli validate
 games/samples/dungeon --json` checks every data file. `pnpm dev` and open

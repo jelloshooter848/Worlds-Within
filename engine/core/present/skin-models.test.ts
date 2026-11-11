@@ -6,7 +6,9 @@ import {
   resolveSkinModel,
   resolveTileModel,
   skinModelUses,
+  sceneryModel,
   skinSchema,
+  themedSkin,
   type SkinFile,
 } from './skin';
 
@@ -91,7 +93,9 @@ describe('skin models (Engine 0.16 T11)', () => {
       castShadow: true,
       clip: 'sway',
       time: 30 / MODEL_TICKS_PER_SECOND,
+      hold: false,
       offset: { x: 1, y: -2, z: 3 },
+      stretch: { x: 1, y: 1, z: 1 },
       materials: {},
       tint: null,
     });
@@ -129,5 +133,128 @@ describe('skin models (Engine 0.16 T11)', () => {
         clips: [{ path: ['tiles', '#', 'clip'], clip: 'shine' }],
       },
     ]);
+  });
+});
+
+describe('tag-look models, tint, stretch, scenery and 3D themes (Engine 0.16 part B, T10)', () => {
+  const SKIN2 = {
+    backend: 'three',
+    kinds: {
+      flag: {
+        mesh: 'box',
+        color: '#808080',
+        model: 'assets/pack/sign.glb',
+        scale: 16,
+        stretch: { z: 2 },
+        byTag: [
+          { tag: 'active', model: 'assets/pack/flag.glb', scale: 20, clip: 'wave', tint: '#ff8080' },
+          { tag: 'dim', tint: '#808080', clip: 'droop' },
+        ],
+      },
+    },
+    tiles: { '#': { mesh: 'box', color: '#000' } },
+    scenery: [{ model: 'assets/pack/tree.glb', scale: 10, every: 64, z: -80, jitter: { x: 8, turn: 30 } }],
+    themes: {
+      night: {
+        tiles: { '#': { mesh: 'box', color: '#000', model: 'assets/pack/rock.glb' } },
+        scenery: [{ model: 'assets/pack/hill.glb', every: 128, z: -200 }],
+        scene3d: { fog: { kind: 'linear', color: '#102040', far: 400 } },
+      },
+    },
+  };
+  const parsed = skinSchema.parse(SKIN2) as SkinFile;
+
+  it('validates them on a 3D skin and keeps them off 2D skins', () => {
+    expect(issues(SKIN2)).toEqual([]);
+    expect(
+      issues({
+        backend: 'three',
+        kinds: { t: { mesh: 'box', color: '#000', tint: '#fff', stretch: { x: 2 } } },
+      }),
+    ).toEqual([
+      ['kinds.t.tint', 'missing_field'],
+      ['kinds.t.stretch', 'missing_field'],
+    ]);
+    expect(
+      issues({
+        backend: 'canvas2d',
+        sheets: { sheet: 's', fallbackColor: '#000' },
+        kinds: { t: { frames: { idle: 'a' }, byTag: [{ tag: 'x', model: 'assets/p/m.glb' }] } },
+        scenery: [],
+      }),
+    ).toEqual([
+      ['scenery', 'wrong_backend_field'],
+      ['kinds.t.byTag.0.model', 'wrong_backend_field'],
+    ]);
+    expect(issues({ ...SKIN2, scenery: [{ model: 'assets/pack/tree.glb', every: 0, z: 0 }] })).toEqual([
+      ['scenery.0.every', 'too_small'],
+    ]);
+  });
+
+  it("resolves a tag look's own model, scale and tint, and the kind's stretch", () => {
+    const flag = (tags: string[]) => ({ ...entity('flag', 'idle', 0), tags });
+    expect(resolveSkinModel(parsed, flag([]))).toMatchObject({
+      model: 'assets/pack/sign.glb',
+      scale: 16,
+      stretch: { x: 1, y: 1, z: 2 },
+      tint: null,
+    });
+    expect(resolveSkinModel(parsed, flag(['active']))).toMatchObject({
+      model: 'assets/pack/flag.glb',
+      scale: 20,
+      clip: 'wave',
+      tint: '#ff8080',
+      stretch: { x: 1, y: 1, z: 2 },
+    });
+    expect(resolveSkinModel(parsed, flag(['dim']))).toMatchObject({
+      model: 'assets/pack/sign.glb',
+      tint: '#808080',
+    });
+  });
+
+  it("holds the clip of a kind's clipHold states", () => {
+    const held = skinSchema.parse({
+      backend: 'three',
+      kinds: {
+        foe: {
+          mesh: 'box',
+          color: '#000',
+          model: 'assets/pack/foe.glb',
+          clip: { idle: 'Idle', dead: 'Death' },
+          clipHold: ['dead'],
+        },
+      },
+    }) as SkinFile;
+    expect(resolveSkinModel(held, entity('foe', 'dead', 90))).toMatchObject({
+      clip: 'Death',
+      hold: true,
+      time: 1.5,
+    });
+    expect(resolveSkinModel(held, entity('foe', 'idle', 90))).toMatchObject({ clip: 'Idle', hold: false });
+  });
+
+  it('lists tag looks, scenery and theme models among the uses', () => {
+    expect(skinModelUses(parsed).map((u) => [u.path.join('.'), u.model, u.clips.map((c) => c.clip)])).toEqual(
+      [
+        ['kinds.flag', 'assets/pack/sign.glb', []],
+        ['kinds.flag.byTag.0', 'assets/pack/flag.glb', ['wave']],
+        ['kinds.flag.byTag.1', 'assets/pack/sign.glb', ['droop']],
+        ['scenery.0', 'assets/pack/tree.glb', []],
+        ['themes.night.tiles.#', 'assets/pack/rock.glb', []],
+        ['themes.night.scenery.0', 'assets/pack/hill.glb', []],
+      ],
+    );
+  });
+
+  it("a theme's scene3d and scenery replace the skin's on that map", () => {
+    const night = themedSkin(parsed, 'night');
+    expect(night.scene3d).toEqual(SKIN2.themes.night.scene3d);
+    expect(night.scenery).toEqual(SKIN2.themes.night.scenery);
+    expect(themedSkin(parsed, 'day')).toBe(parsed);
+    expect(sceneryModel(parsed.scenery![0]!)).toMatchObject({
+      model: 'assets/pack/tree.glb',
+      scale: 10,
+      clip: null,
+    });
   });
 });

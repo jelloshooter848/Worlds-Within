@@ -75,7 +75,9 @@ const spec = (over: Partial<SkinModel> = {}): SkinModel => ({
   castShadow: false,
   clip: null,
   time: 0,
+  hold: false,
   offset: { x: 0, y: 0, z: 0 },
+  stretch: { x: 1, y: 1, z: 1 },
   materials: {},
   tint: null,
   ...over,
@@ -191,6 +193,20 @@ describe('ModelInstance', () => {
     expect(m.object.getObjectByName('body')!.scale.x).toBeCloseTo(1);
     m.pose('no-such-clip', 0.5);
     expect(m.playing).toBeNull();
+  });
+
+  it('holds a clip on its last pose instead of looping (clipHold, Engine 0.16 part B)', async () => {
+    const m = new ModelInstance((await library()).get(GLB)!, spec({ anchor: 'origin', scale: 1 }), {
+      w: 1,
+      h: 1,
+    });
+    const head = m.object.getObjectByName('head')!;
+    m.pose('bob', 1.25);
+    expect(head.position.y).toBeCloseTo(1.75); // looped: a quarter into the second play
+    m.pose('bob', 1.25, true);
+    expect(head.position.y).toBeCloseTo(2.5, 2); // held at the end
+    m.pose('bob', 0.5, true);
+    expect(head.position.y).toBeCloseTo(2);
   });
 
   it('owns its materials (so alpha on one leaves another alone) and shares the geometry', async () => {

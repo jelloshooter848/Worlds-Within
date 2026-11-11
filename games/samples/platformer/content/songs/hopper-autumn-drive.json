@@ -1,0 +1,7 @@
+{
+  "id": "hopper-autumn-drive",
+  "bpm": 150,
+  "loop": true,
+  "pulse1": "v4 @0 q4 L o4a8 o5e8 o5c8 o5e8 o5a8 o5e8 o5c8 o5e8 | o4f8 o5c8 o4a8 o5c8 o5f8 o5c8 o4a8 o5c8 | o5c8 o5g8 o5e8 o5g8 o6c8 o5g8 o5e8 o5g8 | o4g8 o5d8 o4b8 o5d8 o5g8 o5d8 o4b8 o5d8 | o4a8 o5e8 o5c8 o5e8 o5a8 o5e8 o5c8 o5e8 | o4f8 o5c8 o4a8 o5c8 o5f8 o5c8 o4a8 o5c8 | o4g8 o5d8 o4b8 o5d8 o5g8 o5d8 o4b8 o5d8 | o4e8 o4b8 o4g+8 o4b8 o5e8 o4b8 o4g+8 o4b8 | o4f8 o5c8 o4a8 o5c8 o5f8 o5c8 o4a8 o5c8 | o4g8 o5d8 o4b8 o5d8 o5g8 o5d8 o4b8 o5d8 | o4a8 o5e8 o5c8 o5e8 o5a8 o5e8 o5c8 o5e8 | o4f8 o5c8 o4a8 o5c8 o5f8 o5c8 o4a8 o5c8 | o5d8 o5a8 o5f8 o5a8 o6d8 o5a8 o5f8 o5a8 | o4e8 o4b8 o4g+8 o4b8 o5e8 o4b8 o4g+8 o4b8 | o4a8 o5e8 o5c8 o5e8 o5a8 o5e8 o5c8 o5e8 | o4a8 o5e8 o5c8 o5e8 o5a8 o5e8 o5c8 o5e8",
+  "noise": "v5 L [k8 r16 h16 s8 h8 r16 k16 k8 s8 h8]16"
+}

@@ -15,7 +15,10 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
     (`left`, `up-left`, `down-left`).
   - `map` is either the full `PresentMap` `{ id, version, tileSize, cols, rows, tiles, layers?, tags? }`
     (`tiles` as text rows or a grid of tile ids; `tags?` free labels such as `dark`) or only a `PresentMapRef` `{ id, version }`.
-    `isFullMap(map)` tells them apart. Bump `version` whenever any tile changes.
+    `isFullMap(map)` tells them apart. Bump `version` whenever any tile changes. From Engine 0.16
+    part C T4 a full map may list `parts` (`PresentMapPart` `{ id, col, row, cols, rows, tags? }`,
+    in tiles): the maps it is made of, each at its place (the top-down kit's room slide lists its
+    two rooms), so a skin's per-map looks (lighting's placed lights and darkness) follow each part.
   - `PresentEvent` `{ type, x?, y?, entity?, ...any JSON-safe fields }`: this frame's events, for
     a skin's sounds and effects.
   - `status`: HUD values, `Record<string, number | string | boolean>`.
@@ -25,7 +28,9 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
     inside, for a kit-side scroll lock), `layer` (depth, drawn low to high), `fx` (`PresentFx`
     `{ squashX?, squashY?, rotate?, alpha?, tint? }`) and the map's `layers`.
   - `DeepReadonly<T>` and the `Presenter` interface: `present(frame: DeepReadonly<PresentFrame>)`
-    and optional `resize(size)`. Backends implement `Presenter`.
+    and optional `resize(size)`, and from Engine 0.16 part C T1 optional `showHud(shown)`
+    (whether the skin's HUD is drawn from the next frame: the shell hides it under its title;
+    both backends' presenters have it). Backends implement `Presenter`.
 - `freeze.ts`: `freezeFrame(value)` deep-freezes a frame in place and returns it as
   `DeepReadonly`, so a backend that writes to it throws. Use it in tests and dev; it is not needed
   per frame in a release build.
@@ -119,12 +124,28 @@ inner-top-left inner-top-right inner-bottom-right inner-bottom-left`): `"top lef
     `"inner-top-right"`, `"right bottom inner-top-left"`. The frame is the full key's, else the
     sides-only key's, else the entry's `frame` (also with nothing open). A key out of order, with
     an unknown word or a word twice, or an inner corner beside its own open side is `bad_join_key`
-    at `tiles.<tile>.join.frames.<key>` (`tileJoinKeyProblem` names the order wanted); `join` is a
-    2D field (`wrong_backend_field` on a 3D skin); its frames are checked against the tile's sheet
+    at `tiles.<tile>.join.frames.<key>` (`tileJoinKeyProblem` names the order wanted); on a 3D
+    skin (from Engine 0.16 part B, T10) its frames name other tile entries (below); its 2D frames are checked against the tile's sheet
     (`missing_frame` at `tiles.<tile>.join.frames.<key>`). Pure: `tileJoinKeys(join, own, grid,
 col, row)` (the keys looked up, most specific first) and `resolveTileFrame(entry, own, grid,
 col, row)` (`TileGrid`: text rows or rows of ids). The Canvas2D presenter draws tiles through
     it (once per map version, into the map cache). Tested in `tile-join.test.ts`.
+  - Floor variety (Engine 0.16 part C T3, `tile-join.ts`): a 2D tile entry's `vary` `{ frames,
+weights?, period?: { cols, rows } }` (`tileVarySchema`; `bad_weights` when the weights are not one
+    per frame; `wrong_backend_field` on a 3D skin) replaces the entry's own `frame` (shown when no
+    `join` key matched) with one of `frames` picked by a hash of the cell's place
+    (`variedTileFrame(vary, col, row)`: the same cell always the same frame, by the weights;
+    `period` takes the place modulo it first, so a top-down room keeps its look beside another in
+    a slide map). Its frames are checked against the tile's sheet (`missing_frame` at
+    `tiles.<tile>.vary.frames.<i>`). Tested in `tile-join.test.ts`.
+  - HUD halves and conditions (Engine 0.16 part C T3, `hud.ts`): a `hearts` item's `half` (a frame)
+    makes the status count halves, a `frame` per two points and `half` for one left over (checked
+    across files like `frame`; `half` on another type is an error); any item's `when` (a status
+    key) shows it only while that value is truthy (`hudItemShown(item, status)`, used by
+    `layoutHud` and the UI kit's `SkinHud`). From Engine 0.16 part C T9 an `icon`'s `frames`
+    (status value -> frame, checked across files at `hud.<i>.frames.<value>`; on another type a
+    schema error) picks its frame by the value (the selected item), else `frame`. Tested in
+    `hud.test.ts`.
   - PNG sheets (Engine 0.16 T10, `engine/core/gfx/image-sheet.ts`): a top-level `images` map,
     image id -> `{ image: "assets/<pack>/<file>.png", frameSize?, grid?, names?, frames?, anchor? }`,
     on 2D and 3D skins. An entry naming the id as its `sheet` uses its frames like a text
@@ -147,6 +168,20 @@ clip, time, offset }`, `time` = `anim.t` / `MODEL_TICKS_PER_SECOND`, 60; the kin
     with its clips' field paths, for `validate` and preloading). The file, its header and its
     clips are checked by the content loader (`content/assets.ts`: `missing_file`, `bad_model`,
     `missing_clip`). Tested in `skin-models.test.ts`.
+  - The 2.5D view's model fields (Engine 0.16 part B, T10; Hopper's Way): a 3D kind or tile may
+    give `tint` (a colour multiplied into the model's materials) and `stretch` (`{ x?, y?, z? }`
+    factors on top of `scale`, model axes), a kind `clipHold` (animation states whose clip plays
+    once and holds), all `missing_field` without `model`; a tag look may give `model`, `scale`,
+    `anchor`, `rotate`, `clip`, `tint` and `stretch` (its own model for that look;
+    `wrong_backend_field` on a 2D skin). `SkinModel` gains `stretch`, `tint` and `hold`. A 3D
+    tile's `join` (no longer 2D only) picks another `tiles` entry by key: each `join.frames` value
+    must be a tile key of the skin (in a theme, of the theme's or the skin's), else `missing_ref`
+    (`checkJoinTiles`). A top-level `scenery` (3D, `MESH_SKIN_FIELDS`; `sceneryRowSchema`,
+    `SkinSceneryRow`: `{ model, scale?, stretch?, rotate?, tint?, every, from?, z, y?, jitter?: {
+x?, y?, z?, scale?, turn? }, castShadow?, receiveShadow? }`) lists rows of scenery models along
+    a map; `sceneryModel(row)` is a row's `SkinModel`. `skinModelUses` now also lists tag looks'
+    models (and clips), scenery rows and each theme's tiles and scenery, so `validate` checks and
+    pages preload them. Tested in `skin-models.test.ts` (part B block) and `tile-join.test.ts`.
   - Audio (Engine 0.16 T8, `engine/core/audio/mix.ts`): an event entry's `pitch` and `volume`
     (`[min, max]`, `bad_range` when min is above max), `cooldown` (frames) and `duck { amount,
 attack?, hold?, release? }`, and a top-level `music` section of layered songs (`skinMusicSchema`;
@@ -158,8 +193,8 @@ attack?, hold?, release? }`, and a top-level `music` section of layered songs (`
     or a list, `tweensSchema`) is started on the event's `entity` (ignored for an event with none),
     and a kind entry's optional `spawnTween` on an entity the first frame a presenter shows it.
     Both are presentation only, allowed on 2D and 3D skins, applied by the Canvas2D presenter on
-    top of the entity's `fx` (never written back to the frame); the 3D backend ignores them for
-    now. A bad ease, prop or colour is an error at that field (`events.hit.tween.ease`).
+    top of the entity's `fx` (never written back to the frame), and from Engine 0.16 part B T10
+    by the 3D backend too (item 340: offsets, factors, turn, alpha; a colour as the emissive colour). A bad ease, prop or colour is an error at that field (`events.hit.tween.ease`).
   - Particles (Engine 0.16 T3, `engine/core/fx`): a skin's top-level `emitters` maps names to
     emitter defs (`emitterSchema`, on 2D and 3D skins); an event entry's `emit` (a name or a
     list) starts them at the event (its `x`/`y`, else its entity; an emitter's `anchor` places it
@@ -183,6 +218,15 @@ attack?, hold?, release? }`, and a top-level `music` section of layered songs (`
     `missing_ref` for its `sheet`, `missing_field` at `parallax.<i>.sheet` when there is neither a
     `sheet` nor `sheets.sheet`), on both backends (3D cuts it from the decoded sheets). The old
     `effect` kinds `flash` and `shake` keep working as before (the shake scale applies to them).
+  - Lighting (Engine 0.16 part C T4, `engine/core/fx`'s `lightingSchema`): a 2D skin's top-level
+    `lighting` (darkness per map tag or id, lights per kind and state, tile, fixed place and event,
+    flicker, a vignette, banded falloff and room-wide `particles`; format in `fx/CLAUDE.md`). It is
+    a 2D field (`wrong_backend_field` on a 3D skin). Checked in the schema: its `kinds` and `tiles`
+    keys must be the skin's (`missing_ref` at `lighting.kinds.<kind>`), its `events` keys read like
+    `events`' (`bad_event_key`), its particles' `emit` must name emitters (`missing_ref` at
+    `lighting.particles.<i>.emit`); and across files a placed light's `sprite` frames against its
+    sheet (`missing_frame`, `missing_ref`, `missing_field` at `lighting.maps.<id>.lights.<i>.sprite`
+    without a sheet). Tested in `fx/lighting.test.ts`.
   - Per-map looks (Engine 0.16 part B, T7): a skin-level `themes` map, map id -> `{ background?,
 parallax?, tiles? }` (a platformer level's id is its map's), so one skin gives each level its
     own sky, background layers and ground. `themedSkin(skin, mapId)` (pure) lays the map's entry
@@ -191,7 +235,9 @@ parallax?, tiles? }` (a platformer level's id is its map's), so one skin gives e
     skin is never changed. Checked like the skin's own fields: a theme's tiles by `checkShapes`
     (`wrong_backend_field`, `missing_field` at `themes.<map>.tiles.<key>...`) and across files
     (`missing_frame`, `missing_ref` at `themes.<map>.parallax.<i>...` and `.tiles.<key>...`). The
-    Canvas2D presenter draws through it; the 3D backend ignores `themes` for now. Tested in
+    Canvas2D presenter draws through it; from Engine 0.16 part B T10 the 3D backend too, and a
+    theme may also give `scene3d` (that map's lights, fog and tone mapping) and `scenery` (its
+    scenery rows), both replacing the skin's. Tested in
     `skin.test.ts` (`per-map looks`).
   - Hosted rounds and top-down looks (Engine 0.16 F8, the mini siege's rounds): a 3D skin's
     `rounds2d` (mini game ids; `wrong_backend_field` on a 2D skin) says a 3D page draws those
