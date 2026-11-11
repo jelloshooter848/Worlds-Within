@@ -97,6 +97,20 @@ skins without an `idle` state draw as before; tested in `present.test.ts`).
   per-room lighting follows each room through the slide);
   the new room sits at its offset in it and the `camera` hint scrolls across. With `state`, the
   `MapTracker` sends the full map only when the id or version changes, else `{ id, version }`.
+- **Decoration** (`decor`, Engine 0.16 polish P4): a room file may carry an optional decoration
+  grid, usually `rooms/<id>.decor.txt` (the room kind's second grid part after `.map.txt`): 11 rows
+  of 16 characters, `.` for nothing and any other `DECOR_CHARS` character (`room.ts`: printable
+  ASCII that is no kit `LEGEND` character and no `PRESENT_TILES` one, so `d` too) for a prop. The
+  room schema reports a bad character as `unknown_char`, a short row as `ragged_row` and a grid
+  not 16x11 as `size_mismatch` (none of them stops the room's own checks). It is presentation
+  only: no rule reads it (no collision, no snapshot field), so a room with and without it gives the
+  same state hashes (`decor.test.ts`). `presentMap` adds it as the map layer `decor`, empty cells
+  as spaces (no skin lists a space, so the layer never redraws the floor's `.`); the skin's `tiles`
+  map each prop character to a frame, drawn over the tiles, a frame's `anchor` placing a prop
+  larger than a tile on its cell (the anchored-decoration walk in `engine/core/draw`). It never
+  changes, so it is not in `version`. During a room slide the layer holds both rooms' decoration,
+  each where its `parts` entry puts it, so it slides with them; a room without `decor` adds blanks
+  there (and a slide between two undecorated rooms has no layer).
 - **Positions** are world pixels (the room's top-left tile at 0,0). The HUD band is not baked in:
   `camera` `{ x, y }` is the world point at the picture's centre (`cameraHint(view, size, top)`):
   the HUD band (`top` px) stays at the top of any picture size, the room is centred across the
