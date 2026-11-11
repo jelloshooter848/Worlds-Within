@@ -3,6 +3,7 @@ import type { Container } from 'pixi.js';
 import { Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { blended, clipped, glowing, transformed, translucent } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
+import { ditheredRadial } from '@engine/core/fx';
 import { glowHalo, GRADIENT_SIZE, HALO_SIZE, PixiRenderer, radialTexture } from './renderer';
 
 // pixi.js imports and builds display objects in Node with no DOM adapter: nothing here renders.
@@ -444,5 +445,46 @@ describe('PixiRenderer radial gradients (Engine 0.16 part D, D1: lighting)', () 
     const before = r.stage.children.length;
     r.gradient({ x: -100, y: 20, radius: 20, color: '#000', stops: v, mode: 'add' });
     expect(r.stage.children).toHaveLength(before);
+  });
+});
+
+describe('PixiRenderer dithered radial fills (Engine 0.16 polish P, C1)', () => {
+  const fill = {
+    x: 50,
+    y: 40,
+    radius: 10,
+    color: '#f8b800',
+    stops: [
+      { at: 0, alpha: 0.8 },
+      { at: 1, alpha: 0 },
+    ],
+    mode: 'erase' as const,
+    dither: { size: 8 as const, levels: 16 },
+  };
+
+  it("draws one whole-pixel sprite of the fill's dithered bytes, its textures reused next frame", () => {
+    const r = renderer();
+    r.gradient(fill);
+    r.gradient({ ...fill, mode: 'add', x: 20 });
+    const [erase, add] = only(r.stage.children, Sprite);
+    expect([erase!.x, erase!.y, erase!.width, erase!.height]).toEqual([40, 30, 20, 20]);
+    expect(erase!.blendMode).toBe('erase');
+    expect(add!.blendMode).toBe('add');
+    expect(add!.tint).toBe(0xf8b800);
+    expect(erase!.texture).not.toBe(add!.texture);
+    const texture = erase!.texture;
+    const bytes = (texture.source.resource as Uint8Array).slice();
+    const want = ditheredRadial(fill, fill.dither, { width: 256, height: 240 })!;
+    // Premultiplied white: the alpha byte of texel (i, j) in row stride of the texture's width.
+    const stride = texture.source.width;
+    expect(bytes[(10 * stride + 10) * 4 + 3]).toBe(want.alpha[10 * want.w + 10]);
+    r.beginFrame();
+    r.gradient({ ...fill, radius: 9 });
+    const [again] = only(r.stage.children, Sprite);
+    expect(again!.texture).toBe(texture);
+    expect([again!.width, again!.height]).toEqual([18, 18]);
+    r.beginFrame();
+    r.gradient(fill);
+    expect((texture.source.resource as Uint8Array).slice()).toEqual(bytes);
   });
 });

@@ -170,7 +170,13 @@ map's surface, below). `particleCount` is the particles alive after the last `pr
   translucent box. Then each light with a `glow` is added in its colour (`mode: 'add'`), then the
   vignette (a radial fill over the whole picture, clear to `inner`, `strength` at the corners).
   `CanvasRenderer.gradient` (the optional `Renderer.gradient`, `RadialFill`) fills a box with a
-  `createRadialGradient` at `destination-out`, `lighter` or `source-over`. `reduceFlashing`
+  `createRadialGradient` at `destination-out`, `lighter` or `source-over`. With the skin's
+  `lighting.dither` (Engine 0.16 polish P, C1) each light's erase and glow fill carries
+  `dither` (`lightDither(layout)`) and smooth stops (`lightStops(.., bands, dither)`): the
+  renderer then draws `ditheredRadial`'s alpha bytes (`@engine/core/fx`, an ordered Bayer dither
+  by picture pixel, no RNG) in the fill's colour as image data on a scratch canvas (an
+  `OffscreenCanvas`, made once and grown; none in Node), copied with the same blend, since
+  `putImageData` takes none. The vignette is never dithered. `reduceFlashing`
   halves event flashes and flicker. Room-wide `lighting.particles` run in `SkinParticles` (the
   presenter passes it the map shown) and are drawn with the other particles. The walk is the
   core's (merged in Engine 0.16 part D, D1), so the PixiJS backend runs it too, with its own
@@ -304,7 +310,10 @@ calls on the screen and on a recording light surface: the darkness cleared and e
 the light map laid over at the darkness level after the entities and before the HUD, glows added,
 the vignette over the picture, a kind lit only in its states, a placed sprite under the entities,
 an event's flash fading (half with reduced flashing), the surface made once and again on a resize,
-the flat box without a surface, nothing for a skin without lighting and the same calls per seed.
+the flat box without a surface, nothing for a skin without lighting and the same calls per seed,
+and (polish P) a skin's `dither` passed to every light's erase and glow fill with the finer smooth
+stops, never to the vignette. `renderer.test.ts`'s dithered block puts the fill's dithered bytes
+in its colour on the scratch canvas and draws them in its blend, the same bytes each time.
 
 These tests drive the shared walk in `@engine/core/draw` through the thin wrappers here (Engine
 0.16 T13b moved the code, not the tests); `engine/core/draw/draw.test.ts` checks the core's own

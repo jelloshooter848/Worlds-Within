@@ -1,3 +1,4 @@
+import type { RadialDither } from '../fx/dither';
 import type { SpriteSheet } from './spritesheet';
 
 /**
@@ -134,6 +135,12 @@ export interface RadialFill {
   mode: RadialMode;
   /** The box filled (default the circle's bounding square). */
   box?: { x: number; y: number; w: number; h: number };
+  /**
+   * Dithered (Engine 0.16 polish P, C1): drawn pixel by pixel as `ditheredRadial` in
+   * `@engine/core/fx` gives it (an ordered Bayer dither by picture pixel, no RNG), not as a
+   * smooth gradient, so every backend draws the same pixels and a falloff shows no rings.
+   */
+  dither?: RadialDither;
 }
 
 /** Fills `g` through `r` where `r` can (Renderer.gradient), else draws nothing. */

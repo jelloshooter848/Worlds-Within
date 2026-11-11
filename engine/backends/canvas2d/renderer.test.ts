@@ -133,3 +133,79 @@ describe('CanvasRenderer radial gradients (Engine 0.16 part C T4)', () => {
     ]);
   });
 });
+
+describe('CanvasRenderer dithered radial fills (Engine 0.16 polish P, C1)', () => {
+  const fill = {
+    x: 10,
+    y: 8,
+    radius: 5,
+    color: '#f80',
+    stops: [
+      { at: 0, alpha: 1 },
+      { at: 1, alpha: 0 },
+    ],
+    mode: 'add' as const,
+    dither: { size: 4 as const, levels: 8 },
+  };
+
+  /** A context whose scratch canvas keeps the image data put on it, and records each draw. */
+  function ditherCtx() {
+    const draws: { op: string; data: number[]; at: number[] }[] = [];
+    let put: number[] = [];
+    const scratchCtx = {
+      createImageData: (w: number, h: number) => ({
+        width: w,
+        height: h,
+        data: new Uint8ClampedArray(w * h * 4),
+      }),
+      putImageData: (img: { data: Uint8ClampedArray }) => (put = [...img.data]),
+    };
+    const g = globalThis as { OffscreenCanvas?: unknown };
+    const had = g.OffscreenCanvas;
+    g.OffscreenCanvas = class {
+      constructor(
+        public width: number,
+        public height: number,
+      ) {}
+      getContext() {
+        return scratchCtx;
+      }
+    };
+    const ctx = {
+      canvas: { width: 64, height: 32 },
+      imageSmoothingEnabled: true,
+      globalCompositeOperation: 'source-over',
+      save: () => undefined,
+      restore: () => undefined,
+      drawImage(_img: unknown, ...at: number[]) {
+        draws.push({ op: this.globalCompositeOperation, data: put, at });
+      },
+    };
+    const restore = () => {
+      g.OffscreenCanvas = had;
+    };
+    return { ctx: ctx as unknown as CanvasRenderingContext2D, draws, restore };
+  }
+
+  it('puts the fill dithered in its colour and draws it in its blend, the same bytes every time', () => {
+    const { ctx, draws, restore } = ditherCtx();
+    try {
+      const r = new CanvasRenderer(ctx);
+      r.gradient(fill);
+      r.gradient({ ...fill, mode: 'erase' });
+      r.gradient(fill);
+      expect(draws.map((d) => d.op)).toEqual(['lighter', 'destination-out', 'lighter']);
+      // The circle's square in whole pixels, from the scratch's top-left.
+      expect(draws[0]!.at).toEqual([0, 0, 10, 10, 5, 3, 10, 10]);
+      const first = draws[0]!.data;
+      expect(first.slice(0, 3)).toEqual([255, 136, 0]);
+      const alphas = new Set(first.filter((_, i) => i % 4 === 3));
+      const steps = Array.from({ length: 9 }, (_, k) => Math.round((k * 255) / 8));
+      for (const a of alphas) expect(steps).toContain(a);
+      expect(alphas.size).toBeGreaterThan(2);
+      expect(draws[2]!.data).toEqual(first);
+    } finally {
+      restore();
+    }
+  });
+});

@@ -1452,7 +1452,7 @@ export const skinSchema = z
     lighting: lightingSchema
       .exactOptional()
       .describe(
-        '2D lighting and mood (Engine 0.16 part C): `{ ambient?, tags?, maps?: { id: { ambient?, lights? } }, kinds?, tiles?, events?, vignette?, bands?, particles? }`: darkness per map tag or id, lights per kind and state, tile, place and event (radius, colour, intensity, glow, flicker), a vignette and room-wide particles',
+        '2D lighting and mood (Engine 0.16 part C): `{ ambient?, tags?, maps?: { id: { ambient?, lights? } }, kinds?, tiles?, events?, vignette?, bands?, dither?, particles? }`: darkness per map tag or id, lights per kind and state, tile, place and event (radius, colour, intensity, glow, flicker), a vignette, banded or dithered falloffs and room-wide particles',
       ),
     themes: z
       .record(id, themeSchema)

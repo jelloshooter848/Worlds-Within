@@ -2,6 +2,7 @@ import type { SheetLookup } from '../assets/sheet-lookup';
 import {
   CameraFx,
   layoutParallax,
+  lightDither,
   lightStops,
   REST_STATE,
   SkinLighting,
@@ -488,7 +489,8 @@ export class SkinnedPresenter implements Presenter {
   /**
    * The skin's lighting over the picture (after the entities and particles, before effects and
    * the HUD): the darkness drawn on the light map with each light erased out of it as a radial
-   * gradient (`lightStops`: smooth or in `bands`), the map laid over the picture at the darkness
+   * gradient (`lightStops`: smooth or in `bands`; dithered by picture pixel with the skin's
+   * `dither`, `lightDither`), the map laid over the picture at the darkness
    * level, then each light's colour added (`add`), then the vignette.
    */
   private drawLighting(frame: Frame, view: View, size: ScreenSize): void {
@@ -505,6 +507,7 @@ export class SkinnedPresenter implements Presenter {
     if (layout === null) return;
     const r = this.r;
     if (layout.darkness !== null) this.drawDarkness(layout, size);
+    const dither = lightDither(layout);
     for (const l of layout.lights) {
       if (l.glow <= 0) continue;
       radialFilled(r, {
@@ -512,8 +515,9 @@ export class SkinnedPresenter implements Presenter {
         y: l.y,
         radius: l.radius,
         color: l.color,
-        stops: lightStops(l.glow, layout.bands),
+        stops: lightStops(l.glow, layout.bands, layout.dither),
         mode: 'add',
+        ...(dither && { dither }),
       });
     }
     const v = layout.vignette;
@@ -553,6 +557,7 @@ export class SkinnedPresenter implements Presenter {
     }
     const s = surface.renderer;
     s.clear(dark.color);
+    const dither = lightDither(layout);
     for (const l of layout.lights) {
       if (l.intensity <= 0) continue;
       radialFilled(s, {
@@ -560,8 +565,9 @@ export class SkinnedPresenter implements Presenter {
         y: l.y,
         radius: l.radius,
         color: '#000000',
-        stops: lightStops(l.intensity, layout.bands),
+        stops: lightStops(l.intensity, layout.bands, layout.dither),
         mode: 'erase',
+        ...(dither && { dither }),
       });
     }
     const sheet: SpriteSheet = {

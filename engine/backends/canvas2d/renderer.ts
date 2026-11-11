@@ -1,10 +1,13 @@
-import { parseHexColor } from '@engine/core/fx';
+import { ditheredRadial, parseHexColor } from '@engine/core/fx';
 import type { BlendMode, RadialFill, Renderer, Rotation } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export class CanvasRenderer implements Renderer {
+  /** The scratch canvas a dithered fill's pixels are put on before they are drawn (made once, grown). */
+  private scratch: { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: Ctx } | null = null;
+
   constructor(private readonly ctx: Ctx) {
     ctx.imageSmoothingEnabled = false;
   }
@@ -109,9 +112,17 @@ export class CanvasRenderer implements Renderer {
       ctx.restore();
     }
   }
-  /** A radial gradient (Engine 0.16 part C T4): `erase` is `destination-out`, `add` is `lighter`. */
+  /**
+   * A radial gradient (Engine 0.16 part C T4): `erase` is `destination-out`, `add` is `lighter`.
+   * A dithered one (`g.dither`, Engine 0.16 polish P) is `ditheredRadial`'s pixels in `g.color`,
+   * put on a scratch canvas and drawn with the same blend (`putImageData` takes no blend).
+   */
   gradient(g: RadialFill): void {
     const ctx = this.ctx;
+    if (g.dither !== undefined) {
+      this.dithered(g);
+      return;
+    }
     // A context without radial gradients (a test's fake page, whose methods may return nothing) draws none.
     if (!(g.radius > 0) || typeof ctx.createRadialGradient !== 'function') return;
     const rgb = parseHexColor(g.color) ?? [0, 0, 0];
@@ -129,6 +140,50 @@ export class CanvasRenderer implements Renderer {
     ctx.fillRect(box.x, box.y, box.w, box.h);
     ctx.restore();
   }
+  /** A dithered radial fill: its alpha bytes in `g.color` as image data, drawn through a scratch canvas. */
+  private dithered(g: RadialFill): void {
+    const ctx = this.ctx;
+    const stamp = ditheredRadial(g, g.dither!, { width: ctx.canvas.width, height: ctx.canvas.height });
+    if (stamp === null) return;
+    const scratch = this.scratchFor(stamp.w, stamp.h);
+    // A context without image data (a test's fake page) draws none.
+    if (scratch === null || typeof scratch.ctx.createImageData !== 'function') return;
+    const [r, gr, b] = parseHexColor(g.color) ?? [0, 0, 0];
+    const img = scratch.ctx.createImageData(stamp.w, stamp.h) as ImageData | undefined;
+    // A fake page's context may make no image data: it draws none.
+    if (img?.data === undefined) return;
+    const px = img.data;
+    for (let i = 0; i < stamp.alpha.length; i++) {
+      px[i * 4] = r;
+      px[i * 4 + 1] = gr;
+      px[i * 4 + 2] = b;
+      px[i * 4 + 3] = stamp.alpha[i]!;
+    }
+    scratch.ctx.putImageData(img, 0, 0);
+    ctx.save();
+    ctx.globalCompositeOperation =
+      g.mode === 'erase' ? 'destination-out' : g.mode === 'add' ? 'lighter' : 'source-over';
+    ctx.drawImage(scratch.canvas, 0, 0, stamp.w, stamp.h, stamp.x, stamp.y, stamp.w, stamp.h);
+    ctx.restore();
+  }
+
+  /** The scratch canvas, at least `w` x `h` (cleared where a fill is put), or null where none can be made. */
+  private scratchFor(w: number, h: number): { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: Ctx } | null {
+    const s = this.scratch;
+    if (s !== null && s.canvas.width >= w && s.canvas.height >= h) return s;
+    const width = Math.max(w, s?.canvas.width ?? 0);
+    const height = Math.max(h, s?.canvas.height ?? 0);
+    let canvas: OffscreenCanvas | HTMLCanvasElement;
+    if (typeof OffscreenCanvas !== 'undefined') canvas = new OffscreenCanvas(width, height);
+    else if (typeof document !== 'undefined')
+      canvas = Object.assign(document.createElement('canvas'), { width, height });
+    else return null;
+    const c = canvas.getContext('2d') as Ctx | null;
+    if (c === null) return null;
+    this.scratch = { canvas, ctx: c };
+    return this.scratch;
+  }
+
   glow(color: string, radius: number, draw: () => void): void {
     const ctx = this.ctx;
     ctx.save();

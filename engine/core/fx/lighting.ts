@@ -2,10 +2,12 @@ import { resolveSkinEvent, type SkinFile } from '../present/skin';
 import type { DeepReadonly, PresentEntity, PresentEvent, PresentMap, PresentMapPart } from '../present/types';
 import type { ScreenSize } from '../gfx/screen';
 import { lerpColor } from './color';
+import type { DitherSize, RadialDither } from './dither';
 import { anchorPoint } from './particles';
 import { fxRng } from './rng';
 import {
   LIGHT_DEFAULTS,
+  LIGHT_DITHER_LEVELS,
   type AmbientSpec,
   type EventLight,
   type LightFlicker,
@@ -57,8 +59,10 @@ export interface LightingLayout {
   darkness: { color: string; level: number } | null;
   lights: LightDraw[];
   vignette: { color: string; strength: number; inner: number } | null;
-  /** Flat steps in each light's falloff (0: smooth). */
+  /** Flat steps in each light's falloff (0: smooth); with `dither`, the alpha steps dithered between. */
   bands: number;
+  /** The Bayer matrix's side each falloff is dithered with (0: none; Engine 0.16 polish P, C1). */
+  dither: 0 | DitherSize;
 }
 
 /** A placed light's sprite to draw this frame, in world px (top-left), before the entities. */
@@ -79,6 +83,11 @@ export interface LightStop {
 export const LIGHT_SPRITE_TICKS = 8;
 /** How many stops a smooth falloff has. */
 export const LIGHT_SMOOTH_STOPS = 8;
+/**
+ * How many stops a dithered falloff has: finer than a plain smooth one, so the straight runs
+ * between stops do not show through the dither as faint rings.
+ */
+export const LIGHT_DITHER_STOPS = 32;
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
@@ -86,11 +95,13 @@ const smoothstep = (t: number) => t * t * (3 - 2 * t);
  * The falloff of a light of `intensity` from its centre to its radius: smooth (`bands` 0: an
  * ease from full to nothing) or in `bands` flat steps, each band's value the curve's at its inner
  * edge, so a band's edges are hard (two stops at one place). The last stop is always 0 at 1.
+ * With `dither` (a Bayer size, Engine 0.16 polish P) it is always the smooth ease, in
+ * `LIGHT_DITHER_STOPS` stops: the steps come from dithering it (`lightDither`), not from stops.
  */
-export function lightStops(intensity: number, bands = 0): LightStop[] {
+export function lightStops(intensity: number, bands = 0, dither = 0): LightStop[] {
   const fall = (t: number) => intensity * (1 - smoothstep(Math.min(1, Math.max(0, t))));
-  if (bands <= 0) {
-    const n = LIGHT_SMOOTH_STOPS;
+  if (bands <= 0 || dither > 0) {
+    const n = dither > 0 ? LIGHT_DITHER_STOPS : LIGHT_SMOOTH_STOPS;
     return Array.from({ length: n + 1 }, (_, i) => ({ at: i / n, alpha: fall(i / n) }));
   }
   const out: LightStop[] = [];
@@ -100,6 +111,15 @@ export function lightStops(intensity: number, bands = 0): LightStop[] {
   }
   out.push({ at: 1, alpha: 0 });
   return out;
+}
+
+/**
+ * How a layout's falloffs are dithered (`RadialFill.dither`), or undefined for none: its Bayer
+ * size, between `bands` alpha steps, or `LIGHT_DITHER_LEVELS` when it has no bands.
+ */
+export function lightDither(layout: { bands: number; dither: number }): RadialDither | undefined {
+  if (layout.dither !== 4 && layout.dither !== 8) return undefined;
+  return { size: layout.dither, levels: layout.bands > 0 ? layout.bands : LIGHT_DITHER_LEVELS };
 }
 
 /**
@@ -401,6 +421,7 @@ export class SkinLighting {
               inner: v.inner ?? LIGHT_DEFAULTS.vignetteInner,
             },
       bands: lighting.bands ?? 0,
+      dither: lighting.dither ?? 0,
     };
   }
 

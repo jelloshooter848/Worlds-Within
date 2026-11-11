@@ -3235,7 +3235,8 @@
         "maps": ["crypt"]
       }
     ],
-    "bands": 6
+    "bands": 0,
+    "dither": 8
   },
   "music": {
     "crypt": {

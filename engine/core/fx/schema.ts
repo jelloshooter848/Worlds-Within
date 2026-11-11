@@ -446,6 +446,9 @@ export const LIGHT_DEFAULTS = {
 /** The most light bands a skin may ask for (`bands`; 0 is a smooth falloff). */
 export const LIGHT_MAX_BANDS = 16;
 
+/** The alpha steps a dithered falloff is quantized to when the skin gives no `bands`. */
+export const LIGHT_DITHER_LEVELS = 64;
+
 const unit = (what: string) => z.number().min(0).max(1).describe(what);
 
 export const lightFlickerSchema = z
@@ -615,6 +618,12 @@ export const lightingSchema = z
       .max(LIGHT_MAX_BANDS)
       .exactOptional()
       .describe('light falls off in this many flat steps, pixel-art style (default 0: smooth)'),
+    dither: z
+      .union([z.literal(0), z.literal(4), z.literal(8)])
+      .exactOptional()
+      .describe(
+        `an ordered (Bayer) dither of each falloff by picture pixel, 4x4 or 8x8, with no RNG (default 0: none): the falloff is drawn smooth and dithered between \`bands\` alpha steps, or ${LIGHT_DITHER_LEVELS} with no \`bands\`, so it shows no rings`,
+      ),
     particles: z
       .array(ambientParticlesSchema)
       .exactOptional()

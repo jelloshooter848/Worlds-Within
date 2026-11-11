@@ -273,6 +273,17 @@ dawn-fresh.run.json --tick 30 --backend three` draws the dawn at 06:00 but lit a
   notes say.
 - **P-4.** C2's shots cover all six rooms other than the crypt and the warden hall (01 and 02
   show those two), more than the four the task asked for.
+- **P-5 (revisits item 436).** C1: The Old Crypt's skin goes from `lighting.bands: 6` (item 436's
+  stepped pixel-art falloff, which showed as hard rings round every torch) to `bands: 0` with
+  the new `lighting.dither: 8`: each light's falloff is drawn smooth (32 stops) and quantized by
+  picture pixel to 64 alpha steps with an 8x8 Bayer matrix (`LIGHT_DITHER_LEVELS`), no RNG, the
+  same in Canvas2D and PixiJS. 16 and 32 steps were tried and looked at full size: a strong
+  checker in the half-lit floor (16) and a busy one (32); at 64 the dither is a faint pixel
+  texture and no ring shows. A skin that wants the stepped look back with soft edges can give
+  `bands` with `dither` (it dithers between its bands). The smooth falloff ends darker towards
+  the radius than the banded one (a band kept its inner edge's value), so the rooms read a little
+  darker at their edges; no radius was changed. The fx lab's night level keeps its smooth,
+  undithered falloff (it had no bands and shows no rings).
 - Seen in the shots and not in P's scope: the results' losses wrap "Vosk" onto its own line in the
   left column (15); at the dawn an empty black bar floats over a soldier by the hall (11).
 

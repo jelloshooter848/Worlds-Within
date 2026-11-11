@@ -11,6 +11,7 @@ import {
   Texture,
   TextureSource,
 } from 'pixi.js';
+import { ditheredRadial, stopsAlpha } from '@engine/core/fx';
 import type { BlendMode, RadialFill, Renderer, Rotation } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
@@ -161,17 +162,7 @@ export function radialTexture(stops: readonly { at: number; alpha: number }[]): 
   const key = norm.map((s) => `${s.at.toFixed(4)}:${s.alpha}`).join(',');
   const hit = gradientTextures.get(key);
   if (hit) return hit;
-  const alphaAt = (d: number): number => {
-    if (norm.length === 0) return 0;
-    if (d <= norm[0]!.at) return norm[0]!.alpha;
-    for (let i = 1; i < norm.length; i++) {
-      const a = norm[i - 1]!;
-      const b = norm[i]!;
-      if (d <= b.at)
-        return b.at === a.at ? b.alpha : a.alpha + ((d - a.at) / (b.at - a.at)) * (b.alpha - a.alpha);
-    }
-    return norm[norm.length - 1]!.alpha;
-  };
+  const alphaAt = (d: number): number => stopsAlpha(norm, d);
   const n = GRADIENT_SIZE;
   const px = new Uint8Array(n * n * 4);
   for (let y = 0; y < n; y++) {
@@ -198,6 +189,62 @@ export function radialTexture(stops: readonly { at: number; alpha: number }[]): 
   }
   gradientTextures.set(key, texture);
   return texture;
+}
+
+/** The side a dithered fill's texture is rounded up to, so a flickering light reuses its texture. */
+const STAMP_STEP = 32;
+
+/**
+ * A dithered fill's texture (Engine 0.16 polish P, C1): a white buffer whose alpha is the fill's
+ * bytes, at least `cap` texels a side, its frame cut to the fill's size. Pooled per renderer and
+ * rewritten each frame (`PixiRenderer.gradient` with `dither`), so a steady scene makes none.
+ */
+class DitherStamp {
+  readonly bytes: Uint8Array;
+  readonly source: BufferImageSource;
+  readonly texture: Texture;
+  constructor(
+    readonly capW: number,
+    readonly capH: number,
+  ) {
+    this.bytes = new Uint8Array(capW * capH * 4);
+    this.source = new BufferImageSource({
+      resource: this.bytes,
+      width: capW,
+      height: capH,
+      alphaMode: 'premultiplied-alpha',
+      scaleMode: 'nearest',
+    });
+    // Dynamic: a sprite showing it hears when its frame changes (`update`) and resizes.
+    this.texture = new Texture({
+      source: this.source,
+      frame: new Rectangle(0, 0, capW, capH),
+      dynamic: true,
+    });
+  }
+
+  /** Writes `alpha` (`w` x `h` bytes) as premultiplied white and cuts the frame to it. */
+  write(alpha: Uint8Array, w: number, h: number): void {
+    const px = this.bytes;
+    px.fill(0);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const a = alpha[y * w + x]!;
+        const i = (y * this.capW + x) * 4;
+        px[i] = px[i + 1] = px[i + 2] = px[i + 3] = a;
+      }
+    this.source.update();
+    const { frame, orig } = this.texture;
+    if (frame.width !== w || frame.height !== h) {
+      frame.width = orig.width = w;
+      frame.height = orig.height = h;
+      this.texture.update();
+    }
+  }
+
+  destroy(): void {
+    this.texture.destroy(true);
+  }
 }
 
 interface Tint {
@@ -267,6 +314,9 @@ export class PixiRenderer implements Renderer {
   private readonly texts = new Pool(
     () => new Text({ text: '', style: { fontFamily: 'monospace', fontSize: 8, fill: 0xffffff } }),
   );
+  /** Dithered fills' textures, one per dithered fill this frame (`gradient` with `dither`). */
+  private readonly stamps: DitherStamp[] = [];
+  private stampsUsed = 0;
   private readonly sheets = new WeakMap<SpriteSheet, SheetTextures>();
   private readonly tints = new Map<string, Tint>();
   private readonly size: ScreenSize;
@@ -312,6 +362,7 @@ export class PixiRenderer implements Renderer {
     this.containers.used = 0;
     this.masks.used = 0;
     this.texts.used = 0;
+    this.stampsUsed = 0;
   }
 
   /** Pooled objects in use this frame (`used`) and made so far (`made`). */
@@ -512,6 +563,10 @@ export class PixiRenderer implements Renderer {
    */
   gradient(g: RadialFill): void {
     if (!(g.radius > 0)) return;
+    if (g.dither !== undefined) {
+      this.dithered(g);
+      return;
+    }
     const peak = Math.max(0, ...g.stops.map((s) => Math.min(1, Math.max(0, s.alpha))));
     if (peak <= 0 && g.mode !== 'normal') return;
     const x = g.x - g.radius;
@@ -540,6 +595,36 @@ export class PixiRenderer implements Renderer {
       b.y + b.h >= this.size.height;
     if (b !== undefined && inside && !coversPicture) this.clip(b.x, b.y, b.w, b.h, put);
     else put();
+  }
+
+  /**
+   * A dithered radial fill (Engine 0.16 polish P, C1): `ditheredRadial`'s pixels (the same bytes
+   * the Canvas2D backend puts) as one sprite of a pooled {@link DitherStamp} at their whole-pixel
+   * place, scale 1, tinted `g.color`, blended as `gradient`. The box is already cut into the bytes.
+   */
+  private dithered(g: RadialFill): void {
+    const stamp = ditheredRadial(g, g.dither!, this.size);
+    if (stamp === null || this.culled(stamp.x, stamp.y, stamp.w, stamp.h)) return;
+    let t = this.stamps[this.stampsUsed];
+    if (t === undefined || t.capW < stamp.w || t.capH < stamp.h) {
+      const up = (n: number, have = 0) => Math.max(have, Math.ceil(n / STAMP_STEP) * STAMP_STEP);
+      const next = new DitherStamp(up(stamp.w, t?.capW), up(stamp.h, t?.capH));
+      t?.destroy();
+      this.stamps[this.stampsUsed] = next;
+      t = next;
+    }
+    this.stampsUsed++;
+    t.write(stamp.alpha, stamp.w, stamp.h);
+    const s = this.sprites.take();
+    s.texture = t.texture;
+    s.anchor.set(0, 0);
+    s.rotation = 0;
+    s.position.set(stamp.x, stamp.y);
+    s.scale.set(1, 1);
+    tintSprite(s, this.tint(g.color).rgb);
+    s.alpha = this.opacity;
+    s.blendMode = g.mode === 'erase' ? 'erase' : g.mode === 'add' ? 'add' : this.mode;
+    this.parent.addChild(s);
   }
 
   transform(
