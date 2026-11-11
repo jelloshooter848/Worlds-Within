@@ -14,7 +14,7 @@
     "font": ["content/fonts/*.txt"]
   },
   "start": { "seed": 9 },
-  "screen": { "width": 320, "height": 240 },
+  "screen": { "width": 480, "height": 270 },
   "menus": {
     "font": "ford-small",
     "titleFont": "ford-title",
@@ -39,8 +39,10 @@
       "name": "The River Ford",
       "subtitle": "Hold the crossing against the raiders",
       "art": [
-        { "sheet": "skirmish", "frame": "hero-right-0", "scale": 3, "anchor": "left", "x": 40, "y": -6 },
-        { "sheet": "skirmish", "frame": "soldier-right-1", "scale": 3, "anchor": "left", "x": 100, "y": 4 }
+        { "sheet": "rts", "frame": "hero-red", "scale": 3, "anchor": "left", "x": 44, "y": -4 },
+        { "sheet": "rts", "frame": "worker-red", "scale": 2, "anchor": "left", "x": 104, "y": 14 },
+        { "sheet": "rts", "frame": "soldier-blue", "scale": 3, "anchor": "right", "x": 44, "y": -4 },
+        { "sheet": "rts", "frame": "soldier-blue", "scale": 2, "anchor": "right", "x": 104, "y": 14 }
       ],
       "music": "ford",
       "footer": "An original game made with the Worlds Within engine",

@@ -7,7 +7,7 @@ import { parseOverlay } from '../../engine/tools/sheet-overlay';
 import { shotSetup } from '../../engine/tools/shot-job';
 
 // Visual parity of the two 2D backends (Engine 0.16 T13b-5): the same ticks of the fx lab, the RTS
-// skirmish and the tower defense, drawn by `pnpm cli screenshot`'s page through Canvas2D (the
+// skirmish (the 0.15 battle and, from part D's D7, The River Ford on its CC0 pack) and the tower defense, drawn by `pnpm cli screenshot`'s page through Canvas2D (the
 // view's `render`) and through PixiJS (`frame()` and `pixiDisplay`, WebGL on SwiftShader), are
 // compared pixel by pixel. Every presentation effect is on (the presenters' defaults): particles,
 // flashes, tints, shake, parallax, the HUD, the pause menu (the fx lab) and a fade or wipe
@@ -80,6 +80,14 @@ const CASES: Case[] = [
     run: 'games/rts-classic/runs/battle.run.json',
     // A building done (flash), units going down (particles), hits, the battle won (tint, banner).
     tiles: ['19', '124', '127', '141', '148', '160', '127+fade*10', '141+wipe*8'],
+    bound: STRICT,
+  },
+  {
+    name: 'the RTS skirmish on its CC0 pack at 16:9 (The River Ford, Engine 0.16 part D, D7)',
+    run: 'games/samples/rts-skirmish/runs/battle.run.json',
+    // The pack's sprites with team colours and outlines, the made ground sheet, zoom-stable bars,
+    // the minimap; a building done (flash), units going down (particles), the battle won (banner).
+    tiles: ['19', '124', '141', '160', '141+fade*10'],
     bound: STRICT,
   },
   {

@@ -14,17 +14,28 @@ exports as a run file that `pnpm -s cli run` replays to the same state hashes. S
 T14 it is **finished** as **The River Ford** (docs/BUILD-LOG.md, Engine 0.15, decision 13): sfx
 for the battle's events and an MML song, no placeholder look left, a win and a loss with an end
 banner and an end screen, and a `lost` run file. Its `CLAUDE.md` is the worked example of an RTS
-game on the kit.
+game on the kit. From Engine 0.16 part D (D7) it draws on a CC0 pack, Kenney's Medieval RTS
+(`assets/kenney-medieval-rts/`, credited in `assets/CREDITS.md`), at 16:9 (480x270, 4x is
+1920x1080), with team colours, team outlines, zoom-stable bars and a minimap; text sprites remain
+only where the pack has nothing (ring, bars, box, path dots, order markers, HUD icons, banners).
+Presentation only: no hash moved.
 
 ## Public API entry points
 
-- `game.json`: kit `rts`, 320x240, seed 9, `headless.ts`, `view.ts`.
+- `game.json`: kit `rts`, 480x270 (16:9, Engine 0.16 part D, D7; 320x240 before), seed 9,
+  `headless.ts`, `view.ts`; the title's art is the pack's hero and soldiers.
+- `assets/kenney-medieval-rts/` (D7): the pack's sheet `medieval-rts-sheet.png` and its atlas
+  (`medieval-rts-sheet-atlas.txt`), `license.txt`, and `ford-tiles.png`, the ground, roads, river
+  banks, rocks, trees, gold, sites and ghost cut and scaled from the pack for 16 px cells by
+  `tools/ford-tiles.ts` (`fordTiles`, `FORD_FRAMES`); `assets/CREDITS.md`.
 - `content/`: `maps/skirmish.world.json` (`rts-map`), `types/skirmish.json` (`rts-types`),
-  `enemy/raiders.json` (`rts-enemy`), `sprites/skirmish.txt` (with the end banners
-  `banner-won` and `banner-lost`) and `skirmish-font.txt`, `palettes/skirmish.json` and
-  `skirmish-blue.json`, `skins/canvas2d.json` (its `events`: sounds and effects for the kit's
-  `RtsEventTracker` events and `battle-end`; its HUD: the banners), `sfx/*.json` (nine) and
-  `songs/ford.json` (Engine 0.15 T14).
+  `enemy/raiders.json` (`rts-enemy`), `sprites/skirmish.txt` (what the pack lacks: ring, bars,
+  box, path dots, order markers, HUD icons, the end banners `banner-won` and `banner-lost`) and
+  `skirmish-font.txt`, `palettes/skirmish.json`, `skins/canvas2d.json` (images `rts` and `ford`;
+  every kind the kit presents with team colours and outlines; tiles with `join` roads and banks
+  and `vary` ground; `fog` colours; its `events`: sounds and effects for the kit's
+  `RtsEventTracker` events and `battle-end`; its HUD: the counters, a minimap and the banners),
+  `sfx/*.json` (nine) and `songs/ford.json` (Engine 0.15 T14).
 - `headless.ts`: `createGame(content, seed, opts?)` (a `SkirmishGame`: the kit's `rtsGame` on
   the sim's `rtsWorldPort(world)` (Engine 0.15 T6, gap M27), taking
   recorded orders and interface actions; snapshot `{ world, kit, sides, ui }`; Engine 0.14 T7:
@@ -61,14 +72,16 @@ game on the kit.
 
 ## How to test
 
-`pnpm test games/samples/rts-skirmish`, `pnpm -s cli validate games/samples/rts-skirmish --json`,
+`pnpm test games/samples/rts-skirmish` (`assets.test.ts`: the credits, the made sheet against
+its script, the frames against the pack's atlas), `pnpm -s cli validate games/samples/rts-skirmish --json`,
 `pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json`,
 `pnpm -s cli mutants games/samples/rts-skirmish --json` (exit 0), `pnpm test tests/runs` (golden
 hashes and backend parity through null and Canvas2D), `pnpm -s cli screenshot
 games/samples/rts-skirmish/runs/battle.run.json --tick 140 --json`,
 `pnpm vitest run tests/browser/rts-skirmish.test.ts` (the page followed from the games index's
 link in headless Chromium: the volume control, a battle by mouse and touch, the end screen on the
-win, its export replayed with `pnpm -s cli run` to the same hashes).
+win, its export replayed with `pnpm -s cli run` to the same hashes), `pnpm vitest run
+tests/browser/pixi-parity.test.ts` (the sample's battle on Canvas2D and PixiJS, strict bound).
 
 ## 2D backend choice
 

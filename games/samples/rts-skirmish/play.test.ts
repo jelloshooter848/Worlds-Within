@@ -139,7 +139,7 @@ describe('SkirmishPlay (the page without the DOM)', () => {
 
   it('starts with the camera on the player’s base and draws through the picture', () => {
     const { play, presenter } = newPlay(new ScriptedPointer());
-    expect(play.camera.topLeft()).toEqual({ x: 0, y: 48 });
+    expect(play.camera.topLeft()).toEqual({ x: 0, y: 33 });
     play.render(new NullRenderer());
     expect(presenter.frames).toBe(1);
     expect(presenter.last?.camera).toMatchObject({ zoom: 1 });

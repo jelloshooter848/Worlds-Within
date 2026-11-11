@@ -1,3 +1,4 @@
+import { withContentImages } from '@engine/core/assets/content-images';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { bootBrowserGame } from '@engine/core/shell';
 import { contentFonts } from '@engine/core/ui';
@@ -56,7 +57,8 @@ export interface SkirmishHook {
   exportRun(game?: string): Promise<RecordedRun | null>;
 }
 
-const content = mustLoad(loadSkirmish(gameFiles), 'the RTS skirmish');
+// The skin's PNG sheets (the CC0 pack, Engine 0.16 part D, D7) decoded before the first frame.
+const content = await withContentImages(mustLoad(loadSkirmish(gameFiles), 'the RTS skirmish'));
 const look = skirmishLook(content);
 const fonts = contentFonts(content);
 let shift = false;

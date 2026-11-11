@@ -6,6 +6,9 @@ import type { Renderer } from '@engine/core/gfx/renderer';
 import { compileSong, parseMml } from '@engine/core/audio/mml';
 import { contentSfx, contentSongs } from '@engine/core/content/game-content';
 import { mustLoad } from '@engine/core/content/game-content';
+import { withContentImages } from '@engine/core/assets/content-images';
+import type { ContentBundle } from '@engine/core/content/bundle';
+import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { readGameFiles } from '@engine/core/node/game-files';
@@ -19,12 +22,25 @@ import {
   skirmishScenario,
   skirmishTypes,
 } from './content';
+import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
+import { presentWorld, RtsPresentState } from '@kits/rts';
 import { createGame, sidesOf, skirmishResult } from './headless';
 import { sideKinds, skirmishCanvasPicture, skirmishFrames, skirmishLook } from './picture';
 import { createView } from './view';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
-const content = mustLoad(loadSkirmish(readGameFiles(ROOT)));
+/**
+ * The bundle with its skin's PNG sheets (the CC0 pack, Engine 0.16 part D, D7) "decoded" for Node:
+ * each image's size from its header and no pixels (the recording renderers here never look at
+ * them), as `withContentImages` gives the page and the screenshot tool the real ones.
+ */
+const content: ContentBundle = await withContentImages(
+  mustLoad(loadSkirmish(readGameFiles(ROOT))),
+  async (url) => {
+    const size = readPngSize(dataUrlBytes(url)!)!;
+    return { image: null, width: size.width, height: size.height, data: null };
+  },
+);
 const NO_INPUT = {} as InputFrame;
 
 interface RunEntry extends JsonObject {
@@ -140,10 +156,10 @@ describe('the skirmish headless', () => {
 });
 
 describe('the skirmish picture', () => {
-  it('gives the enemy side kinds of its own, drawn with the enemy palette', () => {
+  it('gives the enemy side kinds of its own, drawn from the pack in blue', () => {
     const frame = sideKinds({
       frame: 0,
-      size: { width: 320, height: 240 },
+      size: { width: 480, height: 270 },
       entities: [
         {
           id: 'unit-1',
@@ -186,7 +202,9 @@ describe('the skirmish picture', () => {
       status: {},
     } satisfies PresentFrame);
     expect(frame.entities.map((e) => e.kind)).toEqual(['unit:soldier:enemy', 'unit:soldier', 'health-bar']);
-    expect(skirmishLook(content).skin.kinds['unit:soldier:enemy']!.palette).toBe('skirmish-blue');
+    const { skin } = skirmishLook(content);
+    expect(resolveSkinFrame(skin, frame.entities[0]!).frame).toBe('soldier-blue');
+    expect(resolveSkinFrame(skin, frame.entities[1]!).frame).toBe('soldier-red');
   });
 
   it('has a sprite frame for every kind, state, facing and tile the battle shows', () => {
@@ -244,8 +262,8 @@ describe('the skirmish picture', () => {
       }
     })();
     view.render(r);
-    // The 20 x 15 tiles in view (no map cache in Node), the units, the town centre and the HUD.
-    expect(sprites).toBeGreaterThan(300);
+    // The 30 x 17 tiles in view (no map cache in Node), the units, the town centre and the HUD.
+    expect(sprites).toBeGreaterThan(500);
     const snapshot = canonicalJson(view.snapshot());
     view.render(r);
     expect(canonicalJson(view.snapshot())).toBe(snapshot);
@@ -293,6 +311,66 @@ describe('the finished skirmish: art, sound and its end (Engine 0.15 T14)', () =
     });
     expect(sprites).toBeGreaterThan(0);
     expect(fallbacks.slice(0, 5)).toEqual([]);
+  });
+
+  it('draws the feedback, fog and placing of every run from the art too (Engine 0.16 part D, D7)', () => {
+    // What the page adds over a run (selection rings, path dots, order markers of every kind, the
+    // placing ghost, fog), presented each tick through Canvas2D: a frame for every kind and state,
+    // and never a fallback box.
+    const look = skirmishLook(content);
+    const kinds = new Set<string>();
+    const missing = new Set<string>();
+    const fallbacks: string[] = [];
+    let name = '';
+    let tick = 0;
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      rect(_x: number, _y: number, _w: number, _h: number, color: string) {
+        if (color === FALLBACK) fallbacks.push(`${name} ${tick}`);
+      },
+    });
+    for (name of runs) {
+      const state = new RtsPresentState();
+      const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, { size: look.screen });
+      play(name, (g) => {
+        const view = g.rts.view();
+        tick = view.tick;
+        if (tick % 10 === 0) {
+          const kind = (['move', 'attack', 'gather', 'build'] as const)[(tick / 10) % 4]!;
+          state.mark(
+            { kind, x: 10, y: 10, w: kind === 'build' ? 2 : 1, h: kind === 'build' ? 2 : 1, entity: null },
+            tick,
+          );
+        }
+        const frame = sideKinds(
+          presentWorld(view, {
+            faction: PLAYER,
+            size: look.screen,
+            selection: [...view.units, ...view.buildings].map((t) => t.id),
+            placing: { building: 'barracks', cell: { x: 12, y: 12 }, w: 2, h: 2 },
+            box: { x: 16, y: 16, w: 48, h: 32 },
+            fog: true,
+            state,
+          }),
+        );
+        for (const e of frame.entities) {
+          kinds.add(`${e.kind.replace(/:enemy$/, '')} ${e.anim.state}`);
+          if (resolveSkinFrame(look.skin, e).frame === null)
+            missing.add(`${e.kind} ${e.anim.state} ${e.facing}`);
+        }
+        presenter.present(frame);
+      });
+    }
+    expect([...missing].sort()).toEqual([]);
+    expect(fallbacks.slice(0, 5)).toEqual([]);
+    for (const k of ['move', 'attack', 'gather', 'build']) expect(kinds).toContain(`order-marker ${k}`);
+    for (const k of [
+      'path-dot idle',
+      'path-dot goal',
+      'ghost:barracks idle',
+      'selection-box idle',
+      'selection-ring idle',
+    ])
+      expect(kinds).toContain(k);
   });
 
   it('has one song, its channels the same length, and an sfx for every sound the skin names', () => {

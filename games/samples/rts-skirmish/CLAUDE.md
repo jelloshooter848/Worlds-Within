@@ -11,7 +11,9 @@ Since Engine 0.15 T14 it is **finished** as **The River Ford** (docs/BUILD-LOG.m
 decision 13): sfx for the battle's events and an MML song (`ford`), no placeholder look, an end
 for a win and for a loss (the skin's banner over the picture, the page's end screen, the
 `battle-end` jingle) and a `lost` run file beside the win. This file is the worked example of an
-RTS game on the kit: "How it was built" below is the order to follow for a new one.
+RTS game on the kit: "How it was built" below is the order to follow for a new one. From Engine
+0.16 part D (D7) it draws on a CC0 pack, Kenney's Medieval RTS, at 16:9 ("The CC0 art pack and
+the 16:9 skin" below); presentation only, so no hash moved.
 
 ## How it was built (the worked example)
 
@@ -29,12 +31,15 @@ RTS game on the kit: "How it was built" below is the order to follow for a new o
    `pnpm -s cli dump`, sync `hashes` from `run`, then `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`;
    `pnpm -s cli mutants games/samples/rts-skirmish --json` until every kit rule is guarded and no
    run is weak. One run per end: `battle` (a win) and `lost` (a loss).
-5. **Art as text**: `content/sprites/*.txt` with its palettes, one frame for every kind, state
-   and facing the kit presents (`skirmish.test.ts` fails on a missing one and on any fallback box
-   drawn in any tick of any run); bigger pieces such as the end banners were made once by a
-   throwaway script and kept as text.
-6. **The skin** (`content/skins/canvas2d.json`): kinds to frames (the enemy's kinds in its own
-   palette, `sideKinds`), tiles, the HUD, `events` (the kit's `RtsEventTracker` events and the
+5. **Art**: a CC0 pack in `assets/<pack>/` with `assets/CREDITS.md` (from Engine 0.16 part D,
+   D7; before it, text sprites only), anything cut or scaled from it made by a script in
+   `tools/` and checked against it, and text sprites (`content/sprites/*.txt`) only where the
+   pack has nothing; one frame for every kind, state and facing the kit presents
+   (`skirmish.test.ts` fails on a missing one and on any fallback box drawn in any tick of any
+   run); bigger text pieces such as the end banners were made once by a throwaway script and kept
+   as text.
+6. **The skin** (`content/skins/canvas2d.json`): kinds to frames (the enemy's kinds their own
+   art, `sideKinds`), tiles, the HUD, `events` (the kit's `RtsEventTracker` events and the
    game's `battle-end`, each to an sfx and an effect) and the end banners as HUD icons keyed on
    the frame's `won` / `lost` status. No `fallbackColor` but the sheet's own (`#ff00ff`, so a
    missing frame shows).
@@ -57,14 +62,15 @@ rows, stats, plan steps or pixel rows in `.ts` files (`tests/architecture/no-con
 
 ## Files
 
-- `game.json`: kit `rts`, 320x240 (decided in T3), seed 9, `headless.ts`, `view.ts`; content kinds
+- `game.json`: kit `rts`, 480x270 (16:9 from Engine 0.16 part D, D7: 4x is 1920x1080; 320x240
+  from T3 before it), seed 9, `headless.ts`, `view.ts`; content kinds
   `rts-map`, `rts-types`, `rts-enemy`, `palette`, `sprite`, `skin`, and since Engine 0.15 T14
   `sfx` and `song`. `index.html` is its page (title "RTS skirmish: The River Ford, ..."): the
   games index lists it and `pnpm build` emits `games/samples/rts-skirmish/index.html`.
 - `content/maps/skirmish.world.json` (`rts-map`): a world scenario (`engine/sim` format,
-  `"systems": "rts"`), 40x24 cells of 16 px (larger than the 20x15-cell picture): grass (`.`),
+  `"systems": "rts"`), 40x24 cells of 16 px (larger than the picture): grass (`.`),
   dirt roads (`,`), rock (`#`, impassable) and a river (`~`, impassable) down columns 19-20 with
-  two fords (rows 4-6 and 15-17). Terrain types are numbered in sorted character order: 0 rock,
+  two fords (rows 4-6 and 15-17); the 480x270 picture shows 30x16.9 cells. Terrain types are numbered in sorted character order: 0 rock,
   1 dirt, 2 grass, 3 water (the skin's `tiles` keys). Entities: red's town centre (3x3 at 3,9,
   the stockpile with 250 gold, trains workers), three gold nodes (8,6 and 8,15 with 300; 30,12
   with 500), three red workers, four blue soldiers (36-37, 10-11) and the `guard` squad with one
@@ -79,37 +85,48 @@ rows, stats, plan steps or pixel rows in `.ts` files (`tests/architecture/no-con
   from the box 32-34, 10-12), `raid` (once red has 7 units or more: attack the nearest red unit,
   again every 20 ticks while that holds) and `press` (from tick 400, every 20 ticks: attack
   anyway, so a player who never builds is raided too).
-- Art, all text: `content/sprites/skirmish.txt` (palette `content/palettes/skirmish.json`): tiles
-  (`grass`, `dirt`, `water`, `rock`), the three unit types in three facings (`down`, `up`,
-  `right`; the skin mirrors `right` for `left`, and a diagonal uses its horizontal part, the
-  four-way choice the task allows) with two walking steps each, `town-centre` (48x48),
-  `barracks` (32x32), `site-3x3` and `site-2x2` (scaffolds for a building under construction),
-  `site-2x2-half` (a barracks half built: its walls under the scaffold, Engine 0.15),
-  `ghost-2x2` (placing), `gold`/`gold-empty`, `ring` (selection), `hp-0`..`hp-8` and
-  `p-0`..`p-8` (bars), `box`, the HUD icons and (Engine 0.15 T14) the end banners `banner-won`
-  ("VICTORY", red pennants) and `banner-lost` ("DEFEAT", blue pennants), 160x48, made once by a
-  throwaway script and kept as text. `content/palettes/skirmish-blue.json` is the same
-  palette with the team colours blue (the enemy). `content/sprites/skirmish-font.txt`: the HUD
-  digits.
-- `content/skins/canvas2d.json`: every kind the kit presents (`unit:<type>`, `building:<kind>`
-  with `idle`, `train`, `site`, `resource:gold`, `selection-ring`, `health-bar`,
-  `progress-bar`, `ghost:barracks`, `selection-box`) and the enemy's `unit:<type>:enemy` /
-  `building:<kind>:enemy` in the blue palette; unit states `idle`, `walk`, `attack`, `build`,
-  `gather`; tiles `0`-`3`; HUD gold, own units and enemy units (icon and number) and (Engine 0.15
-  T14) the end banner, `won` / `lost` as `icon` items at 80,96 (the picture's centre). From Engine
-  0.16 part D (D4) `health-bar` and `progress-bar` are zoom-stable (`screenScale { min: 1, max: 1
-}`): the same pixels at zoom 1, the bars' own size when the camera zooms out to 0.5 or in to 2. No look
-  has a `fallbackColor` of its own (only the sheet's `#ff00ff`, so a missing frame shows).
+- Art (Engine 0.16 part D, D7): the CC0 pack in `assets/kenney-medieval-rts/` (below) for the
+  units, buildings, ground and props, and the text sheet `content/sprites/skirmish.txt` (palette
+  `content/palettes/skirmish.json`) for what the pack has nothing for: `ring` (selection, white,
+  tinted by side), `hp-0`..`hp-8` and `p-0`..`p-8` (bars, 16x2), `box`, `dot` and `dot-goal`
+  (path dots, 4x4), `marker-<move|attack|gather|build>-<0|1>` (order markers, 16x16, large then
+  small), the HUD icons and the end banners `banner-won` ("VICTORY") and `banner-lost`
+  ("DEFEAT"), 160x48. `content/sprites/skirmish-font.txt`: the HUD digits. The 0.15 text units,
+  tiles and buildings (and the blue palette) are kept only in `games/rts-classic`.
+- `content/skins/canvas2d.json` (rewritten in D7): `images` `rts` (the pack's sheet: `<type>-red`
+  and `<type>-blue` for worker (villager), soldier (sword and shield) and hero (the king), each
+  with a `-step` copy anchored 1 px higher for walking, attacking, building and gathering;
+  `town-centre` (the stone keep) and `barracks` (the green-roofed hall), anchored `bottom`) and
+  `ford` (`ford-tiles.png`, `FORD_FRAMES`). Every kind the kit presents: `unit:<type>` (red art)
+  and `unit:<type>:enemy` (blue art) in `idle`, `walk`, `attack`, `build`, `gather`, facings
+  `down`, `up`, `right` (the pack draws one front view; `flipFacing` mirrors it for the left), with
+  `team` (`faction:` red `#e0442c`, blue `#1e8ce1`; the cloth's hue range, 5-22 on the red art,
+  190-206 on the blue) and `outline: "team"`; `building:town-centre` and `building:barracks` (and
+  `:enemy`, the same art recoloured: the keep's banner, hue 5-22, the hall's roof, hue 135-155)
+  in `idle`, `train`, `site` (`site-3x3`, `site-2x2`: the pack's crate and plank floor) and a
+  `byTag` look from `progress:50` (`site-3x3-half`, `site-2x2-half`: fresh boards), team outline
+  too; `resource:gold` (`gold`, `gold-empty`); `selection-ring` (team-tinted by `own`, `enemy`,
+  `neutral`); `health-bar` and `progress-bar` (zoom-stable, `screenScale { min: 1, max: 1 }`,
+  D4); `ghost:barracks` (the hall at half alpha); `selection-box`; `path-dot` (`idle`, `goal`)
+  and `order-marker` (`move`, `attack`, `gather`, `build`, a one-shot large-to-small cycle), both
+  at least one picture px per sprite px (`screenScale { min: 1 }`). Tiles: `0` rock (`vary`:
+  boulders and trees), `1` dirt (`join` with `["1", "3"]`: a road for every set of open sides and
+  a plaza with notched inner corners; water counts as joined, so the road runs through the river
+  as the ford), `2` grass (`vary`), `3` water (`join`: a bank on each side open to land). `fog`:
+  unexplored `#0c0c1c` at 1, explored at 0.5, a 6 px edge (for D8's fog). HUD: gold, own units
+  and enemy units (icon and number) at the top left; a `minimap` (82x50 at the bottom right, 2 px
+  a tile, `fog`, dots per kind coloured by `teams` own red and enemy blue, the view outlined) and
+  the end banner, `won` / `lost` as `icon` items at 160,111 (the picture's centre). The grass
+  colour `#27ae60` is the skin's `background` (gap G36). No look has a `fallbackColor` of its own
+  (only the sheet's `#ff00ff`, so a missing frame shows). The team colours and outlines need the
+  backends' recolour (a canvas: the page, `pnpm cli screenshot`); Node tests draw the sprites
+  plain, which is why the enemy keeps the pack's blue art and not only a recolour.
   `events` (Engine 0.15 T14), keyed by the event's `side` (`type:side=own`): `unit-down` (`fall`
   for own, `slain` for the enemy, with particles in the side's colour), `unit-hit` (`clash`, a
   spark), `unit-ready:side=own` (`ready`), `site-placed:side=own` (`placed`),
   `building-done:side=own` (`built`, a flash), `building-hit:side=own` (`clash`),
   `stock-up:side=own` (`coin`), `battle-end:won` (`victory`, a gold tint) and `battle-end:lost`
-  (`defeat`, a red tint); the enemy's training and building are silent. Its
-  `background` (`#00a800`, the grass) is what the backend clears to (gap G36). The barracks (both
-  sides) have a `byTag` look `{ "prefix": "progress:", "min": 50 }` (gap M2): a site at
-  construction progress 50 or more draws `site-2x2-half`, below that the scaffold
-  (`skirmish.test.ts` checks both over the `commands` run).
+  (`defeat`, a red tint); the enemy's training and building are silent.
 - Sound (Engine 0.15 T14): `content/sfx/` (`ready`, `fall`, `slain`, `clash`, `placed`,
   `built`, `coin`, `victory`, `defeat`; one line of MML each) and `content/songs/ford.json`, "The
   River Ford", an original looping march in G (126 bpm, two pulses, triangle and noise, every
@@ -153,6 +170,9 @@ look, ui?, onSound?)`. Since Engine 0.15 T14 each stream's state is a `SkirmishP
   - `view.ts`: `createView` for `pnpm cli screenshot` and the parity test: `render` (Canvas2D),
     `frame()`, and `order` (the same orders as the headless game). The camera is the map's
     centre.
+  - `tools/ford-tiles.ts` (D7): `fordTiles(packSheet)` makes `ford-tiles.png` from the pack's
+    sheet (`FORD_FRAMES`, `FORD_SIZE`, `SIDE_KEYS`, `CORNER_KEYS`; `pnpm exec tsx
+    games/samples/rts-skirmish/tools/ford-tiles.ts` writes it); the same bytes every run.
   - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
   - `recording.ts`: `BattleRecorder(seed, hashEvery = 20)`: `reached(tick, snapshot)` (after
     every step, and at tick 0: a hash tick's snapshot is taken before that tick's orders, where
@@ -171,7 +191,8 @@ ticks, orders, hashEvery, hashes }`, ending at the last hash tick, with the orde
     the kit's `trainButtons`, `stop`, `placing`); `exportRun(game?)`; `message` is the last
     refusal; `result()` (Engine 0.15 T14) is `skirmishResult` now. The controls' selection is the page's own: the game's `ui.selection` stays `[]`, as
     in a replay of the recorded orders, so the page's hashes are the replay's.
-  - `main.ts`: the DOM: `bootBrowserGame` with Canvas2D (`canvasDisplay` with the shell's
+  - `main.ts`: the DOM: the skin's PNG sheets decoded first (`withContentImages`, D7);
+    `bootBrowserGame` with Canvas2D (`canvasDisplay` with the shell's
     `onSound`, so the skin's event sounds play), `pointer: true` and `touchPad: false`, `game` and
     `audio` (`contentSongs`, `contentSfx`, music `ford`; Engine 0.15 T14) with the shell's volume
     control and stored volumes (gap M1); Shift for additive selection; the bar under the picture
@@ -192,7 +213,14 @@ wy)` (world px to client px through the camera and the display's `toClient`, Eng
   every sound the skin names, the battle's events and sounds (the site, the barracks, the
   soldiers, gold, the fight, the four raiders down, `battle-end:won` once, the `won` status), the
   `lost` run's (every red unit down, `battle-end:lost`, the `lost` status) and `skirmishResult`
-  on each run's end.
+  on each run's end. Engine 0.16 part D (D7): the bundle's PNGs "decoded" to their sizes for
+  Node, the enemy's kinds drawn from the pack's blue art, and every run presented again with what
+  the page adds (every unit and building selected, fog, the placing ghost, a box, an order marker
+  of each kind every ten ticks) with a frame for every kind and state and no fallback box.
+- `assets.test.ts` (D7): the credits (OpenGameArt source, Kenney, CC0, the licence file), only
+  the four files kept, `ford-tiles.png` byte for byte what `tools/ford-tiles.ts` makes from the
+  pack's sheet, the skin's `ford` frames equal to `FORD_FRAMES` and every `rts` frame one of the
+  pack's own sprites in its atlas.
 
 ## Entity ids
 
@@ -239,7 +267,7 @@ changes the ids of everything after it: re-record the run files (below).
 ## Playing in the browser
 
 `pnpm dev`, then `games/samples/rts-skirmish/` from the launcher (or `pnpm build && pnpm
-preview`). The picture is 320x240 over a 640x384 map; the bar under it holds the buttons.
+preview`). The picture is 480x270 over a 640x384 map; the bar under it holds the buttons.
 
 - **Mouse**: left click selects one thing (own unit first, else any unit, else a building; empty
   ground clears), a left drag boxes your units, Shift adds to the selection, right click
@@ -278,7 +306,9 @@ page and the headless game played differently. Add assertions (from `dump`) and 
 `pnpm -s cli mutants games/samples/rts-skirmish --json`, `pnpm test tests/runs` (golden hashes;
 backend parity plays every run through the view's `frame()` into the null backend and `render`
 into Canvas2D), `pnpm -s cli screenshot games/samples/rts-skirmish/runs/battle.run.json --tick 140
---json` (the fight at the southern ford; `matchesHeadless` true). `play.test.ts`: the recorder
+--json` (the fight at the southern ford; `matchesHeadless` true; `--scale 4` gives 1920x1080).
+`tests/browser/pixi-parity.test.ts` (D7) draws the battle's ticks on Canvas2D and PixiJS and holds
+them to the strict bound. `play.test.ts`: the recorder
 hashes as `run` does and gives `battle.run.json`'s hashes for its orders; `SkirmishPlay` driven
 by scripted gestures and buttons builds, trains and beats the raid, and its export replays to its
 hashes. The page itself: `pnpm vitest run tests/browser/rts-skirmish.test.ts` (headless Chromium:
@@ -291,7 +321,7 @@ inputs list the page.
 
 `game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
 `engine/core/ui/menus.ts`): the title "The River Ford" in `ford-title` over the game's own
-picture at its start (dimmed 0.6), the subtitle "Hold the crossing against the raiders", art (`hero-right-0` x3, `soldier-right-1` x3),
+picture at its start (dimmed 0.6), the subtitle "Hold the crossing against the raiders", art (from D7 the pack's `hero-red` x3 and `worker-red` x2 on the left, `soldier-blue` x3 and x2 on the right),
 the song `ford`, a footer and the items start, controls, settings; the pause menu
 (resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing); and the controls screen's
 rows (Select; Select many; Command; Pan; Zoom), shown with the player's keys. Colours: focus bar `#004058`,
@@ -321,3 +351,24 @@ Canvas2D (exact Canvas2D output, a machine whose WebGL misbehaves); `?backend=pi
 default. `pnpm cli screenshot` and the run files' backend parity still draw through Canvas2D
 (`view.ts`). Tested in `tests/browser/pixi-pages.test.ts` (the default, the fallback with WebGL
 taken away, `?backend=canvas2d`); the page and menus browser tests play on PixiJS.
+
+## The CC0 art pack and the 16:9 skin (Engine 0.16 part D, D7)
+
+- **The pack**: Kenney's "RTS Pack: Medieval" (CC0), fetched from its OpenGameArt mirror
+  (`https://opengameart.org/content/medieval-rts-120`; kenney.nl blocks automated downloads).
+  Only the files used are kept in `assets/kenney-medieval-rts/` (the 550x550 sheet, its atlas as
+  text, the licence, and the made `ford-tiles.png`); `assets/CREDITS.md` names the source URL,
+  the author and the licence, and `validate` checks it.
+- **Scale**: the pack's ground tiles are 64 px and its units about 16x24, while the map's cells
+  are 16 px (the kit's `RTS_TILE_SIZE`; changing it would move the interface actions' world
+  pixels). So units and buildings are the pack's sprites at their own size, standing on their
+  cell's or footprint's bottom centre (a unit pokes 8-9 px above its cell, a building up to 6 px
+  past its footprint's sides), and the ground is made for 16 px by `tools/ford-tiles.ts`.
+- **The picture** is 480x270 (16:9; 4x is 1920x1080), which shows 30x16.9 cells; the HUD banner
+  is centred at 160,111, the minimap sits in the bottom-right corner and the title's art was moved
+  out to the sides. The page's camera starts on the base (`play.test.ts`: top-left 0,33).
+- **Tuning**: from `pnpm -s cli screenshot games/samples/rts-skirmish/runs/battle.run.json --tick
+  140 --scale 4 --out <file>` and the menus browser test's shots (`WW_SHOTS_DIR`), at page scale.
+- To change the ground: edit `tools/ford-tiles.ts`, run it, and keep the skin's `images.ford`
+  frames equal to `FORD_FRAMES` (`assets.test.ts`).
+
