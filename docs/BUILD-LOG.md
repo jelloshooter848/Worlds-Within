@@ -194,7 +194,7 @@ a key and a locked boss door, the Bone Warden (a three-phase boss in data), an i
 in dialog boxes, an end screen, layered boss music and a combat-feel pass. T1 first fixed three
 things the part B review screenshots showed in Hopper's Way. **Open for the owner:** the
 playtest (item 455) and the screenshot review (item 456), then the build choices 419-454 and
-457-462.
+457-467.
 
 ### What was built
 
@@ -296,6 +296,11 @@ tuning, its invulnerability and `hero.dash` only once owned (459); the boss in a
 event places kept beside the snapshot, never in it (460); dialogs as a shell feature that holds
 the game and is skipped under the step hook and the recorder, so every run replays unchanged
 (461).
+
+The final review added five more for the owner: pits only block and the bot does not dash (463),
+the UI kit's import of the mixer's status test (464), the browser checks loosened under the
+darkness (465), the boss's immunities and knockback resistance (466), and the red death fade
+and the new fallback colour (467).
 
 ### Golden hashes
 
@@ -416,10 +421,14 @@ tower-defense kit's good fixture (`kits/towerdefense/__fixtures__/bad` fails, as
 rule unguarded, no run weak on its `guards`). The agent-docs test passes: the touched modules
 (the dungeon sample) keep their `CLAUDE.md`, `AGENTS.md` and `llms.txt` page.
 
+Rerun by the final review on the committed tree (the same results: lint, typecheck, docs:check,
+3226 tests passed and 1 skipped, build, all 75 run files exit 0, dungeon mutants exit 0), with
+only the build log and the feedback log changed.
+
 ### Outstanding issues
 
 - **The owner's playtest and screenshot review:** items 455 and 456.
-- The build choices of part C (items 419-454, 457-462) wait for the owner's answers.
+- The build choices of part C (items 419-454, 457-467) wait for the owner's answers.
 - A dialog box over the item panel's corner (458); the end screen's rooms without a total (462).
 - The PixiJS backend's lighting pass (434), with part A's PixiJS backend (T13b, item 323).
 - From part B: the owner's playtest and screenshot review (393, 394), which parts C-F wait for,

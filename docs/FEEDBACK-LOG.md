@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 463.** (Last used: 462.)
+**Next unused number: 468.** (Last used: 467.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1850,3 +1850,16 @@ door; details in `games/samples/dungeon/CLAUDE.md`, "The dungeon" and "Run files
   file replays through the page unchanged. OK, or should the step hook show them too?
 - **462.** The end screen's "Rooms seen" shows the rooms entered (4 on the win's route, of 8)
   without the total. OK, or show `4/8`?
+- **463.** Pits only block: falling in is not modelled. A dash stopped over a pit puts the hero
+  back where the dash started, and `TopDownBot` was not taught to dash (its pathing treats pits as
+  walls). OK, or should pits be a fall (a hurt and a respawn)?
+- **464.** An end trigger's `when` reuses the music mixer's status test (`mixWhenSchema`,
+  `mixWhenHolds` in `engine/core/audio/mix.ts`), so the UI kit now imports that pure audio file
+  (noted in its `CLAUDE.md`). OK, or move the test to a shared module?
+- **465.** Tests loosened for the darkness: the dungeon page's side-margin pixel has a new expected
+  colour and its wall ledge is checked by colour range, the fx-lab torch-pole tolerance went from
+  24 to 64, and the walk-east browser test steps 16 ticks so the room dip fades first. OK?
+- **466.** The boss takes no boomerang stun and drops no loot, its minions and shots vanish when its
+  defeat starts, and it is not pushed by default (`knockResist` 1; a push stops a charge). OK?
+- **467.** The hero's death is a dark-red fade, not an iris (he is already gone from the frame), and
+  the skin's fallback colour for a missing frame is now `#ff00ff` (was `#f878f8`). OK?
