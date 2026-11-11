@@ -276,3 +276,41 @@ describe('the frame stream and its events', () => {
     expect(stream.next(w, []).events).toEqual([]);
   });
 });
+
+describe('upgrades (Engine 0.16 E3)', () => {
+  const leveled = () => {
+    const r = fixtureRound();
+    const arrow = { ...r.towers.arrow!, levels: [{ cost: 5, range: 2 }] };
+    return new TdWorld({ ...r, towers: { ...r.towers, arrow } }, { seed: 3 });
+  };
+
+  it('tags towers with their level and range, and the selected tower in the status', () => {
+    const w = leveled();
+    w.gold = 100;
+    w.place('arrow', 1, 1);
+    w.place('cannon', 3, 1);
+    w.step();
+    let frame = presentWorld(w, { size: SIZE, cursor: cursor(1, 1) });
+    valid(frame);
+    expect(byId(frame, 'tower-1')?.tags).toEqual(expect.arrayContaining(['level:1', 'range:1']));
+    expect(byId(frame, 'tower-2')?.tags).toEqual(expect.arrayContaining(['level:1', 'range:2']));
+    expect(frame.status).toMatchObject({ selected: 'tower-1', sellValue: 5, upgradeCost: 5 });
+    const state = new TdPresentState();
+    w.upgrade(1, 1);
+    w.step();
+    frame = presentWorld(w, { size: SIZE, cursor: cursor(1, 1), state });
+    expect(byId(frame, 'tower-1')?.tags).toEqual(expect.arrayContaining(['level:2', 'range:2']));
+    expect(frame.status).toMatchObject({ selected: 'tower-1', sellValue: 7 });
+    expect(frame.status.upgradeCost).toBeUndefined();
+    expect(frame.events).toEqual([
+      { type: 'td-upgrade', x: 24, y: 24, entity: 'tower-1', tower: 'arrow', level: 2, cost: 5 },
+    ]);
+    expect(TD_EVENT_TYPES).toContain('td-upgrade');
+    const cannon = presentWorld(w, { size: SIZE, cursor: cursor(3, 1) }).status;
+    expect(cannon).toMatchObject({ selected: 'tower-2', sellValue: 20 });
+    expect(cannon.upgradeCost).toBeUndefined();
+    const empty = presentWorld(w, { size: SIZE, cursor: cursor(2, 3) }).status;
+    expect(empty.selected).toBeUndefined();
+    expect(empty.sellValue).toBeUndefined();
+  });
+});

@@ -8,7 +8,7 @@ import type { JsonObject } from '@engine/core/headless';
 import { bootBrowserGame } from '@engine/core/shell';
 import { contentFonts } from '@engine/core/ui';
 import { canvasDisplay } from '@engine/backends/canvas2d';
-import { TD_CONTROLS } from '@kits/towerdefense';
+import { TD_CONTROLS, TD_UPGRADE_CONTROL } from '@kits/towerdefense';
 import { loadTowerDefense } from './content';
 import { tdLook, tdPicture } from './picture';
 import { TdPlay } from './play';
@@ -118,7 +118,11 @@ function showStatus(scene: TdPlay): void {
   if (status.textContent !== text) status.textContent = text;
 }
 
-/** The kit's controls (`TD_CONTROLS`, lesson D14) with the player's key names: no page strings. */
+/**
+ * The kit's controls (`TD_CONTROLS`, lesson D14) with the player's key names: no page strings. The
+ * classic road's towers have no levels, so its hint leaves out upgrading (Engine 0.16 E3).
+ */
 function hint(): string {
-  return controlsHint(TD_CONTROLS, keyHintMap(input?.bindings[0]?.keyboard ?? DEFAULT_KEYBOARD_P1));
+  const controls = TD_CONTROLS.filter((c) => c !== TD_UPGRADE_CONTROL);
+  return controlsHint(controls, keyHintMap(input?.bindings[0]?.keyboard ?? DEFAULT_KEYBOARD_P1));
 }

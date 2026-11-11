@@ -1,6 +1,15 @@
 {
   "towers": {
-    "arrow": { "cost": 10, "range": 2, "damage": 1, "cooldown": 6 },
+    "arrow": {
+      "cost": 10,
+      "range": 2,
+      "damage": 1,
+      "cooldown": 6,
+      "levels": [
+        { "cost": 8, "damage": 2 },
+        { "cost": 12, "range": 3, "cooldown": 4 }
+      ]
+    },
     "cannon": { "cost": 30, "range": 3, "damage": 4, "cooldown": 20, "sell": 20 }
   }
 }

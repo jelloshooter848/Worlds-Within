@@ -17,7 +17,7 @@ import { CELL_KINDS, cellKinds, LEGEND, tracePath, type CellKind } from './map';
  *                           ..#X
  *
  * - `td-towers`: one file holding a table of tower types (`cost`, `range`, `damage`, `cooldown`,
- *   `sell?`), like `rts-types`. A game may split the table over several files; a type given twice
+ *   `sell?`, and from Engine 0.16 E3 `levels?`, the upgrades), like `rts-types`. A game may split the table over several files; a type given twice
  *   is `duplicate_tower`.
  * - `td-waves`: one wave list per file (its `id` is the file name a map's `waves` gives), each wave
  *   a list of enemy groups `{ kind, count, spacing, hp, speed, bounty, jitter? }` in file order,
@@ -97,6 +97,41 @@ export const tdMapSchema = z
 
 export type TdMap = z.output<typeof tdMapSchema>;
 
+/**
+ * One upgrade level of a tower type (Engine 0.16 E3): the gold the upgrade to it costs, and the
+ * stats it changes; a stat left out stays the level below's.
+ */
+export const towerLevelSchema = z.strictObject({
+  cost: z.number().int().min(0).describe('the gold upgrading a tower to this level costs'),
+  range: z
+    .number()
+    .int()
+    .min(0)
+    .exactOptional()
+    .describe("the range at this level, in cells; the level below's when left out"),
+  damage: z
+    .number()
+    .int()
+    .min(1)
+    .exactOptional()
+    .describe("the hit points one shot takes at this level; the level below's when left out"),
+  cooldown: z
+    .number()
+    .int()
+    .min(1)
+    .exactOptional()
+    .describe("ticks from one shot to the next at this level; the level below's when left out"),
+  sell: z
+    .number()
+    .int()
+    .min(0)
+    .exactOptional()
+    .describe(
+      "the gold selling a tower of this level gives back; left out, the level below's sell value plus half this level's cost (rounded down)",
+    ),
+});
+export type TowerLevel = z.output<typeof towerLevelSchema>;
+
 export const towerTypeSchema = z.strictObject({
   cost: z.number().int().min(0).describe('the gold placing one costs'),
   range: z
@@ -114,6 +149,13 @@ export const towerTypeSchema = z.strictObject({
     .min(0)
     .exactOptional()
     .describe('the gold selling one gives back; half its cost (rounded down) when left out'),
+  levels: z
+    .array(towerLevelSchema)
+    .min(1)
+    .exactOptional()
+    .describe(
+      'the upgrades, in order: the first is level 2 (the type itself is level 1), each overriding the stats of the level below; left out, the type cannot be upgraded',
+    ),
 });
 export type TowerType = z.output<typeof towerTypeSchema>;
 
@@ -231,7 +273,8 @@ export function tdMapKind(): ContentKind<typeof tdMapSchema> {
 export function tdTowersKind(): ContentKind<typeof tdTowersSchema> {
   return {
     name: 'td-towers',
-    description: 'Tower-defense tower types: cost, range in cells, damage, cooldown in ticks and sell value',
+    description:
+      'Tower-defense tower types: cost, range in cells, damage, cooldown in ticks, sell value and upgrade levels',
     schema: tdTowersSchema,
     checkAll(entries) {
       const first = new Map<string, string>();

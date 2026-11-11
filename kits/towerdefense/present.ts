@@ -14,7 +14,7 @@ import {
 } from '@engine/core/present';
 import type { Cell, CellKind } from './map';
 import { CELL_SUB } from './schema';
-import type { EnemyState, TdEvent, TdWorld } from './world';
+import { sellValue, upgradeCost, type EnemyState, type TdEvent, type TdWorld } from './world';
 
 /**
  * The tower-defense kit's side of the presentation contract (`@engine/core/present`): a round
@@ -29,7 +29,7 @@ import type { EnemyState, TdEvent, TdWorld } from './world';
  * `ghost`. Depths are `TD_DEPTH`.
  *
  * Events: each round event since the last frame becomes one present event (`TD_EVENT_TYPES`):
- * `td-place`, `td-sell`, `td-refused` (`code`), `td-wave-start` (`wave`, `by`), `td-spawn`,
+ * `td-place`, `td-sell`, `td-upgrade` (`level`, `cost`), `td-refused` (`code`), `td-wave-start` (`wave`, `by`), `td-spawn`,
  * `td-shot` (at the target, with `from`, `fromX`/`fromY`, `damage`, `hp`), `td-kill` (`bounty`),
  * `td-leak` (at the exit, `lives`), then `td-wave-clear` (`wave`; once per wave and stream, so only
  * with a `TdPresentState`) and `td-end` (`result`: `won` or `lost`, so a skin keys `td-end:won`).
@@ -63,6 +63,7 @@ export const TD_TILES: Readonly<Record<CellKind, string>> = Object.freeze({
 export const TD_EVENT_TYPES = [
   'td-place',
   'td-sell',
+  'td-upgrade',
   'td-refused',
   'td-wave-start',
   'td-spawn',
@@ -219,7 +220,12 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
       ...cellBox(tw.col, tw.row),
       facing,
       anim: { state: anim, t: t(id, anim) },
-      tags: [`type:${tw.type}`, tw.cooldown > 0 ? 'cooling' : 'ready'],
+      tags: [
+        `type:${tw.type}`,
+        tw.cooldown > 0 ? 'cooling' : 'ready',
+        `level:${tw.level}`,
+        `range:${world.statsOf(tw).range}`,
+      ],
       layer: TD_DEPTH.tower,
     });
   }
@@ -307,6 +313,16 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
           entity: `tower-${e.tower}`,
           tower: e.towerType,
           refund: e.refund,
+        });
+        break;
+      case 'upgraded':
+        presented.push({
+          type: 'td-upgrade',
+          ...centre(e.col, e.row),
+          entity: `tower-${e.tower}`,
+          tower: e.towerType,
+          level: e.level,
+          cost: e.cost,
         });
         break;
       case 'refused':
@@ -411,7 +427,9 @@ export function cameraHint(world: TdWorld, tileSize = TD_TILE_SIZE, zoom?: numbe
  * The HUD: `gold`, `lives`, `wave` (`n/m`: waves started of all), `waveNumber`, `waveCount`,
  * `enemies` (on the path), `outcome` (`playing`, `won`, `lost`), `nextWave` (ticks to the timer's
  * next wave, only with a timer and waves left), and with a cursor `tower` (the chosen type) and
- * `towerCost`.
+ * `towerCost`; with the cursor on a tower (Engine 0.16 E3: that tower is selected) also
+ * `selected` (its entity id, `tower-<id>`), `sellValue` (what selling it gives back now) and, while
+ * it has a level above it, `upgradeCost`.
  */
 export function presentStatus(
   world: TdWorld,
@@ -433,6 +451,14 @@ export function presentStatus(
   if (cursor !== null) {
     status.tower = cursor.tower;
     status.towerCost = world.towerTypes[cursor.tower]?.cost ?? 0;
+    const tw = world.towerAt(cursor.col, cursor.row);
+    if (tw !== undefined) {
+      const type = world.towerTypes[tw.type]!;
+      status.selected = `tower-${tw.id}`;
+      status.sellValue = world.rules.isOn('sell-refunds') ? sellValue(type, tw.level) : 0;
+      const next = upgradeCost(type, tw.level);
+      if (next !== null) status.upgradeCost = world.rules.isOn('upgrade-costs-gold') ? next : 0;
+    }
   }
   return status;
 }

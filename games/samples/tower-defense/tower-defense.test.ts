@@ -99,8 +99,8 @@ describe('the tower-defense headless', () => {
     expect(snap['controls']).toEqual({ col: 1, row: 2, tower: 'arrow', held: [0, 0, 0, 0] });
   });
 
-  it('finds the five run files', () => {
-    expect(RUNS).toEqual(['build', 'leaked', 'tapped', 'target', 'won']);
+  it('finds the six run files', () => {
+    expect(RUNS).toEqual(['build', 'leaked', 'tapped', 'target', 'upgrade', 'won']);
   });
 
   it.each(RUNS)('plays %s to the same snapshots twice and passes its assertions', (name) => {

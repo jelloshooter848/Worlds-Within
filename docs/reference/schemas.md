@@ -2674,27 +2674,42 @@ S#####B.
 
 ### `td-towers`
 
-Tower-defense tower types: cost, range in cells, damage, cooldown in ticks and sell value.
+Tower-defense tower types: cost, range in cells, damage, cooldown in ticks, sell value and upgrade levels.
 
 - Defined by: kit towerdefense
 - Where: `content/`, claimed in `game.json` under `content.td-towers`
 - Read from: `.json`
 
-| Field                   | Type                | Required | Default | Limits                               | Description                                                                                      |
-| ----------------------- | ------------------- | -------- | ------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `towers`                | `{ <key>: object }` | yes      |         | keys: matches `^[a-z0-9][a-z0-9-]*$` | tower types by id                                                                                |
-| `towers.<key>.cost`     | `integer`           | yes      |         | >= 0                                 | the gold placing one costs                                                                       |
-| `towers.<key>.range`    | `integer`           | yes      |         | >= 0                                 | how far it reaches, in cells: an enemy whose cell is within this distance (squared, whole cells) |
-| `towers.<key>.damage`   | `integer`           | yes      |         | >= 1                                 | the hit points one shot takes                                                                    |
-| `towers.<key>.cooldown` | `integer`           | yes      |         | >= 1                                 | ticks from one shot to the next (1: every tick)                                                  |
-| `towers.<key>.sell`     | `integer`           | no       |         | >= 0                                 | the gold selling one gives back; half its cost (rounded down) when left out                      |
+| Field                            | Type                | Required | Default | Limits                               | Description                                                                                                                                                    |
+| -------------------------------- | ------------------- | -------- | ------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `towers`                         | `{ <key>: object }` | yes      |         | keys: matches `^[a-z0-9][a-z0-9-]*$` | tower types by id                                                                                                                                              |
+| `towers.<key>.cost`              | `integer`           | yes      |         | >= 0                                 | the gold placing one costs                                                                                                                                     |
+| `towers.<key>.range`             | `integer`           | yes      |         | >= 0                                 | how far it reaches, in cells: an enemy whose cell is within this distance (squared, whole cells)                                                               |
+| `towers.<key>.damage`            | `integer`           | yes      |         | >= 1                                 | the hit points one shot takes                                                                                                                                  |
+| `towers.<key>.cooldown`          | `integer`           | yes      |         | >= 1                                 | ticks from one shot to the next (1: every tick)                                                                                                                |
+| `towers.<key>.sell`              | `integer`           | no       |         | >= 0                                 | the gold selling one gives back; half its cost (rounded down) when left out                                                                                    |
+| `towers.<key>.levels`            | `object[]`          | no       |         | at least 1 item                      | the upgrades, in order: the first is level 2 (the type itself is level 1), each overriding the stats of the level below; left out, the type cannot be upgraded |
+| `towers.<key>.levels[].cost`     | `integer`           | yes      |         | >= 0                                 | the gold upgrading a tower to this level costs                                                                                                                 |
+| `towers.<key>.levels[].range`    | `integer`           | no       |         | >= 0                                 | the range at this level, in cells; the level below's when left out                                                                                             |
+| `towers.<key>.levels[].damage`   | `integer`           | no       |         | >= 1                                 | the hit points one shot takes at this level; the level below's when left out                                                                                   |
+| `towers.<key>.levels[].cooldown` | `integer`           | no       |         | >= 1                                 | ticks from one shot to the next at this level; the level below's when left out                                                                                 |
+| `towers.<key>.levels[].sell`     | `integer`           | no       |         | >= 0                                 | the gold selling a tower of this level gives back; left out, the level below's sell value plus half this level's cost (rounded down)                           |
 
 Example (`docs/reference/examples/td-towers.json`):
 
 ```json
 {
   "towers": {
-    "arrow": { "cost": 10, "range": 2, "damage": 1, "cooldown": 6 },
+    "arrow": {
+      "cost": 10,
+      "range": 2,
+      "damage": 1,
+      "cooldown": 6,
+      "levels": [
+        { "cost": 8, "damage": 2 },
+        { "cost": 12, "range": 3, "cooldown": 4 }
+      ]
+    },
     "cannon": { "cost": 30, "range": 3, "damage": 4, "cooldown": 20, "sell": 20 }
   }
 }
@@ -2847,45 +2862,46 @@ A mission over a world played as one tower-defense round (Engine 0.12): a `*.mis
 - Where: the `params` of a `*.mission.json` whose `play` is `td-defence`
 - Read from: `.json`
 
-| Field                         | Type                    | Required | Default | Limits                            | Description                                                                                                  |
-| ----------------------------- | ----------------------- | -------- | ------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `map`                         | `string`                | yes      |         | not empty                         | the id of the game's `td-map` the round is played on                                                         |
-| `build`                       | `object`                | no       |         |                                   | which world entities (walls) stand on the map's build cells; the map's own cells when left out               |
-| `build.select`                | `object`                | yes      |         |                                   | which world entities (the walls) stand on the build cells                                                    |
-| `build.select.event`          | `string`                | no       |         | not empty                         | only members of this event (`EventMember`); for `wave` the mission's `event` when left out, for `build` any  |
-| `build.select.faction`        | `string`                | no       |         | not empty                         | only entities of this faction (`Owner`)                                                                      |
-| `build.select.types`          | `string[]`              | no       |         | at least 1 item; items: not empty | only units (`Unit.type`) or buildings (`Building.kind`) of these types                                       |
-| `build.select.keys`           | `(string \| integer)[]` | no       |         | at least 1 item                   | only entities with these world names (the mission's scenario keys, or ids)                                   |
-| `build.slot`                  | `string`                | no       |         | not empty; length &lt;= 1         | the map character (a build cell's) whose cells the walls stand on; every build cell when left out            |
-| `build.cells`                 | `object[]`              | no       |         | at least 1 item                   | walls put on named build cells (Engine 0.15, lesson D10); the rest fill the remaining cells in the old order |
-| `build.cells[].entity`        | `string \| integer`     | yes      |         |                                   | the wall, by world name (scenario key) or id; one `select` picks                                             |
-| `build.cells[].cell`          | `object`                | yes      |         |                                   | the build cell it stands on                                                                                  |
-| `build.cells[].cell.x`        | `integer`               | yes      |         | >= 0                              | the build cell's column on the map                                                                           |
-| `build.cells[].cell.y`        | `integer`               | yes      |         | >= 0                              | the build cell's row on the map                                                                              |
-| `budget`                      | `object`                | no       |         |                                   | where the round's gold comes from; the map's `start.gold` when left out                                      |
-| `budget.faction`              | `string`                | yes      |         | not empty                         | the faction whose stockpile pays (the entity with its `Stockpile`)                                           |
-| `budget.item`                 | `string`                | yes      |         | not empty                         | the stockpile item that is the gold (`Inventory.<item>`)                                                     |
-| `budget.cap`                  | `integer`               | no       |         | >= 0                              | at most this much of it goes to the round                                                                    |
-| `lives`                       | `integer`               | no       |         | >= 1                              | the round's lives; the map's `start.lives` when left out                                                     |
-| `timer`                       | `integer`               | no       |         | >= 1                              | ticks after which the wave starts by itself; left out, only the start button starts it                       |
-| `wave`                        | `object[]`              | yes      |         | at least 1 item                   | which world units come down the path, in this order                                                          |
-| `wave[].kind`                 | `string`                | yes      |         | not empty                         | the enemy kind they are in the round (for skins and reports)                                                 |
-| `wave[].select`               | `object`                | no       | `{}`    |                                   | which world units become these enemies                                                                       |
-| `wave[].select.event`         | `string`                | no       |         | not empty                         | only members of this event (`EventMember`); for `wave` the mission's `event` when left out, for `build` any  |
-| `wave[].select.faction`       | `string`                | no       |         | not empty                         | only entities of this faction (`Owner`)                                                                      |
-| `wave[].select.types`         | `string[]`              | no       |         | at least 1 item; items: not empty | only units (`Unit.type`) or buildings (`Building.kind`) of these types                                       |
-| `wave[].select.keys`          | `(string \| integer)[]` | no       |         | at least 1 item                   | only entities with these world names (the mission's scenario keys, or ids)                                   |
-| `wave[].hpPer`                | `integer`               | no       |         | >= 1                              | world hit points per round hit point (rounded up, at least 1); `Health.hp` when left out                     |
-| `wave[].speed`                | `integer`               | yes      |         | 1 to 16                           | sub-cell units walked each tick (16 to a cell)                                                               |
-| `wave[].spacing`              | `integer`               | no       | `0`     | >= 0                              | ticks from one of them entering to the next                                                                  |
-| `wave[].bounty`               | `integer`               | no       | `0`     | >= 0                              | the gold a kill pays in the round                                                                            |
-| `outcomes`                    | `object[]`              | yes      |         | at least 1 item                   | rules from the round to a declared outcome, tried in order; the first that holds wins                        |
-| `outcomes[].outcome`          | `string`                | yes      |         | not empty                         | the mission's declared outcome this rule gives                                                               |
-| `outcomes[].when`             | `object`                | no       |         |                                   | what must all hold (left out: always; the last rule must have none)                                          |
-| `outcomes[].when.result`      | `"pass" \| "fail"`      | no       |         |                                   | how the round ended: every enemy dealt with and lives left (`pass`), or no lives left (`fail`)               |
-| `outcomes[].when.leaksAtMost` | `integer`               | no       |         | >= 0                              | at most this many enemies reached the exit                                                                   |
-| `outcomes[].when.spentAtMost` | `integer`               | no       |         | >= 0                              | at most this much gold spent on towers, net of what selling gave back                                        |
-| `outcomes[].when.killed`      | `(string \| integer)[]` | no       |         | at least 1 item                   | world units (scenario keys or ids) that were all killed in the round                                         |
+| Field                         | Type                    | Required | Default | Limits                            | Description                                                                                                                                      |
+| ----------------------------- | ----------------------- | -------- | ------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `map`                         | `string`                | yes      |         | not empty                         | the id of the game's `td-map` the round is played on                                                                                             |
+| `build`                       | `object`                | no       |         |                                   | which world entities (walls) stand on the map's build cells; the map's own cells when left out                                                   |
+| `build.select`                | `object`                | yes      |         |                                   | which world entities (the walls) stand on the build cells                                                                                        |
+| `build.select.event`          | `string`                | no       |         | not empty                         | only members of this event (`EventMember`); for `wave` the mission's `event` when left out, for `build` any                                      |
+| `build.select.faction`        | `string`                | no       |         | not empty                         | only entities of this faction (`Owner`)                                                                                                          |
+| `build.select.types`          | `string[]`              | no       |         | at least 1 item; items: not empty | only units (`Unit.type`) or buildings (`Building.kind`) of these types                                                                           |
+| `build.select.keys`           | `(string \| integer)[]` | no       |         | at least 1 item                   | only entities with these world names (the mission's scenario keys, or ids)                                                                       |
+| `build.slot`                  | `string`                | no       |         | not empty; length &lt;= 1         | the map character (a build cell's) whose cells the walls stand on; every build cell when left out                                                |
+| `build.cells`                 | `object[]`              | no       |         | at least 1 item                   | walls put on named build cells (Engine 0.15, lesson D10); the rest fill the remaining cells in the old order                                     |
+| `build.cells[].entity`        | `string \| integer`     | yes      |         |                                   | the wall, by world name (scenario key) or id; one `select` picks                                                                                 |
+| `build.cells[].cell`          | `object`                | yes      |         |                                   | the build cell it stands on                                                                                                                      |
+| `build.cells[].cell.x`        | `integer`               | yes      |         | >= 0                              | the build cell's column on the map                                                                                                               |
+| `build.cells[].cell.y`        | `integer`               | yes      |         | >= 0                              | the build cell's row on the map                                                                                                                  |
+| `budget`                      | `object`                | no       |         |                                   | where the round's gold comes from; the map's `start.gold` when left out                                                                          |
+| `budget.faction`              | `string`                | yes      |         | not empty                         | the faction whose stockpile pays (the entity with its `Stockpile`)                                                                               |
+| `budget.item`                 | `string`                | yes      |         | not empty                         | the stockpile item that is the gold (`Inventory.<item>`)                                                                                         |
+| `budget.cap`                  | `integer`               | no       |         | >= 0                              | at most this much of it goes to the round                                                                                                        |
+| `lives`                       | `integer`               | no       |         | >= 1                              | the round's lives; the map's `start.lives` when left out                                                                                         |
+| `timer`                       | `integer`               | no       |         | >= 1                              | ticks after which the wave starts by itself; left out, only the start button starts it                                                           |
+| `upgrades`                    | `boolean`               | no       |         |                                   | true: towers whose type has `levels` can be upgraded in the round (Engine 0.16 E3); left out or false, every tower type plays without its levels |
+| `wave`                        | `object[]`              | yes      |         | at least 1 item                   | which world units come down the path, in this order                                                                                              |
+| `wave[].kind`                 | `string`                | yes      |         | not empty                         | the enemy kind they are in the round (for skins and reports)                                                                                     |
+| `wave[].select`               | `object`                | no       | `{}`    |                                   | which world units become these enemies                                                                                                           |
+| `wave[].select.event`         | `string`                | no       |         | not empty                         | only members of this event (`EventMember`); for `wave` the mission's `event` when left out, for `build` any                                      |
+| `wave[].select.faction`       | `string`                | no       |         | not empty                         | only entities of this faction (`Owner`)                                                                                                          |
+| `wave[].select.types`         | `string[]`              | no       |         | at least 1 item; items: not empty | only units (`Unit.type`) or buildings (`Building.kind`) of these types                                                                           |
+| `wave[].select.keys`          | `(string \| integer)[]` | no       |         | at least 1 item                   | only entities with these world names (the mission's scenario keys, or ids)                                                                       |
+| `wave[].hpPer`                | `integer`               | no       |         | >= 1                              | world hit points per round hit point (rounded up, at least 1); `Health.hp` when left out                                                         |
+| `wave[].speed`                | `integer`               | yes      |         | 1 to 16                           | sub-cell units walked each tick (16 to a cell)                                                                                                   |
+| `wave[].spacing`              | `integer`               | no       | `0`     | >= 0                              | ticks from one of them entering to the next                                                                                                      |
+| `wave[].bounty`               | `integer`               | no       | `0`     | >= 0                              | the gold a kill pays in the round                                                                                                                |
+| `outcomes`                    | `object[]`              | yes      |         | at least 1 item                   | rules from the round to a declared outcome, tried in order; the first that holds wins                                                            |
+| `outcomes[].outcome`          | `string`                | yes      |         | not empty                         | the mission's declared outcome this rule gives                                                                                                   |
+| `outcomes[].when`             | `object`                | no       |         |                                   | what must all hold (left out: always; the last rule must have none)                                                                              |
+| `outcomes[].when.result`      | `"pass" \| "fail"`      | no       |         |                                   | how the round ended: every enemy dealt with and lives left (`pass`), or no lives left (`fail`)                                                   |
+| `outcomes[].when.leaksAtMost` | `integer`               | no       |         | >= 0                              | at most this many enemies reached the exit                                                                                                       |
+| `outcomes[].when.spentAtMost` | `integer`               | no       |         | >= 0                              | at most this much gold spent on towers, net of what selling gave back                                                                            |
+| `outcomes[].when.killed`      | `(string \| integer)[]` | no       |         | at least 1 item                   | world units (scenario keys or ids) that were all killed in the round                                                                             |
 
 Example (`docs/reference/examples/td-defence-params.json`):
 

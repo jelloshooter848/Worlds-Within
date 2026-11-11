@@ -18,6 +18,14 @@ export const TOWERDEFENSE_RULES = defineRules([
   },
   { id: 'sell-refunds', description: "selling a tower gives back its type's sell value" },
   {
+    id: 'upgrade-costs-gold',
+    description: "upgrading a tower needs its next level's cost in gold and pays it (off: upgrades are free)",
+  },
+  {
+    id: 'upgrade-improves',
+    description: "an upgraded tower fires with its level's range, damage and cooldown (off: its type's own)",
+  },
+  {
     id: 'wave-timer',
     description: "with the wave list's timer, the next wave starts by itself timer ticks after the last",
   },

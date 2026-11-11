@@ -27,7 +27,8 @@ right: build towers on the grey stone pads, then send each wave.
 - Keys (and the touch pad on a phone): arrows move the cursor, Z (jump) builds the chosen tower on
   the cursor's pad, X (attack) picks the next tower type (arrow, cannon), C (special) sells the
   tower under the cursor for its sell value, Enter (start) sends the next wave (otherwise the timer
-  does, 400 ticks after the last).
+  does, 400 ticks after the last). Z on a tower upgrades it a level (Engine 0.16 E3; a click on a
+  tower selects it, a second click upgrades).
 - Pointer: a click or tap moves the cursor to a cell, a second one on the same cell builds there; a
   right click or long-press sells. Taps are frame input (Engine 0.15, gap D1), so a round played by
   tapping is a run file (`runs/tapped.run.json`).
@@ -79,7 +80,10 @@ which the shell paces since Engine 0.15, gap D2); the tools play the same ticks,
   entry, `X` exit). The road winds from the entry at (0, 1) to the exit at (15, 13), 36 cells; the
   cursor starts on the first build cell, (1, 2).
 - `content/towers/towers.json`: `arrow` (10 gold, range 2, 1 damage, cooldown 6, sells for 5) and
-  `cannon` (25 gold, range 3, 4 damage, cooldown 20, sells for 15).
+  `cannon` (25 gold, range 3, 4 damage, cooldown 20, sells for 15). Engine 0.16 E3 gave them
+  `levels` (no earlier run upgrades, so none moved): arrow level 2 (8 gold: 2 damage, sells for 9)
+  and 3 (12 gold: range 3, cooldown 4, sells for 15); cannon level 2 (20 gold: range 4, 6 damage,
+  sells for 30).
 - `content/waves/road.json`: a timer of 400 ticks and three waves: six runners; a slow brute with
   four fast runners behind it (they overtake it near the entry, with jitter); eight runners and two
   brutes.
@@ -141,7 +145,7 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
   the bot's plan. Engine 0.15 T14 (the asset audit): no look, tag look or tile with its own
   fallback colour; every tick of every run drawn through `view.ts`'s Canvas2D picture without a
   fallback box; the one song's channels the same length; the skin's sounds exactly the sfx files.
-- `runs/`: five run files, each with sync `hashes` and a golden `<name>.hashes.json`:
+- `runs/`: six run files, each with sync `hashes` and a golden `<name>.hashes.json`:
   - `build.run.json` (40 ticks): an arrow on the path is refused (`not_build_cell`), a cannon
     bought, a second refused (`too_poor`), the first sold for 15, an arrow bought. Guards
     `build-on-build-cells`, `build-costs-gold`, `sell-refunds`.
@@ -160,6 +164,10 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
     waves start 20 ticks earlier than `won`'s, the same towers stand and the round is won with all
     5 lives (its tick-700 hash equals `won`'s: the same end state). Guards nothing (it proves taps
     replay; `won` guards the rules).
+  - `upgrade.run.json` (160 ticks, Engine 0.16 E3): an arrow on the cursor's first pad (1, 2),
+    upgraded twice with Z (8 then 12 gold), a third upgrade refused (`max_level`); the level 3
+    arrow holds wave 1 alone (6 killed, nothing leaked) and is sold for 15 (5 + 4 + 6). Guards
+    `upgrade-costs-gold`, `upgrade-improves`; its sync hashes are ticks 0 and 160 only.
 
 ## Rules
 
@@ -189,8 +197,8 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 
 `pnpm test games/samples/tower-defense`; `pnpm -s cli validate games/samples/tower-defense`;
 `pnpm -s cli run games/samples/tower-defense/runs/won.run.json` (and `build`, `target`, `leaked`,
-`tapped`);
-`pnpm -s cli mutants games/samples/tower-defense` (exit 0, strict, 14 rules guarded);
+`tapped`, `upgrade`);
+`pnpm -s cli mutants games/samples/tower-defense` (exit 0, strict, 16 rules guarded);
 `pnpm test tests/runs` (golden hashes, the mutants test and backend parity through `view.ts`).
 
 The art and the page: `pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick

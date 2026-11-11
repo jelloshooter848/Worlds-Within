@@ -1,0 +1,41 @@
+{
+  "run": "games/samples/tower-defense/runs/upgrade.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "3f3e14aefc1b4bad"
+    },
+    {
+      "tick": 20,
+      "hash": "9ff0f51906594472"
+    },
+    {
+      "tick": 40,
+      "hash": "de6f87974a7b3178"
+    },
+    {
+      "tick": 60,
+      "hash": "f4bbe2ec4b70b74c"
+    },
+    {
+      "tick": 80,
+      "hash": "b95b4a54b78f2d97"
+    },
+    {
+      "tick": 100,
+      "hash": "fdb4cd2fdbad78c6"
+    },
+    {
+      "tick": 120,
+      "hash": "0349bf1af3bab2a3"
+    },
+    {
+      "tick": 140,
+      "hash": "601acd4e6d847d75"
+    },
+    {
+      "tick": 160,
+      "hash": "da8f8fdbead2cdae"
+    }
+  ]
+}

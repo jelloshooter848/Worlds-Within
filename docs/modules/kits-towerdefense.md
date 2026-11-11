@@ -7,9 +7,11 @@ Folder: `kits/towerdefense`. Detailed rules: [`kits/towerdefense/CLAUDE.md`](../
 The tower-defense kit (Engine 0.12, the platform test: a new genre with no change to `engine/sim`).
 It reads three content kinds, `td-map` (a JSON header plus a `.map.txt` grid: one path from an
 entry to an exit, build cells and blocked ground; the starting gold and lives, the tower types and
-the wave list), `td-towers` (cost, range, damage, cooldown, sell value) and `td-waves` (waves of
+the wave list), `td-towers` (cost, range, damage, cooldown, sell value and, from Engine 0.16 E3,
+upgrade `levels`) and `td-waves` (waves of
 enemy groups with spacing, hp, speed and bounty, and an optional timer), and plays a round headless
-and deterministically: towers placed on free build cells and paid for, sold for a refund, waves
+and deterministically: towers placed on free build cells and paid for, upgraded a level at a time for gold, sold for a
+refund that counts the upgrades, waves
 started by a button or the timer, enemies walking the path in whole sub-cell units, towers firing
 at the enemy furthest along within range on their cooldowns, bounties on kills, a life lost on a
 leak, and the round won when every wave is cleared or lost at 0 lives. Every rule is named, so a
@@ -23,8 +25,9 @@ report to a declared outcome. It holds no world rules, never draws and never imp
 `index.ts`, imported as `@kits/towerdefense`: `map` (`LEGEND`, `cellKinds`, `tracePath`),
 `schema` (`tdMapSchema`, `tdTowersSchema`, `tdWavesSchema`, the `td-map`, `td-towers` and
 `td-waves` kinds, `towerTable`, `CELL_SUB`), `rules` (`TOWERDEFENSE_RULES`) and `world`
-(`TdWorld` with `command`/`place`/`sell`/`startWave`, `step()`, `placeRefusal`, `targetOf` and
-`snapshot()`; `TdEvent`, `TdSnapshot`), `present` (`presentWorld`, `describeWorld`, `tdFrames`,
+(`TdWorld` with `command`/`place`/`sell`/`upgrade`/`startWave`, `step()`, `placeRefusal`,
+`upgradeRefusal`, `statsOf`, `targetOf` and `snapshot()`; `TdEvent`, `TdSnapshot`, `towerStats`,
+`sellValue`, `upgradeCost`, `maxLevel`), `present` (`presentWorld`, `describeWorld`, `tdFrames`,
 `TdPresentState`, `presentStatus`, `TD_EVENT_TYPES`: frames with the map, towers, enemies, shots,
 the cursor and a placement ghost tagged `ok` or `blocked`, the HUD and `td-*` events for skin
 sounds), `controls` (`TdControls`: the shared actions as a cursor, place, cycle, sell and start
@@ -43,6 +46,14 @@ name `towerdefense` (from Engine 0.14 T9 with `roundBots()`: `TdBot` for a `td-d
 `pnpm cli record --bot`); it opts in to strict mutant checks (since Engine 0.12 T4, when the run files of
 `games/samples/tower-defense` came to guard every rule).
 
+- Engine 0.16 E3 (tower upgrades): a `td-towers` type's optional `levels` (`{ cost, range?,
+damage?, cooldown?, sell? }`, level 2 on, each over the level below), the `upgrade` command
+  (refusals `no_tower`, `max_level`, `too_poor`, `round_over`), a tower's `level` in the snapshot
+  only once above 1 (so no earlier hash moved), the rules `upgrade-costs-gold` and
+  `upgrade-improves`, `jump` or a second tap on a selected tower to upgrade (`TD_UPGRADE_CONTROL`
+  in `TD_CONTROLS`), tower tags `level:<n>` and `range:<cells>`, the status `selected`,
+  `upgradeCost` and `sellValue`, the event `td-upgrade` and the bot step `upgrade`. A `td-defence`
+  round plays without levels unless its params say `upgrades: true`.
 - Engine 0.15 T7 (lessons D6, D7, D8, D10): the adapter takes the world's key table (`keys`
   selectors, `build.cells` and `killed` may name any keyed entity), `build.cells` puts a named wall
   on a named build cell, `checkUse` checks the selectors against the world scenarios that offer
@@ -68,4 +79,5 @@ over a real sim world (played, delegated, quit, live through `MissionHost`, gold
 `tests/kits/hero-mission.test.ts` a wave over a world with a dead and a captured raider. `pnpm cli validate kits/towerdefense/__fixtures__/game` checks the fixture game;
 `tests/kits/towerdefense-validate.test.ts` also checks that the broken fixture is rejected by file
 and field. `pnpm -s cli mutants games/samples/tower-defense` (exit 0) checks that the sample's run
-files guard every kit rule.
+files guard every kit rule (the upgrade rules by `runs/upgrade.run.json`);
+`tests/runs/td-classic-mutants.test.ts` lists the rules the frozen classic road cannot reach.

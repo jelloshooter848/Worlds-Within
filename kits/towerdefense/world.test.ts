@@ -3,7 +3,16 @@ import { canonicalJson } from '@engine/core/headless';
 import { Rng } from '@engine/core/rng';
 import { TOWERDEFENSE_RULES } from './rules';
 import { CELL_SUB, tdMapSchema, type EnemyGroup, type TdWaves, type TowerTable } from './schema';
-import { TdWorld, type TdEvent, type TdRoundDef, type TdWorldOptions } from './world';
+import {
+  maxLevel,
+  sellValue,
+  TdWorld,
+  towerStats,
+  upgradeCost,
+  type TdEvent,
+  type TdRoundDef,
+  type TdWorldOptions,
+} from './world';
 
 // A straight path along row 0 (7 cells, so the exit is 6 cells on: progress 96) with build cells
 // at columns 1, 3 and 5 of row 1.
@@ -13,6 +22,17 @@ const END = 6 * CELL_SUB;
 const TOWERS: TowerTable = {
   arrow: { cost: 10, range: 1, damage: 1, cooldown: 3 },
   long: { cost: 20, range: 9, damage: 1, cooldown: 1, sell: 15 },
+  // Engine 0.16 E3: two upgrades, the second with its own sell value.
+  tiered: {
+    cost: 10,
+    range: 1,
+    damage: 1,
+    cooldown: 4,
+    levels: [
+      { cost: 6, damage: 2 },
+      { cost: 10, range: 3, cooldown: 2, sell: 20 },
+    ],
+  },
 };
 
 const GRUNT: EnemyGroup = { kind: 'grunt', count: 1, spacing: 4, hp: 3, speed: 4, bounty: 5 };
@@ -28,7 +48,7 @@ function def(s: Setup = {}): TdRoundDef {
   const map = tdMapSchema.parse({
     id: 'line',
     start: { gold: s.gold ?? 30, lives: s.lives ?? 3 },
-    towers: ['arrow', 'long'],
+    towers: ['arrow', 'long', 'tiered'],
     waves: 'line',
     map: ROWS,
   });
@@ -102,6 +122,106 @@ describe('placing and paying', () => {
     ]);
     expect(w.gold).toBe(30);
     expect(w.towers).toEqual([]);
+  });
+});
+
+describe('upgrades (Engine 0.16 E3)', () => {
+  it('gives each level its stats over the level below, and a sell value counting the upgrades', () => {
+    const t = TOWERS.tiered!;
+    expect(maxLevel(t)).toBe(3);
+    expect(maxLevel(TOWERS.arrow!)).toBe(1);
+    expect(towerStats(t, 1)).toEqual({ range: 1, damage: 1, cooldown: 4, spent: 10, sell: 5 });
+    expect(towerStats(t, 2)).toEqual({ range: 1, damage: 2, cooldown: 4, spent: 16, sell: 8 });
+    expect(towerStats(t, 3)).toEqual({ range: 3, damage: 2, cooldown: 2, spent: 26, sell: 20 });
+    expect(towerStats(t, 9)).toEqual(towerStats(t, 3));
+    expect([sellValue(t), sellValue(t, 2), sellValue(t, 3)]).toEqual([5, 8, 20]);
+    expect([upgradeCost(t, 1), upgradeCost(t, 2), upgradeCost(t, 3)]).toEqual([6, 10, null]);
+    expect(upgradeCost(TOWERS.arrow!, 1)).toBeNull();
+  });
+
+  it('upgrades a tower one level, pays the cost and shows the level in the snapshot', () => {
+    const w = world();
+    w.place('tiered', 1, 1);
+    w.step();
+    w.upgrade(1, 1);
+    expect(w.step()).toEqual([
+      { type: 'upgraded', tower: 1, towerType: 'tiered', col: 1, row: 1, level: 2, cost: 6 },
+    ]);
+    expect(w.gold).toBe(14);
+    expect(w.stats.spent).toBe(16);
+    expect(w.snapshot().towers).toEqual([{ id: 1, type: 'tiered', col: 1, row: 1, cooldown: 0, level: 2 }]);
+    expect(w.statsOf(w.towers[0]!)).toMatchObject({ range: 1, damage: 2, cooldown: 4 });
+  });
+
+  it('refuses an upgrade with no tower, at the last level, too poor and once the round is over', () => {
+    const w = world({ gold: 26 });
+    w.place('tiered', 1, 1);
+    w.place('arrow', 3, 1);
+    w.step();
+    expect(w.gold).toBe(6);
+    w.upgrade(5, 1);
+    w.upgrade(3, 1);
+    w.upgrade(1, 1);
+    w.upgrade(1, 1);
+    expect(w.step().map((e) => (e.type === 'refused' ? `${e.command}:${e.code}` : e.type))).toEqual([
+      'upgrade:no_tower',
+      'upgrade:max_level',
+      'upgraded',
+      'upgrade:too_poor',
+    ]);
+    expect(w.upgradeRefusal(1, 1)).toBe('too_poor');
+    const rich = world({ gold: 100 });
+    rich.place('tiered', 1, 1);
+    rich.upgrade(1, 1);
+    rich.upgrade(1, 1);
+    rich.upgrade(1, 1);
+    expect(rich.step().map((e) => (e.type === 'refused' ? e.code : e.type))).toEqual([
+      'placed',
+      'upgraded',
+      'upgraded',
+      'max_level',
+    ]);
+    expect(rich.gold).toBe(74);
+    rich.startWave();
+    steps(rich, 40);
+    expect(rich.outcome).toBe('won');
+    expect(rich.upgradeRefusal(1, 1)).toBe('round_over');
+    rich.upgrade(1, 1);
+    expect(rich.step()).toEqual([{ type: 'refused', command: 'upgrade', code: 'round_over' }]);
+  });
+
+  it("fires with the level's range, damage and cooldown", () => {
+    // At level 1 the tower on (5, 1) reaches only the last cells; at level 3 (range 3) it reaches
+    // the enemy from (2, 0) and fires every 2 ticks for 2.
+    const play = (upgrades: number) => {
+      const w = world({ gold: 100, groups: [[{ ...GRUNT, hp: 50, speed: 2 }]] });
+      w.place('tiered', 5, 1);
+      for (let i = 0; i < upgrades; i++) w.upgrade(5, 1);
+      w.startWave();
+      return steps(w, 40).filter((e) => e.type === 'fire');
+    };
+    const one = play(0);
+    const three = play(2);
+    expect(one.every((e) => e.type === 'fire' && e.damage === 1)).toBe(true);
+    expect(three.every((e) => e.type === 'fire' && e.damage === 2)).toBe(true);
+    expect(three[0]!.at).toBeLessThan(one[0]!.at);
+    expect(three.length).toBeGreaterThan(one.length);
+  });
+
+  it("sells an upgraded tower for its level's sell value", () => {
+    const w = world({ gold: 100 });
+    w.place('tiered', 1, 1);
+    w.place('tiered', 3, 1);
+    w.upgrade(1, 1);
+    w.upgrade(3, 1);
+    w.upgrade(3, 1);
+    w.step();
+    expect(w.gold).toBe(100 - 20 - 6 - 16);
+    w.sell(1, 1);
+    w.sell(3, 1);
+    expect(w.step().map((e) => (e.type === 'sold' ? e.refund : null))).toEqual([8, 20]);
+    expect(w.gold).toBe(58 + 28);
+    expect(w.stats.refunded).toBe(28);
   });
 });
 
@@ -272,6 +392,21 @@ const RULE_CASES: Record<string, (opts: TdWorldOptions) => unknown> = {
     w.sell(1, 1);
     w.step();
     return w.gold;
+  },
+  'upgrade-costs-gold': (o) => {
+    const w = world({ gold: 12 }, o);
+    w.place('tiered', 1, 1);
+    w.upgrade(1, 1);
+    w.step();
+    return [w.gold, w.towers[0]!.level];
+  },
+  'upgrade-improves': (o) => {
+    const w = world({ groups: [[{ ...GRUNT, hp: 9 }]] }, o);
+    w.place('tiered', 1, 1);
+    w.upgrade(1, 1);
+    w.startWave();
+    steps(w, 3);
+    return w.snapshot().enemies.map((e) => e.hp);
   },
   'wave-timer': (o) => {
     const w = world({ timer: 5 }, o);

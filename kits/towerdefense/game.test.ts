@@ -110,6 +110,27 @@ describe('tdGame', () => {
   });
 });
 
+describe('upgrades (Engine 0.16 E3)', () => {
+  it('the bot upgrades a tower with jump, and the snapshot shows its level', () => {
+    const r = fixtureRound();
+    const arrow = { ...r.towers.arrow!, levels: [{ cost: 5, damage: 2 }] };
+    const game = tdGame({ ...r, towers: { ...r.towers, arrow }, seed: 1 });
+    const bot = new TdBot([
+      { do: 'place', tower: 'arrow', col: 1, row: 1 },
+      { do: 'upgrade', col: 1, row: 1 },
+    ]);
+    const input = new ScriptedInput({ steps: [] });
+    for (let i = 0; i < 6; i++) {
+      input.setHeld(bot.next(game));
+      input.next();
+      game.step(input);
+    }
+    expect(bot.done).toBe(true);
+    expect(game.world.gold).toBe(15);
+    expect(game.snapshot()).toMatchObject({ round: { towers: [{ id: 1, level: 2 }] }, kit: { spent: 15 } });
+  });
+});
+
 describe('tdRound', () => {
   it('reads the map, the tower table and the map wave list from the content', () => {
     const r = tdRound(fixtureContent());
