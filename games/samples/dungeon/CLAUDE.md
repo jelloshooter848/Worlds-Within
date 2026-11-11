@@ -131,14 +131,16 @@ games/samples/dungeon --json` to see every kit rule guarded.
   globs (`room`, `song`, `palette`, `sprite`, `sfx`, `skin`, `font`), seed 1, **320x180**, `headless.ts`,
   `view.ts`. Its `title` and `index.html`'s `<title>` are the games index's line.
 - `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt`, `chasm`,
-  `ossuary`, `warden-hall` (above).
+  `ossuary`, `warden-hall` (above), each a `.json`, its `.map.txt` and (polish P5) its
+  `.decor.txt` (Room dressing, below).
 - `content/songs/`: `crypt`, (T10) `crypt-danger` (its danger layer), `daylight`, and (T9) `warden-calm`, `warden-fight`, `warden-rage`
   (the boss song's layers) and `warden-falls` (the victory tune). `content/sfx/`: `blast`,
   `chest`, `door`, `fall`, `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`,
   `unlock`, the menus' `ui-*`, and (T9) `dash` and `warden-warn`, `-charge`, `-shoot`, `-slam`,
   `-summon`, `-hit`, `-roar`, `-defeat`, and (T10) `shutters`, `secret`, `dead` and `push`.
 - `content/palettes/`: `crypt-art`, `crypt-floor`. `content/sprites/`: `crypt-art.txt`,
-  `crypt-floor.txt` (pieces cut from the CC0 pack, and a few original ones in its colours).
+  `crypt-floor.txt` (pieces cut from the CC0 pack, and a few original ones in its colours; the
+  `dec-*` frames at the end of `crypt-art.txt` are the rooms' dressing).
 - `content/skins/canvas2d.json`: the skin (above).
 - `content.ts`: `loadDungeon(files)` (the kit hook's kinds, `kitContentKinds([topdown],
 manifestOptions(files))`), `mustLoad`, and `dungeonRooms`, `dungeonSkin` (the engine's
@@ -193,7 +195,8 @@ opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
    room only moves the hashes of runs that walk through it (T8's chasm doors moved only the old
    boss run's, whose path they changed; cross-the-chasm, which never reaches them, kept its; T9's
    hearts in the warden hall moved only to-the-boss-door's last ticks).
-5. Light and dress it in the skin (`lighting.maps.<room>`, below).
+5. Light it in the skin (`lighting.maps.<room>`, below) and dress it in `<id>.decor.txt` (Room
+   dressing, below).
 
 ## Run files and what each guards
 
@@ -399,11 +402,11 @@ crypt gained the kit's free `dark` flag (it only tags the map), and no run file'
 - **The new wing** (Engine 0.16 part C T8): the chasm has two braziers and three blue banners,
   the ossuary (`dark`, its own ambient 0.74 so its monsters stay readable) two braziers, a blue
   wall fountain with a cold blue glow and two green banners, and the warden hall (lit by its four
-  `T` torches) two red wall fountains with a red glow. Skulls lie on the floors of all three.
-  **Props** are placed lights with a `sprite` and no light (`radius` 1, `intensity` 0, `glow` 0):
-  the skin's only data place for a decoration the map has no tile for; the frames
-  (`banner-*`, `fountain-*-0..2`, `basin-*-0..2`, `skull`) are rectangles of the pack's sheet in
-  the `crypt-items` image. Kept clear of the HUD panels and the boss bar. Tuned from screenshots
+  `T` torches) two red wall fountains with a red glow. The fountains and basins are placed lights
+  with a `sprite` (`fountain-*-0..2`, `basin-*-0..2`, rectangles of the pack's sheet in the
+  `crypt-items` image), kept clear of the HUD panels and the boss bar. The skulls and banners that
+  were placed lights with no light (`radius` 1, `intensity` 0) moved into the rooms' decoration
+  grids in polish P5 (Room dressing, below), where every other prop lives. Tuned from screenshots
   at 6x (`pnpm -s cli screenshot games/samples/dungeon/runs/to-the-boss-door.run.json --tick 420
 --scale 6` the chasm, `--tick 600` the ossuary, `win.run.json --tick 1100` the warden hall).
 - How it was tuned: screenshots at 3x of the courtyard, the store room, the blast, the slide into
@@ -411,6 +414,65 @@ crypt gained the kit's free `dark` flag (it only tags the map), and no run file'
   (`pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json --tick 600 --scale 3`), read
   and adjusted (braziers moved clear of the HUD panels, the default darkness eased to keep the
   guard-room fight readable).
+
+## Room dressing (Engine 0.16 polish P5; the roadmap's C2)
+
+Every room is dressed from data, with no code: its `content/rooms/<id>.decor.txt` is the top-down
+kit's decoration grid (`kits/topdown/CLAUDE.md`, Decoration; polish P4), 11 rows of 16, `.` for
+nothing and one character per prop. The kit presents it as the map layer `decor`; the skin's
+`tiles` give each character a frame, drawn over the floor and walls and under the entities and the
+darkness, so the torches light the props. No rule reads it: every run file kept its golden hashes,
+and `pnpm -s cli mutants games/samples/dungeon` is unchanged.
+
+| Char | Frame (`crypt-art` unless said) | What                                  | Where    |
+| ---- | ------------------------------- | ------------------------------------- | -------- |
+| `,`  | `dec-crack`                     | a crack in the flags                  | floor    |
+| `*`  | `dec-rubble-0`                  | fallen stones                         | floor    |
+| `;`  | `dec-rubble-1`                  | fallen stones                         | floor    |
+| `"`  | `dec-moss-0`                    | a moss patch                          | floor    |
+| `'`  | `dec-moss-1`                    | a smaller moss patch                  | floor    |
+| `w`  | `dec-puddle`                    | a puddle                              | floor    |
+| `x`  | `dec-blood`                     | a dried blood stain                   | floor    |
+| `%`  | `dec-bones-0`                   | two bones                             | floor    |
+| `+`  | `dec-bones-2`                   | two bones                             | floor    |
+| `&`  | `dec-bones-1`                   | a skull and bones                     | floor    |
+| `$`  | `dec-skulls`                    | a pile of skulls                      | floor    |
+| `z`  | `dec-skull`                     | a skull                               | floor    |
+| `<`  | `dec-cobweb-l`                  | a cobweb in a wall's top-left corner  | top wall |
+| `>`  | `dec-cobweb-r`                  | a cobweb in a wall's top-right corner | top wall |
+| `\|` | `dec-chains`                    | two hanging chains                    | top wall |
+| `R`  | `dec-rack`                      | a weapon rack (spear, sword, axe)     | top wall |
+| `/`  | `dec-wall-crack`                | a crack in the wall                   | top wall |
+| `G`  | `dec-wall-moss`                 | moss growing down the wall            | top wall |
+| `!`  | `banner-red` (`crypt-items`)    | a red banner                          | top wall |
+| `[`  | `banner-blue` (`crypt-items`)   | a blue banner                         | top wall |
+| `]`  | `banner-green` (`crypt-items`)  | a green banner                        | top wall |
+
+- **The art:** the `dec-*` frames are original 16x16 pieces in the pack's colours at the end of
+  `content/sprites/crypt-art.txt` (made by a small generator, edit by hand now); the moss's three
+  greens took palette slots 10, 11 and 15 of `palettes/crypt-art.json` (legend `a`, `b`, `f`),
+  which held a pixel in two door frames (now `#222222`) and a statue shade (now its twin, 14), so
+  the palette keeps its 32 colours (`engine/tools/edit.test.ts` adds a 33rd to it). The
+  banners are the pack's own (`crypt-items`). The pack has no cobwebs, chains, moss, blood or
+  bones, so those are drawn, not cut.
+- **Themes:** the courtyard moss, rubble and cracks (moss on its top wall); the guard room weapon
+  racks, chains, bones and blood; the store room chains, cobwebs and rubble by the cracked east
+  wall; the bat hall bones and blood near its one torch (the rest of it stays dark, by design);
+  the crypt chains, skulls and bones; the chasm three blue banners, rubble at the pits' edge and
+  skulls; the ossuary green banners and piles of skulls; the warden hall red banners (two either
+  side of the centre, two by the right wall, clear of the boss bar), chains, skulls and blood.
+- **Rules kept:** only flat props on the floor (decals that look walkable); nothing that looks
+  solid (crates, columns, barrels) on a floor cell, since the grid never blocks. Wall props sit on
+  the top wall's face only (row 0), never on a door, a torch's or a fountain's column, nor under
+  the HUD panel (row 0 and 1, columns 0-3). Floor props stay off doors, chests, keys, hearts,
+  pits, statues, push blocks, torches and every cell the hero's box covers in any run file (they
+  were placed with each run's `pnpm -s cli trace <run> --paths hero.room,hero.x,hero.y`), and
+  mostly where the torches or the hero's light reach. One placed light was added for the props:
+  a faint cold glow over the chasm's pits (`lighting.maps.chasm`, radius 64, `#5fcde4`, 0.3), so
+  the rubble at their edge and the skulls by them read.
+- **Checked by eye** at 1920x1080 (`--scale 6`) with the eight room shots of the polish's before
+  set (docs/BUILD-LOG.md, Engine 0.16 polish P: the same commands with `after-`): props read, and
+  none hides a door, key, chest, pit or enemy or looks like a wall where the hero can walk.
 
 ## Imports
 
