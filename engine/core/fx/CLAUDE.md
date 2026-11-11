@@ -123,7 +123,9 @@ x, y, w, h, color }` (a gradient's bands across the picture). A layer's origin i
   coverage it reaches the farthest corner; centre `irisCentre(at, focus, screen)`, kept on the
   picture). `transitionAlphaAt(shape, x, y, screen)` is the cover at a pixel's centre, the one
   definition both backends draw. `TransitionPlayer` (`start(spec, covered?)`, `step()`, `view`,
-  `running`, `closing`) runs one; the shell's `ShellTransitions` uses it.
+  `running`, `closing`) runs one; the shell's `ShellTransitions` uses it. From Engine 0.16 part C T10 `level` may
+  be `false`: no transition on a map id change, not even `default` (`transitionFor` gives null), for
+  a kit that slides between rooms itself (the dungeon sample).
 - `schema.ts` (Engine 0.16 part C T4) also holds `lightingSchema` (`LightingSpec`), a 2D skin's
   `lighting` block, and its parts (`ambientSchema`, `entityLightSchema`, `eventLightSchema`,
   `placedLightSchema`, `lightSpriteSchema`, `lightFlickerSchema`, `vignetteSchema`,
@@ -138,7 +140,9 @@ values, default 6) } }`; a kind's (`kinds.<kind>`, one or a list) adds `states?`
   `events`) `ticks` (it fades from full to nothing) and `offset?`; a placed one
   (`maps.<id>.lights`) `x`/`y` (world px in that map) and `sprite?` `{ frames, ticks? (8), sheet?,
 x, y }` (an animated frame drawn under the darkness before the entities: a wall torch the map has
-  no tile for). `maps.<id>.ambient` beats the first `tags` key (file order) the map has, which
+  no tile for) and, from Engine 0.16 part C T10, `emit?` (an emitter name or list, run at the
+  light's centre on the ambient particle system while its map shows: a torch's embers;
+  `missing_ref` at `lighting.maps.<id>.lights.<i>.emit` for an unknown one). `maps.<id>.ambient` beats the first `tags` key (file order) the map has, which
   beats `ambient`. `vignette` `{ color?, strength 0-1, inner? (0.45, where it starts as a share of
 the centre-to-corner distance) }`; `bands` (0-16, default 0 smooth) steps each falloff;
   `particles` lists room-wide emitters `{ emit, tags?, maps?, prewarm? (120) }`.
@@ -162,7 +166,8 @@ lights: LightDraw[] { key, x, y, radius, color, intensity, glow }, vignette, ban
   shown also runs the skin's `lighting.particles` on their own `ambient` system: each entry whose
   `tags` (one of the map's) and `maps` (its id or a part's) fit spawns its emitters over the whole
   map's box (`shape` box, `anchor` centre); another map (id or tags) clears them and starts them
-  `prewarm` frames ahead (`AMBIENT_PREWARM`, 120) so the air is full at once. `particles()` lists
+  `prewarm` frames ahead (`AMBIENT_PREWARM`, 120) so the air is full at once. From Engine 0.16 part C T10 each placed
+  light's `emit` runs there too, at the light's centre in its map part (`light:<map>:<i>`). `particles()` lists
   them first. The 3D backend passes no map, so it has none.
 - `index.ts`: re-exports all of the above; import from `@engine/core/fx`.
 

@@ -71,6 +71,14 @@ describe('transition timing (Engine 0.16 T5)', () => {
     expect(transitionFor(undefined, 'level')).toBeNull();
   });
 
+  it('plays nothing on a level change with `level: false`, even with a default (Engine 0.16 part C T10)', () => {
+    const fade: TransitionSpec = { kind: 'fade', ticks: 3 };
+    expect(transitionFor({ level: false, default: fade }, 'level')).toBeNull();
+    expect(transitionFor({ level: false, default: fade }, 'scene')).toBe(fade);
+    expect(transitionsSchema.safeParse({ level: false, default: fade }).success).toBe(true);
+    expect(transitionsSchema.safeParse({ level: true }).success).toBe(false);
+  });
+
   it('becomes a short fade in the same colour under reduced motion', () => {
     expect(reducedMotion({ kind: 'iris', ticks: 30, color: '#123456', ease: 'cubicIn' })).toEqual({
       kind: 'fade',
@@ -191,10 +199,12 @@ describe('the transition schemas (Engine 0.16 T5)', () => {
   it('names the field of an unknown kind, a bad colour and a field of another kind', () => {
     const issues = (json: unknown) =>
       transitionsSchema.safeParse(json).error?.issues.map((i) => i.path.join('.')) ?? [];
-    expect(issues({ level: { kind: 'spin', ticks: 10 } })).toEqual(['level.kind']);
+    expect(issues({ respawn: { kind: 'spin', ticks: 10 } })).toEqual(['respawn.kind']);
+    // `level` is a spec or `false` (Engine 0.16 part C T10): a bad spec there is named at the slot.
+    expect(issues({ level: { kind: 'spin', ticks: 10 } })).toEqual(['level']);
     expect(issues({ scene: { kind: 'fade', ticks: 10, color: 'red' } })).toEqual(['scene.color']);
     expect(issues({ default: { kind: 'fade', ticks: 10, direction: 'up' } })).toEqual(['default']);
-    expect(issues({ level: { kind: 'fade', ticks: 0 } })).toEqual(['level.ticks']);
+    expect(issues({ scene: { kind: 'fade', ticks: 0 } })).toEqual(['scene.ticks']);
     expect(issues({ menu: { kind: 'fade', ticks: 3 } })).toEqual(['']);
     expect(transitionSpecSchema.safeParse({ kind: 'iris', ticks: 3, at: { x: 1 } }).success).toBe(false);
   });

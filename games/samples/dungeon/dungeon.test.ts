@@ -14,7 +14,15 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
 import { canonicalJson } from '@engine/core/headless';
 import { validate } from '@engine/core/content/validate';
-import { isFullMap, presentFrameSchema, resolveSkinEvent, skinSoundCue } from '@engine/core/present';
+import {
+  isFullMap,
+  presentFrameSchema,
+  resolveSkinEvent,
+  skinEmitNames,
+  skinSoundCue,
+} from '@engine/core/present';
+import { eventTransitionSlot, SkinParticles, transitionFor } from '@engine/core/fx';
+import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
 import { PRESENT_TILES, presentWorld, TdPresentState, topdownGame } from '@kits/topdown';
 import { contentSfx, contentSongs } from '@engine/core/content/game-content';
 import { LayerMix, mixWhenHolds } from '@engine/core/audio/mix';
@@ -66,6 +74,8 @@ describe('the dungeon sample', () => {
       'room:ossuary',
       'room:store-room',
       'room:warden-hall',
+      // The danger layer over the dungeon theme (Engine 0.16 part C T10).
+      'song:crypt-danger',
       'song:crypt',
       'song:daylight',
       // The boss music (Engine 0.16 part C T9): three layers and the victory tune.
@@ -81,6 +91,7 @@ describe('the dungeon sample', () => {
       'sfx:blast',
       'sfx:chest',
       'sfx:dash',
+      'sfx:dead',
       'sfx:door',
       'sfx:fall',
       'sfx:fanfare',
@@ -89,6 +100,9 @@ describe('the dungeon sample', () => {
       'sfx:hurt',
       'sfx:kill',
       'sfx:pickup',
+      'sfx:push',
+      'sfx:secret',
+      'sfx:shutters',
       'sfx:spit',
       'sfx:sword',
       'sfx:ui-back',
@@ -166,6 +180,7 @@ describe('the dungeon sample', () => {
   it('has songs that compile, every channel of a song as long as the others', () => {
     const songs = contentSongs(content);
     expect(songs.map((s) => s.id)).toEqual([
+      'crypt-danger',
       'crypt',
       'daylight',
       'warden-calm',
@@ -800,5 +815,158 @@ describe('the dungeon sample: the boss room, the win and the loss (Engine 0.16 p
     expect(hits.length).toBe(6); // the sixth starts the defeat too
     for (const tick of hits) expect(Math.min(...ducks.slice(tick - 1, tick + 6))).toBeLessThan(0.6);
     expect(ducks.slice(hits[0]!, hits[1]!)).toContain(1);
+  });
+});
+
+describe('the dungeon sample: combat feel and polish (Engine 0.16 part C T10)', () => {
+  const skin = dungeonSkin(content);
+  const look = dungeonLook(content);
+  const sfx = new Set(contentSfx(content).map((s) => s.id));
+  const readRun = (name: string) =>
+    JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as {
+      seed: number;
+      ticks: number;
+      input: InputScript;
+    };
+  type Frame = ReturnType<typeof presentWorld>;
+  const eachFrame = (name: string, each: (frame: Frame, tick: number) => void) => {
+    const run = readRun(name);
+    const world = createWorld(content, run.seed);
+    const input = new ScriptedInput(run.input);
+    const state = new TdPresentState();
+    world.events.splice(0);
+    for (let tick = 1; tick <= run.ticks; tick++) {
+      input.next();
+      world.update(input);
+      each(presentWorld(world, world.events.splice(0), { state, size: look.screen, top: HUD_TOP }), tick);
+    }
+  };
+  const emits = (key: string) => skinEmitNames(skin.events![key]!.emit);
+
+  it('gives every combat event its flash, hit-pause, shake, knockback dust and particles', () => {
+    expect(emits('hit')).toEqual(['hit-sparks', 'knock-dust']);
+    expect(skin.events!['hit']).toMatchObject({ hitPause: { ticks: 3 }, shake: {} });
+    expect(emits('hurt')).toContain('knock-dust');
+    expect(skin.events!['hurt']).toMatchObject({ hitPause: {}, shake: {}, flash: {} });
+    expect(emits('kill')).toEqual(['soul-wisp', 'bone-bits']);
+    expect(skin.events!['kill']).toMatchObject({ hitPause: { ticks: 4 }, shake: {} });
+    expect(skin.events!['boss-hit']).toMatchObject({ hitPause: {}, shake: {}, flash: {} });
+    expect(emits('boss-hit')).toContain('hit-sparks');
+    expect(skin.events!['blast']).toMatchObject({ hitPause: {}, shake: {}, flash: {} });
+    expect(skin.events!['boss-attack:attack=slam']).toMatchObject({ shake: {} });
+    expect(emits('pickup')).toContain('pickup-ring');
+    expect(emits('chest')).toContain('chest-rays');
+    // The enemies and the boss flash white while hit (their `flashing` looks).
+    for (const kind of ['bat', 'knight', 'spitter', 'boss:warden'])
+      expect(
+        skin.kinds[kind]!.byTag?.some((l) => l.tag === 'flashing'),
+        kind,
+      ).toBe(true);
+    // The sword leaves a trail; the dash leaves afterimages facing the way it goes.
+    expect(skin.kinds['sword']!.emit).toBe('sword-trail');
+    expect(emits('dash')).toContain('dash-ghost');
+    expect(resolveSkinEvent(skin.events, { type: 'dash', dir: 'left' })?.emit).toContain('dash-ghost-left');
+    expect(resolveSkinEvent(skin.events, { type: 'dash', dir: 'up' })?.emit).toContain('dash-ghost');
+  });
+
+  it('plays a sound for every action the runs raise, most of them varied in pitch', () => {
+    const silent = new Set(['item', 'dash-end', 'met', 'fuse', 'boss-defeated']);
+    const seen = new Set<string>();
+    for (const name of [
+      'escape.run.json',
+      'lost-in-the-guard-room.run.json',
+      'win.run.json',
+      'boss-lost.run.json',
+    ])
+      eachFrame(name, (frame) => {
+        for (const ev of frame.events) seen.add(ev.type);
+      });
+    for (const type of seen) {
+      if (silent.has(type)) continue;
+      const sound = resolveSkinEvent(skin.events, { type })?.sound;
+      expect(sound, type).toBeDefined();
+      expect(sfx.has(sound!) || look.skin.music?.[sound!] !== undefined, type).toBe(true);
+    }
+    expect(seen).toContain('shutters');
+    expect(seen).toContain('dead');
+    for (const type of ['sword', 'hit', 'hurt', 'kill', 'pickup', 'dash', 'room'])
+      expect(skin.events![type]!.pitch, type).toBeDefined();
+  });
+
+  it('holds the game on hits and the boss hits, and draws flashes only without reduced flashing', () => {
+    const run = (reduceFlashing: boolean) => {
+      const pauses: number[] = [];
+      let flashes = 0;
+      let particles = 0;
+      const r: Renderer = Object.assign(new NullRenderer(), {
+        rect(x: number, y: number, w: number, h: number) {
+          if (x === 0 && y === 0 && w === look.screen.width && h === look.screen.height) flashes++;
+        },
+      });
+      const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
+        size: look.screen,
+        reduceFlashing,
+        onHitPause: (ticks) => pauses.push(ticks),
+      });
+      eachFrame('win.run.json', (frame) => {
+        presenter.present(frame);
+        particles = Math.max(particles, presenter.particleCount);
+      });
+      return { pauses, flashes, particles };
+    };
+    const full = run(false);
+    expect(full.pauses.filter((t) => t === 6).length).toBe(6); // each boss hit
+    expect(full.pauses).toContain(4); // the warden's last kill
+    expect(full.particles).toBeGreaterThan(40);
+    expect(full.flashes).toBeGreaterThan(0);
+    const calm = run(true);
+    expect(calm.pauses).toEqual(full.pauses);
+    expect(calm.flashes).toBeLessThan(full.flashes);
+  });
+
+  it('gives every lit brazier and torch its embers, at its place in the room', () => {
+    const maps = skin.lighting!.maps!;
+    for (const [room, entry] of Object.entries(maps))
+      for (const light of entry.lights ?? [])
+        if (light.sprite?.frames[0]?.startsWith('torch-lit')) expect(light.emit, room).toBe('torch-embers');
+    expect(maps['warden-hall']!.lights!.filter((l) => l.emit === 'torch-embers').length).toBe(4);
+    const particles = new SkinParticles(skin, { seed: 1 });
+    const courtyard = dungeonRooms(content).rooms.get('courtyard')!;
+    const frame = presentWorld(createWorld(content), [], { size: look.screen, top: HUD_TOP });
+    expect(frame.status['room']).toBe(courtyard.def.id);
+    particles.update(10, frame.entities, isFullMap(frame.map!) ? frame.map : null);
+    const embers = particles.particles().filter((p) => p.emitter === 'torch-embers');
+    expect(embers.length).toBeGreaterThan(0);
+    for (const p of embers) expect(p.y).toBeLessThan(16);
+  });
+
+  it('dips to dark on a room change, fades on the fall, and keeps the slide (no level transition)', () => {
+    expect(skin.events!['room']!.flash).toMatchObject({ color: '#05030a' });
+    const t = content.manifest.transitions!;
+    expect(t.level).toBe(false);
+    expect(transitionFor(t, 'level')).toBeNull();
+    expect(eventTransitionSlot(t, 'dead')).toBe('respawn');
+    expect(transitionFor(t, 'respawn')).toMatchObject({ kind: 'fade' });
+    expect(transitionFor(t, 'default')).toMatchObject({ kind: 'fade' });
+  });
+
+  it('adds the danger layer over the dungeon theme while enemies are in the room', () => {
+    const music = skin.music!['crypt']!;
+    expect(music.layers).toEqual({ calm: 'crypt', danger: 'crypt-danger' });
+    const songs = new Map(contentSongs(content).map((s) => [s.id, s]));
+    expect(compileSong(songs.get('crypt-danger')!).length).toBe(compileSong(songs.get('crypt')!).length);
+    const mix = new LayerMix(music);
+    const seen: { room: string; enemies: number; danger: number }[] = [];
+    eachFrame('lost-in-the-guard-room.run.json', (frame) => {
+      const gains = mix.update(frame.status);
+      seen.push({
+        room: String(frame.status['room']),
+        enemies: Number(frame.status['enemies']),
+        danger: gains['danger']!,
+      });
+    });
+    expect(seen[0]).toMatchObject({ room: 'courtyard', enemies: 0, danger: 0 });
+    expect(seen.some((s) => s.room === 'guard-room' && s.enemies > 0 && s.danger === 1)).toBe(true);
+    expect(seen.every((s) => s.danger <= 1 && s.danger >= 0)).toBe(true);
   });
 });

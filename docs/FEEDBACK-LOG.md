@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 448.** (Last used: 447.)
+**Next unused number: 455.** (Last used: 454.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1791,3 +1791,30 @@ door; details in `games/samples/dungeon/CLAUDE.md`, "The dungeon" and "Run files
   hall's is the skin's layered `warden` (calm, fight and rage layers, 132 bpm, 8 bars, mixed
   from the frame's `bossHp`/`bossPhase`/`flag.bossDefeated`, ducking under hits, the slam, the
   phase change, the defeat and dialogs). The page now plays music through the shell's mixer. OK?
+
+**Engine 0.16 part C, T10: combat feel and polish pass, browser play test**
+(details in `games/samples/dungeon/CLAUDE.md`, "Combat feel and polish (T10)"):
+
+- **448.** Combat feel in the skin: hits throw white-gold sparks and knockback dust and hold the
+  game 3 ticks; kills release blue soul wisps and bone bits with a 4-tick hit-pause and a shake;
+  the hero's hurt adds dust to its sparks; the sword leaves a short white trail; chests and
+  pickups got rays and a ring. The enemies' and the boss's white flashes and the shakes on
+  blasts, slams and boss hits are kept from T3 and T9. Strong enough, or more?
+- **449.** The dash leaves pale steel afterimages of the knight (two text frames added to
+  `crypt-art.txt`, facing right and left, keyed on the dash event's `dir`). OK?
+- **450.** Engine addition: a placed light may `emit` (an emitter at its centre while its map
+  shows, each slide part at its place), so every brazier, and the warden hall's four torches,
+  throw embers. OK?
+- **451.** Engine addition: `game.json` `transitions.level: false` (no transition on a map id
+  change even with a `default`), so the dungeon keeps the kit's room slide, with a brief dip to
+  dark (the skin's `room` flash, skipped with reduced flashing), Start and Back to title fade
+  through the dark (`default`) and the fall fades to dark red (`dead` -> `respawn`). Should the
+  room change use the part A wipe instead of the slide?
+- **452.** A danger layer over the dungeon theme: the skin's layered `crypt` (the old `crypt` song
+  plus `crypt-danger`, a tense pedal and drums), the danger in while `enemies` (a new kit status:
+  the living enemies in the room, presentation only) is at least 1. OK?
+- **453.** Every action has a sound, most with pitch variation: new `shutters`, `secret`, `dead`
+  and `push` sfx; stun, block, beam, whirr, switch, torch and item-select reuse others at other
+  pitches. OK?
+- **454.** The item panel moved from the top-right to the bottom-right corner of the right margin:
+  the page's volume control and pause button covered it. OK?

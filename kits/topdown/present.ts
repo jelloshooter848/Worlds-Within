@@ -627,7 +627,8 @@ function presentEntities(world: TopDownWorld, ctx: EntityCtx): PresentEntity[] {
  * `hasMap`/`hasCompass`, `goalX`/`goalY` once the compass is found, and `top` (the play area's
  * y on the picture, a layout hint); from Engine 0.16 part C T7 also `time` (the world's ticks),
  * `roomsSeen`, `exited` (an exit reached), `dead` (the hero dead after his spin) and
- * `flag.<id>` (true) for each world flag set (a beaten boss's), for a page's end triggers.
+ * `flag.<id>` (true) for each world flag set (a beaten boss's), for a page's end triggers; from
+ * T10 `enemies` (the living enemies in the room, a boss counted), for a danger music layer.
  */
 function presentStatus(world: TopDownWorld, top: number): Record<string, PresentStatusValue> {
   const d = world.dungeon;
@@ -660,6 +661,8 @@ function presentStatus(world: TopDownWorld, top: number): Record<string, Present
     roomsSeen: cells.length,
     exited: world.exited,
     dead: world.hero.dead,
+    // Living enemies in the room (Engine 0.16 part C T10): for a danger music layer.
+    enemies: world.enemies().length,
   });
   for (const flag of [...world.flags].sort()) status[`flag.${flag}`] = true;
   // A boss in the room (Engine 0.16 part C T6): its bar's values; none without one.

@@ -525,6 +525,12 @@ export const placedLightSchema = z
     x: z.number().describe("world px of the light's centre in the map"),
     y: z.number().describe("world px of the light's centre in the map"),
     sprite: lightSpriteSchema.exactOptional(),
+    emit: z
+      .union([z.string().min(1), z.array(z.string().min(1)).min(1)])
+      .exactOptional()
+      .describe(
+        "an emitter of the skin's `emitters` (or a list) running at the light's centre while its map shows: a torch's embers (Engine 0.16 part C T10)",
+      ),
   })
   .describe('a light at a fixed place in the map');
 

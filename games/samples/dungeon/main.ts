@@ -38,6 +38,9 @@ void bootBrowserGame({
     seed: content.manifest.start.seed,
   },
   menus: { spec: content.manifest.menus, fonts: look.fonts, sheets: look.sheet },
+  // Engine 0.16 part C T10: Start and Back to title fade through the dark, the fall fades to a
+  // dark red; room changes keep the kit's slide (`level: false`), with the skin's brief dip.
+  transitions: content.manifest.transitions,
   displays: {
     canvas2d: (canvas, { onSound, hitPause }) =>
       canvasDisplay(canvas, { ...look, onSound, onHitPause: hitPause }),

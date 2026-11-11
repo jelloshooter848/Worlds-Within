@@ -72,7 +72,10 @@ describe('get, set, add, remove', () => {
     expect(text.endsWith('}\n')).toBe(true);
     const config = await resolveConfig(join(cwd, SONG));
     expect(await check(text, { ...config, parser: 'json' })).toBe(true);
-    // And the game still validates.
+    // And the game still validates, once the song's danger layer (Engine 0.16 part C T10: the
+    // skin's layered `crypt`, whose layers keep one tempo) follows it.
+    const layer = 'games/samples/dungeon/content/songs/crypt-danger.json';
+    expect((await cli(cwd, 'set', layer, 'bpm', '140')).code).toBe(EXIT.ok);
     expect((await cli(cwd, 'validate', 'games/samples/dungeon')).code).toBe(EXIT.ok);
   });
 

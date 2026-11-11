@@ -13,6 +13,12 @@
   },
   "start": { "seed": 1 },
   "screen": { "width": 320, "height": 180 },
+  "transitions": {
+    "level": false,
+    "default": { "kind": "fade", "ticks": 16, "hold": 6, "color": "#05030a", "ease": "quadInOut" },
+    "respawn": { "kind": "fade", "ticks": 30, "hold": 24, "color": "#1a0508", "ease": "cubicIn" },
+    "events": { "dead": "respawn" }
+  },
   "menus": {
     "font": "crypt-small",
     "titleFont": "crypt-title",

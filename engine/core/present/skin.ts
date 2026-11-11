@@ -1172,6 +1172,16 @@ function checkLighting(
       missing(at, 'emitter', name, emitters);
     });
   });
+  for (const [mapId, entry] of Object.entries(lighting.maps ?? {}))
+    (entry.lights ?? []).forEach((light, i) => {
+      if (light.emit === undefined) return;
+      const list = typeof light.emit === 'string' ? [light.emit] : light.emit;
+      list.forEach((name, j) => {
+        if (Object.hasOwn(emitters, name)) return;
+        const at = ['lighting', 'maps', mapId, 'lights', i, 'emit'];
+        missing(typeof light.emit === 'string' ? at : [...at, j], 'emitter', name, emitters);
+      });
+    });
 }
 
 function isPrimitive(name: string): name is MeshPrimitive {

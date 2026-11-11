@@ -13,8 +13,8 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // in manual-loop mode (`?debug=step`: `window.__ww.step(n)` takes exactly n 60 Hz steps):
 // first by the keyboard (ArrowRight held, the walk-east run: the page's state hash at every golden
 // tick is `runs/walk-east.hashes.json`'s), then each run file through the step hook's replay
-// (the way out to the exit and the fall in the guard room, with their golden hashes and their end
-// states). It checks the picture is drawn (the dark side margin of the 16:9 picture, the west wall's ledge),
+// (the way out to the exit, the fall in the guard room and, from Engine 0.16 part C T10, the win
+// over the Bone Warden and the loss to it, with their golden hashes and their end states). It checks the picture is drawn (the dark side margin of the 16:9 picture, the west wall's ledge),
 // the volume control is there, and the page logged no errors. Skipped where Chromium is not
 // installed (never in CI).
 
@@ -102,6 +102,9 @@ describe.skipIf(missing !== null)('the dungeon sample page (headless Chromium)',
       // The 16:9 picture (Engine 0.16 part C T3): the skin's dark background in the side margin,
       // the west wall's stone ledge beside the room (the CC0 pack's colours), from T4 under the
       // skin's darkness and vignette (the margin's #141016 darkened).
+      // From T10 a room change dips the picture to dark for a moment (the skin's `room` flash,
+      // timed by presented frames): a few single steps let it fade before the pixels are read.
+      for (let i = 0; i < 16; i++) await step(1);
       expect(await pixel(page, 12, 120)).toBe('10,7,12');
       // The ledge's warm stone, dimmed by the darkness (78,64,58 from 170,141,122 at T4).
       const ledge = (await pixel(page, 32 + 13, 58)).split(',').map(Number) as [number, number, number];
@@ -115,9 +118,13 @@ describe.skipIf(missing !== null)('the dungeon sample page (headless Chromium)',
     }
   }, 300_000);
 
+  // Engine 0.16 part C T10: the win (title to the Bone Warden beaten) and the loss to the boss
+  // through the built page too, with the polish pass's effects drawn on every tick.
   it.each([
-    ['escape', { exited: true, dead: false }],
-    ['lost-in-the-guard-room', { exited: false, dead: true }],
+    ['escape', { exited: true, dead: false, flags: [] as string[] }],
+    ['lost-in-the-guard-room', { exited: false, dead: true, flags: [] as string[] }],
+    ['win', { exited: false, dead: false, flags: ['bossDefeated'] }],
+    ['boss-lost', { exited: false, dead: true, flags: [] as string[] }],
   ])(
     'replays %s.run.json through the page with the golden hashes and its end',
     async (name, end) => {
@@ -136,8 +143,14 @@ describe.skipIf(missing !== null)('the dungeon sample page (headless Chromium)',
               ww.step(tick - ww.tick);
               hashes.push({ tick: ww.tick, hash: ww.hash() });
             }
-            const snap = ww.snapshot() as { exited: boolean; hero: { dead: boolean } };
-            return { hashes, refused: ww.refused.length, exited: snap.exited, dead: snap.hero.dead };
+            const snap = ww.snapshot() as { exited: boolean; hero: { dead: boolean }; flags?: string[] };
+            return {
+              hashes,
+              refused: ww.refused.length,
+              exited: snap.exited,
+              dead: snap.hero.dead,
+              flags: snap.flags ?? [],
+            };
           },
           { run: runFile(name), ticks },
         );

@@ -274,6 +274,28 @@ describe('room-wide particles', () => {
     p.update(3, [], null);
     expect(p.ambient.count).toBe(0);
   });
+
+  it("run a placed light's emitters at its centre, at each part's place (Engine 0.16 part C T10)", () => {
+    const embers = skin(
+      { maps: { a: { lights: [{ x: 8, y: 4, radius: 4, emit: 'ember' }] } } },
+      { emitters: { ember: { rate: 0.5, life: 200, speed: 0, size: 1 } } },
+    );
+    const p = new SkinParticles(embers, { seed: 2 });
+    const slide: PresentMap = { ...MAP, id: 'b>a', parts: [{ id: 'a', col: 4, row: 0, cols: 4, rows: 2 }] };
+    p.update(10, [], slide);
+    const views = p.particles();
+    expect(views.length).toBe(60);
+    for (const v of views) expect([v.x, v.y]).toEqual([72, 4]);
+    p.update(11, [], { ...MAP, id: 'other' });
+    expect(p.ambient.count).toBe(0);
+    expect(skinSchema.safeParse(embers).success).toBe(true);
+    const missingEmitter = skinSchema.safeParse(
+      skin({ maps: { a: { lights: [{ x: 0, y: 0, radius: 4, emit: ['nope'] }] } } }),
+    );
+    expect(missingEmitter.error!.issues.map((i) => i.path.join('.'))).toEqual([
+      'lighting.maps.a.lights.0.emit.0',
+    ]);
+  });
 });
 
 describe('the lighting schema', () => {

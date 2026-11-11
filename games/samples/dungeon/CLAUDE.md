@@ -132,11 +132,11 @@ games/samples/dungeon --json` to see every kit rule guarded.
   `view.ts`. Its `title` and `index.html`'s `<title>` are the games index's line.
 - `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt`, `chasm`,
   `ossuary`, `warden-hall` (above).
-- `content/songs/`: `crypt`, `daylight`, and (T9) `warden-calm`, `warden-fight`, `warden-rage`
+- `content/songs/`: `crypt`, (T10) `crypt-danger` (its danger layer), `daylight`, and (T9) `warden-calm`, `warden-fight`, `warden-rage`
   (the boss song's layers) and `warden-falls` (the victory tune). `content/sfx/`: `blast`,
   `chest`, `door`, `fall`, `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`,
   `unlock`, the menus' `ui-*`, and (T9) `dash` and `warden-warn`, `-charge`, `-shoot`, `-slam`,
-  `-summon`, `-hit`, `-roar`, `-defeat`.
+  `-summon`, `-hit`, `-roar`, `-defeat`, and (T10) `shutters`, `secret`, `dead` and `push`.
 - `content/palettes/`: `crypt-art`, `crypt-floor`. `content/sprites/`: `crypt-art.txt`,
   `crypt-floor.txt` (pieces cut from the CC0 pack, and a few original ones in its colours).
 - `content/skins/canvas2d.json`: the skin (above).
@@ -266,7 +266,8 @@ the golden files with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and say why in t
   index, follows its `games/samples/dungeon/` link, plays walk-east on the keyboard with
   `?debug=step` (the golden hash at every tick of `walk-east.hashes.json`, the guard room, the
   dark side margin and the west wall's ledge colour, the volume control), and replays `escape` and
-  `lost-in-the-guard-room` through `window.__ww.replay` with their golden hashes and end states.
+  `lost-in-the-guard-room` through `window.__ww.replay` with their golden hashes and end states,
+  and from T10 `win` (the `bossDefeated` flag) and `boss-lost` (dead) the same way.
 - `tests/browser/volume-control.test.ts` checks the volume control and stored volumes here too.
 
 ## Picture size
@@ -479,3 +480,60 @@ dialog:victory` and `--tick 1900 --overlay end` (a Keys line read 0 at the end a
   `tests/browser/menus.test.ts` plays the dungeon by keyboard from the title through the intro
   to the Warden beaten, the victory dialog (with `__ww.mix().song` `warden-falls`) and the end
   screen.
+
+## Combat feel and polish (Engine 0.16 part C T10; feedback items 448-454)
+
+Presentation only, in the skin, `game.json`'s `transitions` and two small engine additions: no
+run file's hashes moved (`tests/runs` and the presentation-invariance and stepped-shell tests
+pass unchanged).
+
+- **Hits and kills** (`events`): `hit` white-gold `hit-sparks` and `knock-dust` at the struck
+  enemy (knockback made readable), a small shake and a 3-tick hit-pause; `kill` `soul-wisp`
+  (blue, rising, additive) and `bone-bits` (falling), a 4-tick hit-pause and a shake; `hurt` adds
+  `knock-dust` to its sparks, red flash, shake and hit-pause; `boss-hit` adds `hit-sparks`. The
+  white hit flashes are the kinds' `flashing` looks (enemies, T3; the warden, T9); blasts, slams
+  and boss hits shake (T3, T9). `kinds.sword.emit` is `sword-trail`, a short white trail while the
+  blade is out; the attack keeps the T3 lunge and squash tween.
+- **Pickups and chests:** `pickup` a gold burst and a `pickup-ring`, `chest` a gold burst,
+  rising `chest-rays` and a small shake.
+- **The dash:** `dash` dust and `dash-ghost` afterimages (`knight-ghost`, the knight's silhouette
+  in the palette's pale steel, a text frame in `crypt-art.txt`, fading in after two frames so the
+  newest never covers the hero); `dash:dir=left` the mirrored `knight-ghost-left`.
+- **Torches:** every lit brazier (`lighting.maps.<room>.lights` with a `torch-lit` sprite) has
+  `emit: "torch-embers"` (the engine's new placed-light `emit`), and the warden hall has four
+  emitter-only lights over its `T` torches.
+- **Transitions** (`game.json` `transitions`): `level: false` (the engine's new switch) keeps the
+  kit's room slide, with the skin's `room` flash a brief dip to dark (`#05030a`, 0.55, 14 ticks;
+  skipped with reduced flashing); `default` (Start and Back to title) a fade through the dark;
+  `respawn` on the `dead` event (`events`) a slow fade to dark red under the `fallen` dialog. With
+  reduced motion each is a short fade (the shell's rule).
+- **Sounds for every action**, most with `pitch` variation: the run files' events all sound
+  (`item`, `dash-end`, `met`, `fuse` and `boss-defeated` aside: another event's sound covers each);
+  new `shutters` (the sealed door, with a shake), `secret` (`secret`, `reveal`), `dead` and `push`;
+  `stun`, `block`, `beam`, `whirr`, `switch`, `torch` and `item-select` reuse others at other
+  pitches.
+- **Danger music:** the skin's `music.crypt` layers the old `crypt` song (`calm`) with
+  `crypt-danger` (`danger`: a staccato D pedal, a high sting and driving drums, same tempo and
+  length) and mixes the danger in while the kit's new `enemies` status is at least 1 (30 ticks in,
+  90 out). The title and every room without a `music` field play it.
+- **HUD:** the item panel moved to the bottom-right of the right margin (`y` 149): the page's
+  volume control and pause button sat over its old place.
+- **Accessibility:** shakes follow the player's shake setting and flashes (the screen flashes,
+  the room dip) are skipped with reduced flashing, the additive particles halved (the engine's
+  rules); the white blink of a hit enemy or hero uses the kit's `calm` tag instead.
+- **Screenshots read and iterated** (the built page with `?debug=step`, each run replayed and
+  stepped one tick at a time to the shot, `#screen` at 960x540): `escape` 170 (the chest), 420
+  (the blast), `win` 369 (the dash's afterimages: first teal like the knight and covering him, now
+  pale steel and fading in), 1199 (a boss hit), 1765 (the defeat), `lost-in-the-guard-room` 410
+  (a hurt) and 1522 (the fall). Fixed from them: the item panel under the volume control, the
+  ghosts' colour and overlap, faint embers and sparks (more and brighter). `pnpm cli screenshot`
+  draws only the shot tick, so an effect started earlier shows only as its first frame there.
+- **Tests** (`dungeon.test.ts`, "combat feel and polish"): the combat events' emitters,
+  hit-pauses, shakes and flashes and the white looks, the dash's ghosts by direction, a sound for
+  every event the runs raise and pitch variation, the win drawn through `SkinnedCanvasPresenter`
+  (a 6-tick hit-pause per boss hit, the kill's 4, particles, flashes fewer with reduced flashing
+  and the same hit-pauses), the braziers' and torches' embers at their place, the transitions and
+  the danger layer mixed over `lost-in-the-guard-room`. `tests/browser/dungeon.test.ts` replays
+  `win` and `boss-lost` through the built page with their golden hashes and end states (and
+  steps walk-east's picture 16 single ticks on before reading its pixels, past the room dip).
+  `engine/tools/edit.test.ts` sets `crypt-danger`'s tempo with `crypt`'s: the layers keep one.

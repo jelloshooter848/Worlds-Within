@@ -91,7 +91,8 @@ cue?)` goes to `mixer.sound` (a presenter's `SoundCue`: varied, cooled down, duc
 - **Screen transitions** (Engine 0.16 T5; `transitions.ts`, pure, on `PURE_CORE`; the timing and
   shapes are `../fx/transition.ts`): `bootBrowserGame({ transitions, reduceMotion? })` with the
   game's `content.manifest.transitions` (`game.json`'s `transitions`, by slot: `level`, `scene`,
-  `mission`, `default`; `transitionFor`: `mission` falls back to `scene`, any slot to `default`)
+  `mission`, `default`; `transitionFor`: `mission` falls back to `scene`, any slot to `default`;
+  from Engine 0.16 part C T10 `level: false` plays none on a map change, the dungeon's room slides)
   makes a `ShellTransitions` (`booted.transitions`; made on every page, so on-demand ones work
   without specs). `reduceMotion` defaults to the browser's `prefers-reduced-motion: reduce`; with
   it every transition is a short fade (`reducedMotion`, `REDUCED_MOTION_TICKS` frames a half).

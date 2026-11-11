@@ -1,5 +1,6 @@
 import { particlesEffectEmitter, skinEmitNames, type SkinFile } from '../present/skin';
 import type { DeepReadonly, PresentEntity, PresentEvent, PresentMap } from '../present/types';
+import { mapParts } from './lighting';
 import { anchorPoint, ParticleSystem, type ParticleView } from './particles';
 import type { EmitterDef } from './schema';
 
@@ -28,6 +29,8 @@ export class SkinParticles {
   readonly ambient: ParticleSystem;
   /** The map the ambient particles were started for (`<id>|<tags>`), or null. */
   private ambientFor: string | null = null;
+  /** The placed lights' emitter boxes on the map shown (`light:<map>:<i>`), in world px. */
+  private readonly lightBoxes = new Map<string, { x: number; y: number; w: number; h: number }>();
 
   constructor(
     private readonly skin: Skin,
@@ -107,13 +110,14 @@ export class SkinParticles {
    */
   private updateAmbient(frame: number, map: DeepReadonly<PresentMap> | null): void {
     const entries = this.skin.lighting?.particles ?? [];
-    if (entries.length === 0) return;
+    if (entries.length === 0 && this.skin.lighting?.maps === undefined) return;
     // Keyed by id and tags: a blast that moves the version keeps the air as it is.
     const key = map === null ? null : `${map.id}|${(map.tags ?? []).join(',')}`;
     const behind = this.ambient.frame !== null && frame < this.ambient.frame;
     if (key !== this.ambientFor || behind) {
       this.ambient.clear();
       this.ambientFor = key;
+      this.lightBoxes.clear();
       if (map === null) return;
       const ids = [map.id, ...(map.parts ?? []).map((p) => p.id)];
       const tags = map.tags ?? [];
@@ -129,9 +133,35 @@ export class SkinParticles {
           this.ambient.attach(`ambient:${i}`, name, over, box, start);
         }
       });
+      this.attachLightEmitters(frame, map);
     }
     if (map !== null)
-      this.ambient.update(frame, (id) => (id.startsWith('ambient:') ? mapBox(map) : undefined));
+      this.ambient.update(frame, (id) => (id.startsWith('ambient:') ? mapBox(map) : this.lightBoxes.get(id)));
+  }
+
+  /**
+   * Engine 0.16 part C T10: each placed light's `emit` (`lighting.maps.<id>.lights.<i>.emit`) runs
+   * at the light's centre on the ambient system, each map part's at its place (a torch's embers
+   * follow its room through a slide), started `AMBIENT_PREWARM` frames ahead.
+   */
+  private attachLightEmitters(frame: number, map: DeepReadonly<PresentMap>): void {
+    const maps = this.skin.lighting?.maps;
+    if (maps === undefined) return;
+    for (const part of mapParts(map)) {
+      if (!Object.hasOwn(maps, part.id)) continue;
+      const ox = part.col * map.tileSize;
+      const oy = part.row * map.tileSize;
+      (maps[part.id]!.lights ?? []).forEach((light, i) => {
+        if (light.emit === undefined) return;
+        const id = `light:${part.id}:${i}`;
+        const at = { x: ox + light.x, y: oy + light.y, w: 0, h: 0 };
+        this.lightBoxes.set(id, at);
+        for (const name of skinEmitNames(light.emit)) {
+          const def = this.skin.emitters?.[name] as EmitterDef | undefined;
+          if (def !== undefined) this.ambient.attach(id, name, def, at, frame - AMBIENT_PREWARM);
+        }
+      });
+    }
   }
 }
 
