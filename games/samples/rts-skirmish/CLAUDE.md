@@ -159,7 +159,10 @@ AI's knowledge only: no world rule reads it.
   a plaza with notched inner corners; water counts as joined, so the road runs through the river
   as the ford), `2` grass (`vary`), `3` water (`join`: a bank on each side open to land). `fog`:
   unexplored `#0c0c1c` at 1, explored at 0.5, a 6 px edge. HUD: gold, own units and enemy units
-  seen (icon and number) at the top left; a `minimap` (128x80 at 348,186, the bottom right, 2 px a
+  seen (icon and number) at the top left, on a flat panel (polish Q, D3: the hud's first item, so
+  it draws over the world and fog and under the counters; 117x14 at 1,1, `#0c0c1c` with no alpha
+  so no sprite shows through, a `#fcfcfc` border like the selected-unit panel's; room for 4-digit
+  gold at 14 and 2-digit counts at 62 and 98, clear of the banner and minimap); a `minimap` (128x80 at 348,186, the bottom right, 2 px a
   tile, so the whole 64x40 map; `fog`, dots per kind coloured by `teams` own red and enemy blue,
   the view outlined; D8 sized it for the new map, as `minimapPointToWorld` needs every cell inside
   the box); the bark lines (D8: one `text` item per order at 4,256 in `ford-small`, white with a

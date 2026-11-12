@@ -1699,6 +1699,15 @@
   },
   "hud": [
     {
+      "as": "panel",
+      "x": 1,
+      "y": 1,
+      "w": 117,
+      "h": 14,
+      "color": "#0c0c1c",
+      "border": "#fcfcfc"
+    },
+    {
       "status": "stock.gold",
       "as": "icon",
       "x": 4,
