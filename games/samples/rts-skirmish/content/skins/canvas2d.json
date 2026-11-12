@@ -1905,7 +1905,7 @@
     },
     {
       "as": "text",
-      "status": "training",
+      "status": "trainingName",
       "x": 8,
       "y": 237,
       "font": "ford-small",

@@ -7,11 +7,13 @@ import {
   rtsEndKind,
   rtsEnemyKind,
   rtsMapKind,
+  rtsNamesKind,
   rtsScenario,
   rtsTypesKind,
   type EnemyPlan,
   type RtsEnd,
   type RtsMap,
+  type RtsNames,
 } from '@kits/rts';
 import { kit as rts } from '@kits/rts/kit';
 
@@ -60,6 +62,15 @@ export function skirmishEnemy(content: ContentBundle): EnemyPlan {
 /** The match's end rule (`content/end/ford.json`, the kit's `rts-end`): when red wins or loses. */
 export function skirmishEnd(content: ContentBundle): RtsEnd {
   return only(contentOf(content, rtsEndKind()), 'end rule (content/end/*.json)');
+}
+
+/**
+ * The HUD's display names (`content/names/skirmish.json`, the kit's `rts-names`; polish Q, D2):
+ * what the selection panel and the training line call each unit type and building kind.
+ * Presentation only: the world never reads it, so no hash depends on it.
+ */
+export function skirmishNames(content: ContentBundle): RtsNames {
+  return only(contentOf(content, rtsNamesKind()), 'names file (content/names/*.json)');
 }
 
 /**

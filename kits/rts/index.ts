@@ -5,6 +5,7 @@ export * from './commands';
 export * from './enemy';
 export * from './knowledge';
 export * from './end';
+export * from './names';
 export * from './present';
 export * from './fog';
 export * from './feedback';

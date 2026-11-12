@@ -24,7 +24,7 @@ the layered music with a danger layer, more sounds, the selected-unit panel and 
 ## How it was built (the worked example)
 
 1. **`game.json`**: kit `rts`, the picture size, a seed, `headless.ts` and `view.ts`, and the
-   content kinds it claims (the kit's `rts-map`, `rts-types`, `rts-enemy`, `rts-end`; the
+   content kinds it claims (the kit's `rts-map`, `rts-types`, `rts-enemy`, `rts-end`, `rts-names`; the
    engine's `palette`, `sprite`, `skin`, `sfx`, `song`, `font`).
 2. **The world as data**: the map as a world scenario (`content/maps/*.world.json`, the sim's
    format with `"systems": "rts"`), the unit and building types (`content/types/`), the AI's plan
@@ -122,6 +122,14 @@ AI's knowledge only: no world rule reads it.
   the kit snapshot's `seen`, so it is in the hashes.
 - `content/end/ford.json` (`rts-end`, D8): red wins once blue has no `town-centre`, and loses once
   red has no `town-centre` or no unit (`lost` is checked first).
+- `content/names/skirmish.json` (`rts-names`, Engine 0.16 polish Q, D2): the HUD's display names,
+  "Worker", "Soldier", "Archer", "Hero", "Town Centre", "Barracks", loaded by `skirmishNames` and
+  passed to the kit's `presentWorld` as `names` (`SkirmishFrameOptions.names`, by `view.ts`,
+  `main.ts` and `play.test.ts`). Presentation only: kept out of `content/types/skirmish.json`,
+  which is copied into the world (it would move every hash). The selected-unit panel's name is
+  the status `selectedName` and its training line `trainingName`; `when` conditions keep reading
+  the ids (`selectedType`, `training`). A new unit type or building kind needs its name here too
+  (`skirmish.test.ts` checks the table covers the types).
 - Art (Engine 0.16 part D, D7): the CC0 pack in `assets/kenney-medieval-rts/` (below) for the
   units, buildings, ground and props, and the text sheet `content/sprites/skirmish.txt` (palette
   `content/palettes/skirmish.json`) for what the pack has nothing for: `ring` (selection, white,

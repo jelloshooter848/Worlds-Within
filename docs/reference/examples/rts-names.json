@@ -1,0 +1,4 @@
+{
+  "units": { "worker": "Worker", "soldier": "Soldier" },
+  "buildings": { "hall": "Great Hall", "barracks": "Barracks" }
+}

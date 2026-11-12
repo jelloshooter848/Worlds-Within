@@ -10,6 +10,7 @@ import {
 } from '@engine/core/present';
 import { RTS_MARKER_MAX, RTS_MARKER_TICKS, type RtsOrderFeedback, type RtsOrderMarker } from './feedback';
 import { fogView, RtsFogMemory } from './fog';
+import { buildingName, unitName, type RtsNames } from './names';
 import type { WorldBox } from './selection';
 import {
   facingOfDir,
@@ -200,6 +201,12 @@ export interface RtsPresentOptions {
    * keeps the memory), and the HUD's enemy counts from what is seen.
    */
   fog?: boolean;
+  /**
+   * The game's display names (Engine 0.16 polish Q, D2; the `rts-names` kind, presentation only):
+   * with them the status's `selectedName` is a unit's or building's display name (a named person
+   * still shows by name) and `trainingName` the training unit's. Left out, the status is as before.
+   */
+  names?: RtsNames;
 }
 
 /** The id of the map `presentWorld` sends when its options name none. */
@@ -517,7 +524,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     entities,
     events: [...(opts.events ?? []), ...(state?.takeEvents() ?? [])],
     status: {
-      ...presentStatus(seen, player, [...selected], opts.placing ?? null),
+      ...presentStatus(seen, player, [...selected], opts.placing ?? null, opts.names),
       ...missionStatus(view, opts.missions ?? []),
       ...keyStatus(view, opts.keys ?? {}),
       ...threatStatus(seen, player),
@@ -653,12 +660,17 @@ export function threatStatus(view: RtsView, player: string): Record<string, Pres
  * `queue` (units queued at the selected own buildings), `training` (the first of them, or '') and
  * `trainingProgress` (0-100), `trainButtons` (the unit types the selection can train, space
  * separated) and `placing` (the building being placed, or '').
+ *
+ * With `names` (Engine 0.16 polish Q, D2): `selectedName` is the type's or kind's display name
+ * when no named person is selected (`selectedType` keeps the id, for `when` conditions), and
+ * `trainingName` is `training`'s display name (or ''). Without it there is no `trainingName`.
  */
 export function presentStatus(
   view: RtsView,
   player: string,
   selection: readonly number[],
   placing: RtsPlacing | null,
+  names?: RtsNames,
 ): Record<string, PresentStatusValue> {
   const status: Record<string, PresentStatusValue> = { faction: player, tick: view.tick };
   for (const [item, n] of Object.entries(view.stock[player] ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
@@ -674,9 +686,9 @@ export function presentStatus(
   const sel = new Set(selection);
   const units = view.units.filter((u) => sel.has(u.id));
   const buildings = view.buildings.filter((b) => sel.has(b.id));
-  const names = new Set([...units.map((u) => u.type ?? 'unit'), ...buildings.map((b) => b.kind)]);
+  const kinds = new Set([...units.map((u) => u.type ?? 'unit'), ...buildings.map((b) => b.kind)]);
   status['selected'] = units.length + buildings.length;
-  status['selection'] = names.size === 0 ? '' : names.size === 1 ? [...names][0]! : 'mixed';
+  status['selection'] = kinds.size === 0 ? '' : kinds.size === 1 ? [...kinds][0]! : 'mixed';
   const one = units.length + buildings.length === 1 ? (units[0] ?? buildings[0])! : null;
   if (one !== null) {
     status['selectedHp'] = one.hp;
@@ -685,7 +697,8 @@ export function presentStatus(
     // else its type or building kind).
     const kind = units[0] !== undefined ? (units[0].type ?? 'unit') : buildings[0]!.kind;
     const named = view.named.find((n) => n.id === one.id);
-    status['selectedName'] = named?.name ?? kind;
+    const label = units[0] !== undefined ? unitName(names, kind) : buildingName(names, kind);
+    status['selectedName'] = named?.name ?? label;
     status['selectedType'] = kind;
     status['selectedRole'] = named?.role ?? '';
   }
@@ -695,6 +708,7 @@ export function presentStatus(
   const first = own.find((b) => b.producer!.queue.length > 0);
   const head = first?.producer!.queue[0];
   status['training'] = head?.unit ?? '';
+  if (names !== undefined) status['trainingName'] = head !== undefined ? unitName(names, head.unit) : '';
   status['trainingProgress'] =
     head !== undefined ? Math.min(100, Math.floor((first!.producer!.progress * 100) / head.ticks)) : 0;
   const buttons: string[] = [];

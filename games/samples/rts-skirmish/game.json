@@ -7,6 +7,7 @@
     "rts-types": ["content/types/*.json"],
     "rts-enemy": ["content/enemy/*.json"],
     "rts-end": ["content/end/*.json"],
+    "rts-names": ["content/names/*.json"],
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],

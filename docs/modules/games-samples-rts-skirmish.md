@@ -28,7 +28,7 @@ and the camera's edge scroll and zoom.
 ## Public API entry points
 
 - `game.json`: kit `rts`, 480x270, seed 9, `headless.ts`, `view.ts`; content kinds `rts-map`,
-  `rts-types`, `rts-enemy`, `rts-end` (D8), `palette`, `sprite`, `skin`, `sfx`, `song`, `font`;
+  `rts-types`, `rts-enemy`, `rts-end` (D8), `rts-names` (polish Q, D2), `palette`, `sprite`, `skin`, `sfx`, `song`, `font`;
   the title "The River Ford" ("Take the far bank of the river") and the controls screen's rows
   (with Jump: the minimap).
 - `assets/kenney-medieval-rts/` (D7): the pack's sheet and atlas, `license.txt`, and
@@ -36,6 +36,9 @@ and the camera's edge scroll and zoom.
 - `content/`: `maps/ford.world.json` (`rts-map`, D8), `types/skirmish.json` (`rts-types`:
   worker, soldier, archer, hero; town centre, barracks; buildings with `sight`),
   `enemy/blue.json` (`rts-enemy`, knowledge `fog`), `end/ford.json` (`rts-end`),
+  `names/skirmish.json` (`rts-names`, polish Q, D2: the HUD's display names, "Town Centre",
+  "Worker" and the rest, `skirmishNames`, presentation only; the panel's `selectedName` and the
+  training line's `trainingName`),
   `sprites/skirmish.txt` and `skirmish-font.txt`, `palettes/skirmish.json`, `skins/canvas2d.json`
   (images `rts` and `ford`; every kind the kit presents, archers too; `fog`; `events` with the
   barks `bark:unitType=<type>`; the HUD: counters, a 128x80 minimap with fog and team dots, the

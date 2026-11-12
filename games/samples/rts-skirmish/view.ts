@@ -11,7 +11,7 @@ import {
   type RtsOrderFeedback,
   type RtsView,
 } from '@kits/rts';
-import { PLAYER } from './content';
+import { PLAYER, skirmishNames } from './content';
 import { createGame } from './headless';
 import { skirmishCanvasPicture, skirmishFrames, skirmishLook, type SkirmishPicture } from './picture';
 
@@ -47,6 +47,7 @@ export function createView(
       return { selection, ...(camera && { camera }) };
     },
     feedback: () => feedback.splice(0),
+    names: skirmishNames(content),
   };
   const frames = skirmishFrames(look.screen, frameOpts);
   let picture: { r: Parameters<ViewGame['render']>[0]; p: SkirmishPicture } | null = null;

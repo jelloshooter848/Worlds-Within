@@ -27,7 +27,13 @@ describe('kits by name', () => {
 
   it('finds the rts kit by its hook: map, types, enemy plan and end rule kinds, its named rules', () => {
     const kit = loadKit('rts');
-    expect(kitKinds('rts').map((k) => k.name)).toEqual(['rts-map', 'rts-types', 'rts-enemy', 'rts-end']);
+    expect(kitKinds('rts').map((k) => k.name)).toEqual([
+      'rts-map',
+      'rts-types',
+      'rts-enemy',
+      'rts-end',
+      'rts-names',
+    ]);
     expect(kitRules('rts').map((r) => r.id)).toContain('enemy-follows-plan');
     expect(allKits()).toContain(kit);
   });

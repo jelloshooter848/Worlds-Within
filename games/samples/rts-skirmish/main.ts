@@ -4,7 +4,7 @@ import { bootBrowserGame, manualFromQuery } from '@engine/core/shell';
 import { contentFonts, skinMinimap } from '@engine/core/ui';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { RTS_TILE_SIZE } from '@kits/rts';
-import { loadSkirmish, SKIRMISH_MUSIC } from './content';
+import { loadSkirmish, SKIRMISH_MUSIC, skirmishNames } from './content';
 import { skirmishLook, skirmishPicture } from './picture';
 import { SkirmishPlay, TICKS_PER_SECOND, type ButtonState, type MatchStats, type PageButton } from './play';
 import type { RecordedRun } from './recording';
@@ -71,6 +71,8 @@ export interface SkirmishHook {
 const content = await withContentImages(mustLoad(loadSkirmish(gameFiles), 'the RTS skirmish'));
 const look = skirmishLook(content);
 const minimap = skinMinimap(look.skin);
+// The HUD's display names (polish Q, D2): the selection panel says "Town Centre", not the id.
+const names = skirmishNames(content);
 const fonts = contentFonts(content);
 let shift = false;
 window.addEventListener('keydown', (e) => (shift = e.shiftKey));
@@ -121,7 +123,7 @@ const booted = await bootBrowserGame({
       content,
       seed: content.manifest.start.seed,
       pointer: page.pointer,
-      picture: (_r, opts) => skirmishPicture(display.presenter, look.screen, opts),
+      picture: (_r, opts) => skirmishPicture(display.presenter, look.screen, { ...opts, names }),
       minimap,
       additive: () => shift,
       // In manual-loop mode (`?debug=step`) one loop step is one game tick, so the step hook's

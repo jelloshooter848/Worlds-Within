@@ -15,6 +15,7 @@ const MANIFEST = JSON.stringify({
     'rts-types': ['content/types.json'],
     'rts-enemy': ['content/enemy/*.json'],
     'rts-end': ['content/end.json'],
+    'rts-names': ['content/names.json'],
   },
   start: { seed: 1 },
   headless: 'headless.ts',
@@ -54,6 +55,8 @@ const END = {
   lost: [{ count: 'units', side: 'self', op: 'lte', value: 0 }],
 };
 
+const NAMES = { units: { soldier: 'Soldier' }, buildings: { barracks: 'Barracks' } };
+
 function load(over: Record<string, unknown> = {}) {
   const kinds = engineContentKinds();
   for (const k of kit.kinds()) kinds.register(k);
@@ -63,6 +66,7 @@ function load(over: Record<string, unknown> = {}) {
     'content/types.json': JSON.stringify(TYPES),
     'content/enemy/blue.json': JSON.stringify(PLAN),
     'content/end.json': JSON.stringify(END),
+    'content/names.json': JSON.stringify(NAMES),
   };
   for (const [k, v] of Object.entries(over)) files[k] = JSON.stringify(v);
   return loadContent(files, kinds, { root: 'games/skirmish/' });
@@ -72,9 +76,15 @@ const brief = (errors: readonly ContentError[]) =>
   errors.map((e) => ({ file: e.file, path: e.path, code: e.code }));
 
 describe('the rts kit hook', () => {
-  it('names the kit, its four kinds and its rules', () => {
+  it('names the kit, its five kinds and its rules', () => {
     expect(kit.name).toBe('rts');
-    expect(kit.kinds().map((k) => k.name)).toEqual(['rts-map', 'rts-types', 'rts-enemy', 'rts-end']);
+    expect(kit.kinds().map((k) => k.name)).toEqual([
+      'rts-map',
+      'rts-types',
+      'rts-enemy',
+      'rts-end',
+      'rts-names',
+    ]);
     expect(kit.rules).toBe(RTS_RULES);
     expect(kit.strictMutants).toBeUndefined();
   });
@@ -130,6 +140,19 @@ describe('the rts kit hook', () => {
     };
     expect(brief(load({ 'content/end.json': castle }).errors)).toEqual([
       { file, path: 'won.0.type', code: 'unknown_type' },
+    ]);
+  });
+
+  it('reports a bad names table, and a unit or building it names that no table has (polish Q, D2)', () => {
+    const file = 'games/skirmish/content/names.json';
+    expect(brief(load({ 'content/names.json': { units: { soldier: '' }, ships: {} } }).errors)).toEqual([
+      { file, path: 'units.soldier', code: 'too_small' },
+      { file, path: 'ships', code: 'unrecognized_keys' },
+    ]);
+    const unknown = { units: { knight: 'Knight' }, buildings: { castle: 'Castle', hall: 'Great Hall' } };
+    expect(brief(load({ 'content/names.json': unknown }).errors)).toEqual([
+      { file, path: 'units.knight', code: 'unknown_type' },
+      { file, path: 'buildings.castle', code: 'unknown_type' },
     ]);
   });
 

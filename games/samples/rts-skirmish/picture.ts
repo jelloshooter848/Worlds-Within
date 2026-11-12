@@ -20,6 +20,7 @@ import {
   RtsEventTracker,
   RtsPresentState,
   type RtsOrderFeedback,
+  type RtsNames,
   type RtsPresentOptions,
   type RtsView,
 } from '@kits/rts';
@@ -105,6 +106,11 @@ export interface SkirmishFrameOptions {
   fog?: boolean;
   /** The feedback of the orders the page issued and the game accepted since the last frame (taken). */
   feedback?: () => readonly RtsOrderFeedback[];
+  /**
+   * The HUD's display names (`skirmishNames`, `content/names/`; polish Q, D2): the selection
+   * panel's `selectedName` and the training line's `trainingName`. Left out, the kit's ids.
+   */
+  names?: RtsNames;
 }
 
 /** One stream's state: the kit's presentation state, its event tracker, the end seen so far and the last bark. */
@@ -145,6 +151,7 @@ export function skirmishSource(
         events,
         state: state.present,
         fog: opts.fog ?? true,
+        ...(opts.names && { names: opts.names }),
       });
       frame.events = heardEvents(frame);
       if (result !== null) frame.status[result] = true;

@@ -2596,6 +2596,30 @@ Example (`docs/reference/examples/rts-end.json`):
 }
 ```
 
+### `rts-names`
+
+A game's display names for its unit types and building kinds, for the HUD (presentation only).
+
+- Defined by: kit rts
+- Where: `content/`, claimed in `game.json` under `content.rts-names`
+- Read from: `.json`
+
+| Field             | Type                | Required | Default | Limits                                   | Description                   |
+| ----------------- | ------------------- | -------- | ------- | ---------------------------------------- | ----------------------------- |
+| `units`           | `{ <key>: string }` | no       | `{}`    | keys: matches `^[A-Za-z][A-Za-z0-9_-]*$` | display name by unit type     |
+| `units.<key>`     | `string`            | no       |         | not empty                                | the display name              |
+| `buildings`       | `{ <key>: string }` | no       | `{}`    | keys: matches `^[A-Za-z][A-Za-z0-9_-]*$` | display name by building kind |
+| `buildings.<key>` | `string`            | no       |         | not empty                                | the display name              |
+
+Example (`docs/reference/examples/rts-names.json`):
+
+```json
+{
+  "units": { "worker": "Worker", "soldier": "Soldier" },
+  "buildings": { "hall": "Great Hall", "barracks": "Barracks" }
+}
+```
+
 ### `room`
 
 A top-down room: id, map cell, music, chests and an 11x16 map grid of the kit legend.

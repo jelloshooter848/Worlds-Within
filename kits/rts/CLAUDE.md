@@ -104,8 +104,12 @@ faction, x, y, w, h, seen }] }`.
   conditions read `knowledge.known(view)`, and an enemy-side `lte` condition on units or
   buildings holds only once the side has seen an enemy thing of that type (`knowledge.hasSeen`),
   so an unscouted enemy base is never a win.
+- `names.ts` (Engine 0.16 polish Q, D2): display names as data, `rtsNamesSchema` (the `rts-names`
+  kind): `{ units: { <type>: <name> }, buildings: { <kind>: <name> } }`, presentation only (never
+  in the world, so no hash depends on it). `unitName(names, type)` and `buildingName(names, kind)`
+  give the table's name, else the id itself.
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
-camera?, missions?, events?, state?, fog? })`, below. `RtsPresentState` (map tracker, animation starts,
+camera?, missions?, events?, state?, fog?, names? })`, below. `RtsPresentState` (map tracker, animation starts,
   fog memory, markers),
   `RTS_DEPTH`, `RTS_TILE_SIZE` (16), `presentMap`, `presentStatus`, `missionStatus`, `keyStatus`,
   `threatStatus` (Engine 0.16 F7), `offerTarget`, `unitAnim`, `rtsMissionInfo(def)`. `missions` is the game's `RtsMissionInfo` list
@@ -189,7 +193,7 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
 
 ## Kit hook (`kit.ts`)
 
-`kit` (`defineKit`): name `rts`, kinds `rts-map`, `rts-types`, `rts-enemy`, `rts-end`, rules `RTS_RULES`, no
+`kit` (`defineKit`): name `rts`, kinds `rts-map`, `rts-types`, `rts-enemy`, `rts-end`, `rts-names`, rules `RTS_RULES`, no
 strict mutants. `engine/tools` finds it through the generated `engine/tools/kit-list.ts` (`pnpm
 docs:gen` after changing it). `index.ts` does not re-export it.
 
@@ -210,7 +214,12 @@ docs:gen` after changing it). `index.ts` does not re-export it.
   types to check against).
 - `rts-end` (Engine 0.16 part D, D6): `rtsEndSchema` (`end.ts`). `checkAll` reports a unit or
   building type its conditions name that the game's types lack (`unknown_type` at `won.<i>.type`).
-- Examples in `docs/reference/examples/` (`rts-map.json`, `rts-types.json`, `rts-enemy.json`, `rts-end.json`);
+- `rts-names` (Engine 0.16 polish Q, D2): `rtsNamesSchema` (`names.ts`), string ids to non-empty
+  display names, both tables optional. `checkAll` reports a unit type or building kind it names
+  that the game's types lack (`unknown_type` at `units.<id>` / `buildings.<id>`; an error, as for
+  plans, since the loader has no warnings).
+- Examples in `docs/reference/examples/` (`rts-map.json`, `rts-types.json`, `rts-enemy.json`, `rts-end.json`,
+  `rts-names.json`);
   every field has a `.describe(...)`. After a schema change: `pnpm docs:gen`.
 
 ## Presentation frames (`present.ts`)
@@ -283,8 +292,12 @@ next frame (`takeEvents()`; `presentWorld` appends them to the frame's events on
   named person, not dead), `key.<key>.hp` / `.maxHp` while it is on the map, `.progress`
   (0-100) for a building with a construction, `.fate` and `.name` for a named person; and
   `enemyNear` (`threatStatus`: the fewest cells, Chebyshev, from an enemy unit to one of the
-  player's buildings; left out when either side has none), for a danger music layer. Tested in
-  `present.test.ts`.
+  player's buildings; left out when either side has none), for a danger music layer. Engine 0.16
+  polish Q (D2; presentation only, no hash moved): with the options' `names` (an `rts-names`
+  table), `selectedName` is the type's or kind's display name when no named person is selected
+  (`selectedType` and `selection` keep the ids, for `when` conditions) and `trainingName` is
+  `training`'s display name (or ''); an id the table lacks shows as itself. Without `names` the
+  status is exactly as before (no `trainingName`). Tested in `present.test.ts`.
 - **Camera**: the given hint (`RtsCamera.hint()`, from `RtsControls.presentOptions`), else the
   map's centre.
 - **Events**: passed through (the world snapshot carries none; `RtsEventTracker` reads them off
