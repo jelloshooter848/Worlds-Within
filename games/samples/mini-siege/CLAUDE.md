@@ -351,7 +351,8 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     and the title, gap M41, and while a hosted round shows on the shell's 2D layer,
     `body[data-round='layer']`, Engine 0.16 polish P7: there in one narrow column, the sound
     button over an upright slider, in the picture's side margin beside the 256 px round, clear of
-    its bar and panel); a save code in the link (`?code=<code>`, gap M42) is pressed as the
+    its bar and panel; Engine 0.16 polish Q8: over a centred screen and the menus, one row clear
+    of the HUD's key-hint panel, in the letterbox or just over the panel); a save code in the link (`?code=<code>`, gap M42) is pressed as the
     bar's code box would (the 3D page has no text box). No launch, campaign-panel, save-code
     or hint logic of its own. `index.html` is the canvas (in 2D leaving the bar's 40 px below
     it; in 3D the whole window), the 2D/3D toggle (`#backend`), the shell's sound control and

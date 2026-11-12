@@ -222,6 +222,12 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   the boxes at 640x520 and 960x540); `three.json`'s `mission-open` flash is a warm, low-alpha
   event `flash` (`#fce0a8` at 0.25, fading over 18 frames) instead of a full-white picture.
   Presentation only: no hash moved.
+- Engine 0.16 polish Q8 (P1, P3): the results' losses line ("Raiders: 4 raiders, ram, Grell,
+  Vosk") stays whole (the shell's results columns move their split to fit it); over a centred
+  screen and the title and pause menus the 3D page's controls stand in one row at the
+  bottom-right, in the letterbox when it is 36 px high or more, else just over the HUD's
+  key-hint panel, never over it (the page test checks the boxes on the results at 640x520 and
+  960x540). Presentation only: no hash moved.
 
 ## Imports allowed
 

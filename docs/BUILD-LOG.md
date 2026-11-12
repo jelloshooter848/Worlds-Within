@@ -343,6 +343,33 @@ memory, so `CameraFx` now holds the punches' product to `FX_ZOOM_MAX` (4) in and
 (`engine/core/fx/camera-fx.ts`, with a test); and the stepped-shell test's loop bound is 6 display
 frames a tick, not 4, as the battle's hit-pauses hold more ticks than any other run's.
 
+### P1 and P3: the results' columns and the controls over the key hints (Q8)
+
+**P1:** the shell's results screen (`resultsScreen` in `engine/core/shell/mission-screens.ts`,
+used by the mini siege alone) flowed its sections down two half columns of 144 px, and the
+losses line "Raiders: 4 raiders, ram, Grell, Vosk" (165 px in `siege-small`) wrapped. Now, when
+a line of either column would wrap in its half and both columns' widest lines fit side by side
+(the gap between them closing from 8 px to no less than 6), the split moves to fit them: the
+losses' line whole in a 165 px left column, the hall's 124 px line in the right one. The rows and
+their order are the same; with no line too wide the halves are unchanged. In the delegated
+siege the people now stay together in the left column (Buildings starts the right one), and the
+quit siege's "Captain Hale: captured by raiders" no longer wraps either. Tests: the shell's
+(`mission-screens.test.ts`: the split moves for a long line, not for one no split fits) and the
+siege's (every losses, people and buildings line one line in its column).
+
+**P3:** over a centred screen (a briefing, the results, the title and pause menus; not a round on
+the 2D layer, whose P7 column stays) the page's pause button, 2D link and sound control now
+stand in one row at the bottom-right: in the letterbox under the picture when it is at least
+36 px high, else just over the top of the HUD's key-hint panel ("Esc pause RMB order", picture
+y 166-177), between it and the centred panel, from CSS alone
+(`games/samples/mini-siege/index.html`: the picture's height and letterbox from the window's
+size, as `fitGame` fits it). `tests/browser/mini-siege-page.test.ts` checks, on the delegated
+siege's results at 640x520 and 960x540, that no control overlaps the key-hint panel, each
+other or the window's edge.
+
+The after shots 05 and 07, by `siege-q-shots.ts` as the before shots (`after` for `before`),
+looked at full size: the losses on one line, the controls in a row above the key hints.
+
 ## Engine 0.16 part E
 
 The tower defense, **The Winding Road** (docs/ROADMAP.md, 0.16 part E), built on branch

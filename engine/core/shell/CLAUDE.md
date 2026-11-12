@@ -312,7 +312,8 @@ changes)` (`MISSION RESULT`: the outcome title, how it was resolved, the changes
   **Continue**; on a picture at least 300 px wide, Engine 0.16 F6, a panel up to 312 px wide (304 until Engine 0.16 P8) with
   the changes down two columns; Engine 0.16 F9, gap M39: there the first section spans the panel
   and the rest flow down the columns, a heading never ends a column, and the save code shares its
-  label's row when it fits). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
+  label's row when it fits; Engine 0.16 polish Q8: the columns' split moves off the halves when a
+  line would wrap in its half and both columns' widest lines then fit, the gap 8 px down to 6). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
   `CARD_MARGIN`, `CARD_WIDTH`. Engine 0.16 F7: the context's (and `MissionScreens`') `card`
   (`MissionCardLook { width?, font? }`) sets the corner cards' widest and their font (text,
   chips, buttons and the window badge; `cardContext` swaps it into the menus for them), so the

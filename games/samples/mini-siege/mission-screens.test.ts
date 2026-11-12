@@ -13,7 +13,7 @@ import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-inp
 import { readGameFiles } from '@engine/core/node/game-files';
 import { SceneStack } from '@engine/core/scene';
 import { missionScreensScene, type MissionScreens } from '@engine/core/shell/mission-screens';
-import { contentFonts, type UiDraw, type UiPainter, type UiScreen } from '@engine/core/ui';
+import { contentFonts, layoutText, type UiDraw, type UiPainter, type UiScreen } from '@engine/core/ui';
 import { loadMiniSiege } from './content';
 import type { MiniSiegeGame } from './headless';
 import { siegePicture } from './picture';
@@ -440,6 +440,11 @@ describe('the results screen: what changed in the world (Engine 0.16 F5)', () =>
         ['Buildings', c.buildings[0]],
       ] as const)
         expect(at(heading).x, heading).toBe(at(`  ${line}`).x);
+      // Every line of the columns fits its column on one line: no "Vosk" alone on a line of its
+      // own (Engine 0.16 Q8, polish Q's P1: the columns' split moves for a long losses line).
+      const face = fonts(content.manifest.menus!.font)!;
+      for (const line of [...c.losses, ...c.people, ...c.buildings])
+        expect(layoutText(face, `  ${line}`, { width: at(`  ${line}`).w! }).lines, line).toHaveLength(1);
       // The save code shares its label's row.
       expect(at(ended.code!).y).toBe(at('Save code').y);
       expect(shown.slice(-3, -1)).toEqual(['Save code', ended.code]);

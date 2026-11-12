@@ -408,13 +408,15 @@ const ROUND_PICTURE: Box = { x: 32, y: 0, w: 256, h: 180 };
 const CONTROLS = ['#ww-volume', '#ww-pause', '#backend'];
 
 /**
- * The page's controls are clear of a round's picture while it shows on its 2D layer (Engine 0.16
- * polish P7, F2): each shown control's box (client px) shares no pixel with the round's.
+ * The 3D skin's HUD key-hint panel ("Esc pause  RMB order", `content/skins/three.json`), in the
+ * picture's bottom-right corner, under a centred screen's dim.
  */
-async function controlsClear(page: Page): Promise<void> {
-  expect(await page.evaluate(() => document.body.dataset.round)).toBe('layer');
-  const a = await toClient(page, ROUND_PICTURE.x, ROUND_PICTURE.y);
-  const b = await toClient(page, ROUND_PICTURE.x + ROUND_PICTURE.w, ROUND_PICTURE.y + ROUND_PICTURE.h);
+const KEY_HINTS: Box = { x: 234, y: 166, w: 83, h: 11 };
+
+/** Each shown control's box (client px): all of them shown. */
+async function controlBoxes(
+  page: Page,
+): Promise<{ id: string; x: number; y: number; w: number; h: number }[]> {
   const shown = await page.evaluate(
     (ids) =>
       ids.flatMap((id) => {
@@ -424,10 +426,61 @@ async function controlsClear(page: Page): Promise<void> {
     CONTROLS,
   );
   expect(shown.map((c) => c.id)).toEqual(CONTROLS);
-  for (const c of shown) {
+  return shown;
+}
+
+/** Each shown control's box (client px) shares no pixel with a picture box's (picture px). */
+async function controlsClearOf(page: Page, box: Box, what: string): Promise<void> {
+  const a = await toClient(page, box.x, box.y);
+  const b = await toClient(page, box.x + box.w, box.y + box.h);
+  for (const c of await controlBoxes(page)) {
     const over = c.x < b.x && c.x + c.w > a.x && c.y < b.y && c.y + c.h > a.y;
-    expect(over, `${c.id} at ${JSON.stringify(c)} over the round at ${JSON.stringify({ a, b })}`).toBe(false);
+    expect(over, `${c.id} at ${JSON.stringify(c)} over ${what} at ${JSON.stringify({ a, b })}`).toBe(false);
   }
+}
+
+/**
+ * The page's controls are clear of a round's picture while it shows on its 2D layer (Engine 0.16
+ * polish P7, F2): each shown control's box (client px) shares no pixel with the round's.
+ */
+async function controlsClear(page: Page): Promise<void> {
+  expect(await page.evaluate(() => document.body.dataset.round)).toBe('layer');
+  await controlsClearOf(page, ROUND_PICTURE, 'the round');
+}
+
+/**
+ * Over a centred screen (the results, a briefing) the page's controls are clear of the HUD's
+ * key-hint panel, inside the window and clear of each other, on a 640x520 window (the picture
+ * letterboxed) and a 960x540 one (16:9, the picture to the window's bottom) (Engine 0.16 polish
+ * Q8, P3). Leaves the page at 640x520.
+ */
+async function controlsClearOfHints({ page, frames }: Opened): Promise<void> {
+  for (const [width, height] of [
+    [640, 520],
+    [960, 540],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    );
+    await frames(1);
+    await controlsClearOf(page, KEY_HINTS, `the key hints at ${width}x${height}`);
+    const boxes = await controlBoxes(page);
+    for (const c of boxes) {
+      expect(c.x >= 0 && c.y >= 0 && c.x + c.w <= width && c.y + c.h <= height, `${c.id} in the window`).toBe(
+        true,
+      );
+      for (const d of boxes)
+        if (c.id < d.id)
+          expect(
+            c.x < d.x + d.w && c.x + c.w > d.x && c.y < d.y + d.h && c.y + c.h > d.y,
+            `${c.id} over ${d.id} at ${width}x${height}`,
+          ).toBe(false);
+    }
+  }
+  await page.setViewportSize({ width: 640, height: 520 });
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+  await frames(1);
 }
 
 /** Loop steps after a round starts by which the iris has opened on it (`game.json`'s 28 + 6 + 28). */
@@ -683,6 +736,8 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         );
         expect((await hook(o.page, 'texts')).some((t) => t.startsWith('and '))).toBe(false);
         await shoot(o.page, 'results');
+        await controlsClearOfHints(o);
+        expect(await hook(o.page, 'screen')).toBe('results');
         await toNext(o, 'dawn');
         expect((await hook(o.page, 'named'))['captain']).toMatchObject({ alive: true, hp: 110 });
         expect(await hook(o.page, 'captive')).toBe('');
