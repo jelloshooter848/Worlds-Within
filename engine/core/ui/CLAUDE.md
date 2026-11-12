@@ -69,7 +69,9 @@ color }`, a nine-slice `panel` frame whose insets are the inset, else a one-px `
   `{text}`/`{value}`, default `Day {day} {time}`) in its `font` at the top of the box, centred
   unless `align` says otherwise, and the day bar along the bottom (`dayBar { h? (3), back?,
 bands?, marks?, markColor?, marker? }`); nothing without the clock). `hudValueText(item, value)`,
-  `borderDraws`.
+  `borderDraws`. A bar's `border` (a HUD `bar` and a world label's `bar`) goes through
+  `barBorder(box, color)`: a box 2 px or less high or wide takes no border, its back and fill
+  covering the whole box, so a thin bar never draws as an empty frame (Engine 0.16 polish Q9).
   From Engine 0.16 part C T3 an item with `when` (a status key) is left out while that value is
   falsy (`hudItemShown`, `@engine/core/present`; from F7 `when` may also be a status test), and
   `hearts` with `half` count halves.
@@ -209,7 +211,7 @@ least one), rate? (frames per character, 0-30), lines? (2-8, default 3) }`, and 
 
 Engine 0.16 T12:
 
-- `labels.ts`: world-anchored labels. `layoutLabels(labels, entity, status, project, fonts?)` ->
+- `labels.ts`: world-anchored labels. `layoutLabels(labels, entity, status, project, fonts?, picture?)` ->
   `{ draws, views }`: each label of a skin's `labels` entry (`@engine/core/present`'s
   `labelSchema`) with something to show (a `text` label's value or `format`, a `bar`'s number
   through `labelBar`, a `timer`'s ticks through `timerText`) is centred on its anchor's picture
@@ -219,7 +221,12 @@ Engine 0.16 T12:
   is `textDraws` in the label's font (none without a font) with its caps (`baseline`) as its
   height; a bar is `DEFAULT_LABEL_BAR` (16x3) unless `w`/`h`, with `border`, `back` and the fill
   (`barFill`, `DEFAULT_BAR_COLOR`). Whole picture px. `LabelView { entity, kind, as, text?, bar?,
-box }`. The 3D backend paints the draws on its labels layer. Tested in `labels.test.ts`.
+box }`. The 3D backend paints the draws on its labels layer. From Engine 0.16 polish P6 (gap
+  M45), with a `picture` size (`{ width, height }`, picture px) the entity's laid-out boxes
+  together (a name with its health or progress bar) are moved as one box by `@engine/core/present`'s
+  `clampBoxInside`, `LABEL_EDGE_MARGIN` px clear of each edge, so a label whose anchor is in the
+  picture is never cut at its edge (a hidden anchor still hides its label); every backend passes
+  it. Tested in `labels.test.ts`.
 
 The shell's side is `engine/core/shell/ui-scene.ts` (`UiScene`): a screen as a scene, its input
 from the frame's actions and taps and the pointer's hover, drawn with the backend's `UiPainter`.

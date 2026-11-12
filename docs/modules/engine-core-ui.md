@@ -52,6 +52,10 @@ entities, extras?)` (`MinimapExtras` `{ fog?, view? }`) draws the frame's fog ov
   and no `frame` is a flat box (`alpha`, `border`), and any HUD item's `when` (`{ status, eq?,
 ne?, lt?, lte?, gt?, gte? }`, the mixer's status test) draws it only while the test holds
   (`hudItemShown` in `@engine/core/present`, so classic items honour it too).
+- World labels (T12): `layoutLabels(labels, entity, status, project, fonts?, picture?)` ->
+  `{ draws, views }`, `LabelView`, `LabelProject`, `DEFAULT_LABEL_BAR`, `DEFAULT_LABEL_OFFSET`,
+  `LABEL_GAP`; from Engine 0.16 polish P6 (gap M45) a `picture` size moves an entity's labels
+  inside the picture as one box (`clampBoxInside` in `@engine/core/present`).
 
 - Menus (T9): `menusSchema`, `TITLE_ITEMS`, `PAUSE_ITEMS`, `SETTINGS_ITEMS`, `MENU_LABELS`,
   `titleScreen`, `pauseScreen`, `settingsScreen`, `controlsScreen`, `controlRows`, `menuHint`,

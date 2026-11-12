@@ -406,3 +406,32 @@ describe('PixiPresenter lighting (Engine 0.16 part D, D1)', () => {
     expect(copy?.obj.alpha).toBeCloseTo(0.8);
   });
 });
+
+describe('PixiPresenter: world labels inside the picture (Engine 0.16 polish P6, gap M45)', () => {
+  it('moves a health bar whose anchor is near an edge inside the picture, as the canvas does', () => {
+    const skin: SkinFile = {
+      ...SKIN,
+      labels: { hero: { from: { tag: 'hp:' }, as: 'bar', max: 4, w: 24, h: 2, color: '#f00', back: '#111' } },
+    };
+    const { r, p } = setup(skin);
+    p.present(
+      freezeFrame(
+        frame({
+          entities: [
+            hero({ id: 'a', y: 8, tags: ['hp:2'] }), // anchor x 8: the bar would start at -4
+            hero({ id: 'b', x: 32, y: 8, tags: ['hp:2'] }), // anchor x 40: it would end at 52
+          ],
+        }),
+      ),
+    );
+    const bars = boxes(r.stage)
+      .filter((e) => ['#111111', '#ff0000'].includes(hex(e.obj.tint)))
+      .map((e) => [hex(e.obj.tint), e.obj.x, e.obj.y, e.obj.scale.x, e.obj.scale.y]);
+    expect(bars).toEqual([
+      ['#111111', 2, 4, 24, 2],
+      ['#ff0000', 2, 4, 12, 2],
+      ['#111111', 22, 4, 24, 2],
+      ['#ff0000', 22, 4, 12, 2],
+    ]);
+  });
+});

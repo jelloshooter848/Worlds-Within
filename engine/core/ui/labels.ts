@@ -1,15 +1,17 @@
 import {
+  clampBoxInside,
   HUD_VALUE_TOKEN,
   labelBar,
   labelValue,
   timerText,
+  unionBox,
   type DeepReadonly,
   type PresentEntity,
   type PresentFrame,
   type SkinLabel,
 } from '../present';
 import type { FontLookup } from './font';
-import { DEFAULT_BAR_COLOR, borderDraws } from './hud';
+import { DEFAULT_BAR_COLOR, barBorder } from './hud';
 import type { Box } from './nine-slice';
 import { DEFAULT_TEXT_COLOR, textDraws, type UiDraw } from './paint';
 import { measureLine } from './text';
@@ -52,6 +54,11 @@ export type LabelProject = (anchor: NonNullable<SkinLabel['anchor']>) => { x: nu
  * on one anchor stack in list order, away from the box (`top` upward, `bottom` downward, `center`
  * upward from the centre). A label whose anchor `project` hides is skipped, and so is one with no
  * font for its text. Positions are whole picture px so pixel fonts stay crisp.
+ *
+ * With a `picture` size (Engine 0.16 polish P6, gap M45) the entity's labels are kept inside it:
+ * their boxes together (a name with its health or progress bar) are moved as one box by
+ * `clampBoxInside`, `LABEL_EDGE_MARGIN` px clear of the edges, so a label whose anchor is in the
+ * picture is never cut at its edge.
  */
 export function layoutLabels(
   labels: readonly DeepReadonly<SkinLabel>[],
@@ -59,9 +66,9 @@ export function layoutLabels(
   status: DeepReadonly<PresentFrame['status']>,
   project: LabelProject,
   fonts?: FontLookup,
+  picture?: Readonly<{ width: number; height: number }>,
 ): { draws: UiDraw[]; views: LabelView[] } {
-  const draws: UiDraw[] = [];
-  const views: LabelView[] = [];
+  const placed: { label: DeepReadonly<SkinLabel>; item: LabelItem; box: Box }[] = [];
   const stacked = new Map<string, number>();
   for (const label of labels) {
     const anchor = label.anchor ?? 'top';
@@ -81,7 +88,20 @@ export function layoutLabels(
         : anchor === 'center'
           ? cy - Math.round(item.h / 2) - used
           : cy - item.h - used;
-    const box = { x, y, w: item.w, h: item.h };
+    placed.push({ label, item, box: { x, y, w: item.w, h: item.h } });
+  }
+  let dx = 0;
+  let dy = 0;
+  const all = picture === undefined ? null : unionBox(placed.map((p) => p.box));
+  if (all !== null && picture !== undefined) {
+    const inside = clampBoxInside(all, picture);
+    dx = inside.x - all.x;
+    dy = inside.y - all.y;
+  }
+  const draws: UiDraw[] = [];
+  const views: LabelView[] = [];
+  for (const { label, item, box: at } of placed) {
+    const box = { x: at.x + dx, y: at.y + dy, w: at.w, h: at.h };
     draws.push(...item.draw(box));
     views.push({
       entity: entity.id,
@@ -124,8 +144,9 @@ function labelItem(
         const out: UiDraw[] = [];
         let inner = box;
         if (label.border !== undefined) {
-          out.push(...borderDraws(box, label.border));
-          inner = { x: box.x + 1, y: box.y + 1, w: box.w - 2, h: box.h - 2 };
+          const framed = barBorder(box, label.border);
+          out.push(...framed.draws);
+          inner = framed.inner;
         }
         if (inner.w <= 0 || inner.h <= 0) return out;
         if (label.back !== undefined) out.push({ kind: 'fill', ...inner, color: label.back });

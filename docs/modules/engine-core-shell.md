@@ -276,6 +276,9 @@ next)` with `scenes.speed = n`: n scene updates, the first with the step's input
 - Engine 0.16 F9 (gap M39): there the first section (the missions' records) spans the panel and
   the rest flow down the two columns; a heading never ends a column (it moves on with its first
   line); the save code shares its label's row when it fits.
+- Engine 0.16 polish Q8: when a line would wrap in its half column and both columns' widest
+  lines fit side by side (their gap closing from 8 to no less than 6 px), the columns' split
+  moves to fit them, so a losses line stays whole; otherwise the halves stay.
 
 ## Imports allowed
 

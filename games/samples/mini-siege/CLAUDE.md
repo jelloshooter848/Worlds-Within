@@ -164,7 +164,9 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
     `offer-0`/`offer-1`, HUD icons (`icon-gold`, `icon-units`, `icon-enemy`, `icon-time`,
     `icon-torch`) and `heart`. Since Engine 0.13 T8: the sergeant Mara Venn (`sergeant-<dir>-<0|1>`,
     the soldier with a red sash and a gold plume) and the HUD's captive marker `icon-captive` (a
-    shackle, 8x8). `content/palettes/siege-held.json` is the same palette in cold
+    shackle, 8x8). Since Engine 0.16 polish Q (Q10): the hall's `wall` (a low stone block) and
+    `wall-tower` (crenellated, with a door), 16x16 in the watchtower's stone, for the 2D skin's
+    walls, which until then fell back to magenta boxes. `content/palettes/siege-held.json` is the same palette in cold
     blues: the units and buildings of the frozen event while the mission is open.
   - `content/sprites/camp.txt` (palette `content/palettes/camp.json`, night colours, the same
     letters): the room's `wall` (a palisade) and `floor`, the hero (a villager in a blue hood:
@@ -187,7 +189,9 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
     `.`, `-`, `:`), white with a black drop shadow, for the HUD's numbers and the mission title.
 - Skins: `content/skins/canvas2d.json` (the battle): every kind the RTS kit presents here
   (`unit:<type>` for the six types with `idle`, `walk`, `attack`, `build`, `gather`;
-  `building:hall`, `building:watchtower`, `resource:gold`, `selection-ring`, `health-bar`,
+  `building:hall`, `building:watchtower`, `building:wall` and `building:wall-tower` (polish Q,
+  Q10; `play.test.ts` checks every unit type and building kind has a 2D look), `resource:gold`,
+  `selection-ring`, `health-bar`,
   `progress-bar`, `mission-offer`, `selection-box`), looks by tag (T4): the engines' `damaged`
   (the burnt frames: a catapult or ram the result damaged), the watchtower's `site` (the
   scaffold), and `frozen` on every unit and building (the `siege-held` palette), `damaged` listed
@@ -348,7 +352,11 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     texts, in order)). Engine 0.16 F9: under the title the frames carry `HUD_HIDDEN_STATUS` (no HUD
     or labels behind the title, gap M40); `body[data-screen]` is the mission screen shown (the
     page's CSS moves its controls to the bottom-right corner over a centred screen, the pause menu
-    and the title, gap M41); a save code in the link (`?code=<code>`, gap M42) is pressed as the
+    and the title, gap M41, and while a hosted round shows on the shell's 2D layer,
+    `body[data-round='layer']`, Engine 0.16 polish P7: there in one narrow column, the sound
+    button over an upright slider, in the picture's side margin beside the 256 px round, clear of
+    its bar and panel; Engine 0.16 polish Q8: over a centred screen and the menus, one row clear
+    of the HUD's key-hint panel, in the letterbox or just over the panel); a save code in the link (`?code=<code>`, gap M42) is pressed as the
     bar's code box would (the 3D page has no text box). No launch, campaign-panel, save-code
     or hint logic of its own. `index.html` is the canvas (in 2D leaving the bar's 40 px below
     it; in 3D the whole window), the 2D/3D toggle (`#backend`), the shell's sound control and
@@ -704,7 +712,9 @@ hash, save code or path moved; the backend parity test plays every run through i
   ring a ring of small green blocks; the health and progress bars draw nothing (a 0.01 px box):
   they are labels instead.
 - **Labels**: a health bar over each unit and building whose bar the RTS kit shows (the kit's
-  `hp:<hp>/<max>` tag, F6), red for raiders; `Battering ram` and `Catapult` under the engines;
+  `hp:<hp>/<max>` tag, F6), red for raiders, each at least 3 px high so its 1-px black border
+  leaves room for the fill (polish Q9, P2: at 2 px a hurt captain showed an empty black bar;
+  the UI kit now also drops a border that would leave no inside, `barBorder`); `Battering ram` and `Catapult` under the engines;
   `Watchtower <n>%` and a progress bar over the site (`progress:`); places THE HALL and
   RAIDERS' CAMP on every map, in `siege-small`.
 - **Terrain and decor**: grass, road and rock cells are Nature Kit ground tiles (recoloured by the
@@ -715,7 +725,12 @@ hash, save code or path moved; the backend parity test plays every run through i
   road and the battle rows 12-19 and at the south gold node, so no unit is ever drawn inside a
   wall; houses, smithy, market, well and carts inside; the river (columns 27-29, the bridge on
   the road; the raiders wade it elsewhere, as their paths always did); fields, the sheep pen and
-  the windmill in the south; woods to the north and south; the raiders' camp east of the river
+  the windmill in the south; woods to the north and south; the open fields round the battle rows
+  dressed as countryside (polish P10): a fenced corn plot north of the corridor, hay bales (`z`),
+  flowers (`v`), grass, bushes, small rocks, stumps (`x`) and a few trees on the banks and field
+  edges, each turned, sized and nudged per cell by the legend's `yaw`, `scale` range and
+  `jitter`, every model one the skin already loads (the battle rows stay bare grass); the
+  raiders' camp east of the river
   (tents, red banners, log piles and campfires, each with a flickering point light, smoke and
   flame: the legend's `light` and `emit`, F6). The dawn's camp is half struck; the ridge's sits
   among the ridge's rocks. Every legend entry is presentation only and drawn from the
@@ -789,6 +804,11 @@ links the other one. Presentation only: no hash, save code or run file moved.
   danger layer up while a mission is open (`missionLeft`) or raiders are within 3 cells of the
   village's buildings (the RTS kit's `enemyNear`), mixed by the shell's mixer. The title plays
   the same (calm). Event and UI sounds as before.
+- **Mission-open flash** (Engine 0.16 polish P7, F3; polish Q9, P4): `three.json`'s and
+  `canvas2d.json`'s `mission-open` give the same event `flash` (`#fce0a8`, a warm cream, at alpha
+  0.25 fading over 18 presentation frames, three world ticks on the page), in place of the old
+  full-white two-tick `effect` flash, which whited out the whole picture after Delegate. Like
+  every flash it is skipped with the player's reduced-flashing setting.
 
 `three.test.ts` checks the HUD (the UI kit's, every key it reads on the frames, the title, clock
 and objectives drawn, no watchtower line at the dawn) and the music's danger layer while a

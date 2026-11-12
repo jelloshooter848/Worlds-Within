@@ -1517,6 +1517,90 @@
     "^": {
       "sheet": "crypt",
       "frame": "hole"
+    },
+    ",": {
+      "sheet": "crypt-art",
+      "frame": "dec-crack"
+    },
+    "w": {
+      "sheet": "crypt-art",
+      "frame": "dec-puddle"
+    },
+    "x": {
+      "sheet": "crypt-art",
+      "frame": "dec-blood"
+    },
+    "\"": {
+      "sheet": "crypt-art",
+      "frame": "dec-moss-0"
+    },
+    "'": {
+      "sheet": "crypt-art",
+      "frame": "dec-moss-1"
+    },
+    "*": {
+      "sheet": "crypt-art",
+      "frame": "dec-rubble-0"
+    },
+    ";": {
+      "sheet": "crypt-art",
+      "frame": "dec-rubble-1"
+    },
+    "%": {
+      "sheet": "crypt-art",
+      "frame": "dec-bones-0"
+    },
+    "+": {
+      "sheet": "crypt-art",
+      "frame": "dec-bones-2"
+    },
+    "&": {
+      "sheet": "crypt-art",
+      "frame": "dec-bones-1"
+    },
+    "$": {
+      "sheet": "crypt-art",
+      "frame": "dec-skulls"
+    },
+    "<": {
+      "sheet": "crypt-art",
+      "frame": "dec-cobweb-l"
+    },
+    ">": {
+      "sheet": "crypt-art",
+      "frame": "dec-cobweb-r"
+    },
+    "|": {
+      "sheet": "crypt-art",
+      "frame": "dec-chains"
+    },
+    "R": {
+      "sheet": "crypt-art",
+      "frame": "dec-rack"
+    },
+    "/": {
+      "sheet": "crypt-art",
+      "frame": "dec-wall-crack"
+    },
+    "G": {
+      "sheet": "crypt-art",
+      "frame": "dec-wall-moss"
+    },
+    "z": {
+      "sheet": "crypt-art",
+      "frame": "dec-skull"
+    },
+    "!": {
+      "sheet": "crypt-items",
+      "frame": "banner-red"
+    },
+    "[": {
+      "sheet": "crypt-items",
+      "frame": "banner-blue"
+    },
+    "]": {
+      "sheet": "crypt-items",
+      "frame": "banner-green"
     }
   },
   "events": {
@@ -2679,81 +2763,15 @@
             "emit": "torch-embers"
           },
           {
-            "x": 152,
-            "y": 120,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 144,
-              "y": 112
-            }
-          },
-          {
-            "x": 200,
-            "y": 40,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 192,
-              "y": 32
-            }
-          },
-          {
-            "x": 56,
-            "y": 152,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 48,
-              "y": 144
-            }
-          },
-          {
-            "x": 104,
-            "y": 8,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["banner-blue"],
-              "x": 96,
-              "y": 0
-            }
-          },
-          {
-            "x": 152,
-            "y": 8,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["banner-blue"],
-              "x": 144,
-              "y": 0
-            }
-          },
-          {
-            "x": 216,
-            "y": 8,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["banner-blue"],
-              "x": 208,
-              "y": 0
+            "x": 176,
+            "y": 104,
+            "radius": 64,
+            "color": "#5fcde4",
+            "intensity": 0.3,
+            "glow": 0.04,
+            "flicker": {
+              "amount": 0.06,
+              "rate": 9
             }
           }
         ]
@@ -2836,97 +2854,6 @@
               "x": 224,
               "y": 16
             }
-          },
-          {
-            "x": 120,
-            "y": 104,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 112,
-              "y": 96
-            }
-          },
-          {
-            "x": 24,
-            "y": 152,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 16,
-              "y": 144
-            }
-          },
-          {
-            "x": 232,
-            "y": 136,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 224,
-              "y": 128
-            }
-          },
-          {
-            "x": 56,
-            "y": 104,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 48,
-              "y": 96
-            }
-          },
-          {
-            "x": 168,
-            "y": 152,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 160,
-              "y": 144
-            }
-          },
-          {
-            "x": 104,
-            "y": 8,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["banner-green"],
-              "x": 96,
-              "y": 0
-            }
-          },
-          {
-            "x": 168,
-            "y": 8,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["banner-green"],
-              "x": 160,
-              "y": 0
-            }
           }
         ]
       },
@@ -2996,45 +2923,6 @@
               "ticks": 8,
               "x": 176,
               "y": 16
-            }
-          },
-          {
-            "x": 40,
-            "y": 152,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 32,
-              "y": 144
-            }
-          },
-          {
-            "x": 216,
-            "y": 56,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 208,
-              "y": 48
-            }
-          },
-          {
-            "x": 232,
-            "y": 152,
-            "radius": 1,
-            "intensity": 0,
-            "glow": 0,
-            "sprite": {
-              "sheet": "crypt-items",
-              "frames": ["skull"],
-              "x": 224,
-              "y": 144
             }
           },
           {

@@ -34,7 +34,7 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
   `hitPauseSpecSchema`; `CameraFx` (`event`, `shake`, `zoom`, `flash`, `update`,
   `state(frame, { reduceFlashing?, shakeScale? })` -> `{ shakeX, shakeY, zoom, flashes }`; trauma
   shake from `fxRng`, whole px unless `subPixel`), `shakeStrength`, `zoomFactor`, `zoomLength`,
-  `flashAlpha`; `HitPause` (`request`, `hold`, `remaining`), the shell's freeze-frame counter.
+  `flashAlpha`, `FX_ZOOM_MAX` (the punches' product held to 1/4..4, polish Q); `HitPause` (`request`, `hold`, `remaining`), the shell's freeze-frame counter.
 - Parallax (Engine 0.16 T4): `parallaxLayerSchema`, `layoutParallax(skin, cam, size, frameSize)`
   (`ParallaxDraw`s for both backends), `parallaxFactor`, `parallaxOrigin`, `gradientBands`.
 - Screen transitions (Engine 0.16 T5, `transition.ts`): `transitionSpecSchema` (`fade`, `wipe`
@@ -54,7 +54,8 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
   `lightDither(layout)` (the `RadialFill.dither` of a skin's `dither`: its Bayer size, between
   `bands` steps or `LIGHT_DITHER_LEVELS`); from Engine 0.16 polish P `dither.ts`:
   `ditheredRadial(fill, dither, bounds?)` (a radial fill's alpha bytes, ordered-dithered by
-  picture pixel with no RNG, which both 2D backends draw), `ditherValue`, `bayerRank`,
+  picture pixel with no RNG, which both 2D backends draw; table-driven and cached by everything
+  but the fill's place, so a steady or scrolled light gets the same shared `alpha` bytes), `ditherValue`, `bayerRank`,
   `bayerThreshold`, `stopsAlpha`,
   `flickerNoise(seed, key, frame, rate)` and `flickered` (deterministic flicker from `fxRng`),
   `ambientFor`, `blendedDarkness`, `mapParts`; room-wide particles through `SkinParticles.update(frame,

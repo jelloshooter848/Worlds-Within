@@ -191,6 +191,7 @@ export {
   type HudSprite,
   type HudText,
 } from './hud';
+export { clampBoxInside, LABEL_EDGE_MARGIN, unionBox, type PictureBox } from './label-clamp';
 export {
   PROJECTILE_DEFAULT_COLOR,
   PROJECTILE_DEFAULT_SIZE,

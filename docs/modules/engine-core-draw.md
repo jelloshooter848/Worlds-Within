@@ -9,7 +9,8 @@ The skinned presenter walk the 2D backends share (Engine 0.16 T13b, item 323): o
 that draws any `PresentFrame` through a skin onto any core `Renderer` (events, frame events,
 tweens, particles, camera follow and zoom, camera effects, parallax, per-map looks, the map,
 tiles, entities, from Engine 0.16 F8 top-down looks (frames turned to the facing, range rings,
-silhouette hit flashes and world-anchored labels such as health bars), from Engine 0.16 part D
+silhouette hit flashes and world-anchored labels such as health bars, kept inside the picture
+from Engine 0.16 polish P6), from Engine 0.16 part D
 (D3) a frame's `fog` (after the entities, particles, lighting and labels, under effects and the
 HUD; none without it) and the HUD through the UI kit, its minimap given the frame's fog and the
 camera's view box; from D4 a kind's `outline` (its sheet's silhouette drawn one picture pixel each

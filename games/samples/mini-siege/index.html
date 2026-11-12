@@ -51,12 +51,15 @@
       }
       /* Over a centred mission screen (the briefing, the results), the pause menu and the title,
          whose key hint and footer run along the picture's bottom, the controls sit in the
-         bottom-right corner, clear of them (Engine 0.16 F9, gap M41). */
+         bottom-right corner, clear of them (Engine 0.16 F9, gap M41). So too while a hosted round
+         shows on the shell's 2D layer (`body[data-round='layer']`, Engine 0.16 polish P7): its
+         bar and panel run along the picture's bottom, between the 256 px round's own edges. */
       body[data-backend='three']:is(
           [data-screen='briefing'],
           [data-screen='results'],
           [data-menu='title'],
-          [data-menu='pause']
+          [data-menu='pause'],
+          [data-round='layer']
         )
         #ww-volume {
         left: auto;
@@ -67,7 +70,8 @@
           [data-screen='briefing'],
           [data-screen='results'],
           [data-menu='title'],
-          [data-menu='pause']
+          [data-menu='pause'],
+          [data-round='layer']
         )
         #ww-pause {
         left: auto;
@@ -77,11 +81,85 @@
           [data-screen='briefing'],
           [data-screen='results'],
           [data-menu='title'],
-          [data-menu='pause']
+          [data-menu='pause'],
+          [data-round='layer']
         )
         #backend {
         left: auto;
         right: 8px;
+      }
+      /* The HUD's key-hint panel ("Esc pause  RMB order", the 3D skin's HUD at picture y 166 to
+         177 of 180) runs along the picture's bottom-right corner, under a centred screen's dim, and
+         on a window as wide as 16:9 or wider the picture reaches the window's bottom. So over a
+         centred screen the controls stand in one row at the bottom-right, in the letterbox under
+         the picture when it is at least 36 px high, else just over the key-hint panel's top edge,
+         between it and the centred panel (the row 28 px high: a 960x540 window has 30 px there)
+         (Engine 0.16 polish Q8, P3). The picture is 320x180, as big as fits and centred
+         (`fitGame`): --pic-h is its height, --pic-under the letterbox under it, --hint-top the
+         key-hint panel's top from the window's bottom. */
+      body[data-backend='three']:is(
+          [data-screen='briefing'],
+          [data-screen='results'],
+          [data-menu='title'],
+          [data-menu='pause']
+        ):not([data-round='layer']) {
+        --pic-h: min(100vh, 56.25vw);
+        --pic-under: calc((100vh - var(--pic-h)) / 2);
+        --hint-top: calc(var(--pic-under) + var(--pic-h) * 14 / 180);
+        --row-bottom: max(4px, calc(var(--hint-top) + 1px - 1000 * max(0px, var(--pic-under) - 36px)));
+      }
+      body[data-backend='three']:is(
+          [data-screen='briefing'],
+          [data-screen='results'],
+          [data-menu='title'],
+          [data-menu='pause']
+        ):not([data-round='layer'])
+        #ww-volume {
+        bottom: var(--row-bottom);
+        padding: 0 4px;
+      }
+      body[data-backend='three']:is(
+          [data-screen='briefing'],
+          [data-screen='results'],
+          [data-menu='title'],
+          [data-menu='pause']
+        ):not([data-round='layer'])
+        #backend {
+        bottom: calc(var(--row-bottom) + 2px);
+        right: 152px;
+      }
+      body[data-backend='three']:is(
+          [data-screen='briefing'],
+          [data-screen='results'],
+          [data-menu='title'],
+          [data-menu='pause']
+        ):not([data-round='layer'])
+        #ww-pause {
+        bottom: var(--row-bottom);
+        right: 194px;
+        min-height: 28px;
+      }
+      /* Over a round the corner is only the picture's side margin (a tenth of its width beside
+         the 256 px round), so the controls stand in one narrow column there: the sound button over
+         an upright slider, the 2D link and the pause button above them (Engine 0.16 polish P7). */
+      body[data-backend='three'][data-round='layer'] #ww-volume {
+        right: 4px;
+        flex-direction: column;
+        padding: 2px;
+      }
+      body[data-backend='three'][data-round='layer'] #ww-master {
+        width: 16px;
+        height: 56px;
+        writing-mode: vertical-lr;
+        direction: rtl;
+      }
+      body[data-backend='three'][data-round='layer'] #backend {
+        right: 4px;
+        bottom: 104px;
+      }
+      body[data-backend='three'][data-round='layer'] #ww-pause {
+        right: 4px;
+        bottom: 134px;
       }
       #backend {
         position: fixed;

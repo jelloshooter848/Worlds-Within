@@ -312,7 +312,9 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
     let paused = 0;
     let ends = 0;
     let bannerFrames = 0;
-    while ((tick < run.ticks || booted.transitions.running) && frames < run.ticks * 4 + 600) {
+    // A loop bound, not a rule: 6 frames a tick (4 before polish Q, Q7), as The River Ford's
+    // `big-fight` holds more ticks under hit-pauses than any other run.
+    while ((tick < run.ticks || booted.transitions.running) && frames < run.ticks * 6 + 600) {
       frames++;
       if (booted.menus?.state === 'end') {
         ends++;

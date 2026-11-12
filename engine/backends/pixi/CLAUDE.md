@@ -74,10 +74,13 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
   nothing is drawn (the vignette's circle reaches the picture's corners). Culled like a box.
   A fill with `dither` (Engine 0.16 polish P, C1: a skin's `lighting.dither`) is instead one
   sprite at scale 1 and whole pixels of `ditheredRadial`'s alpha bytes (`@engine/core/fx`, the
-  same bytes the Canvas2D backend puts), written as premultiplied white into a pooled
+  same bytes the Canvas2D backend puts), written as premultiplied white into a
   `DitherStamp` (a `BufferImageSource`, nearest filtering, rounded up to 32 texels a side, its
-  frame cut to the fill; one per dithered fill in the frame, reset by `beginFrame` and rewritten
-  next frame, so a flickering light makes no new texture), tinted and blended as above.
+  frame cut to the fill), kept by the stamp's shared `alpha` array, least recently drawn first,
+  up to `DITHER_TEXTURE_BYTES` (32 MB) past the frame's own; over that the oldest are let go and
+  one big enough holds the next new fill. So a steady light, or one the camera scrolls (the same
+  bytes at each Bayer phase), is written and uploaded once (polish P review round 2), tinted and
+  blended as above.
 
 - Tinted sheets (T13b-3): a sheet whose `image` is a `TintedImage` (a texture and a colour) draws
   every sprite with that colour as `tint` (and its alpha as alpha); a sheet whose `image` is a
@@ -227,7 +230,8 @@ animation frames by their ticks, additive glowing particles and a kind's blend a
 behind each), parallax before the map before the entities, a spawn tween's transform container,
 flash and tint overlays (and reduced flashing), the UI kit HUD with one white glyph strip tinted
 per colour, the skin set, and sounds, hit-pauses, particle counts and focus equal to the core
-presenter on another renderer. `transition.test.ts` checks the transition `Graphics` against
+presenter on another renderer, and (Engine 0.16 polish P6, gap M45) world labels near the
+picture's edges moved inside it as on the canvas. `transition.test.ts` checks the transition `Graphics` against
 `transitionAlphaAt` per pixel; `display.test.ts` the display's passes, letterbox, pointer maths,
 transition and UI painter on a recording `DisplayGpu`, both `upscale` paths and the backdrop
 clear colour. `tests/browser/pixi-display.test.ts` builds
@@ -243,4 +247,4 @@ of a glow, the mask of a clip and the nesting of transforms and scopes; quarter 
 against the same texel table as `canvas2d/renderer.test.ts`; and that the pools hand back the same
 objects frame after frame, reset. Its dithered block (polish P) checks a dithered fill's sprite
 (whole-pixel place and size, blend, tint), its texture holding `ditheredRadial`'s bytes, reused and
-resized next frame and byte-identical for the same fill.
+resized next frame and byte-identical for the same fill, and not uploaded again for a steady one.

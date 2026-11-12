@@ -26,11 +26,23 @@ It never draws and never imports the sim: a game's glue fills its `RtsWorldPort`
 `trainCommand`, `stopCommand`, `trainButtons`, `OrderDraft`, `stampOrder`; missions:
 `missionRequest`, `missionButtons`, `launchMission`, `MissionLauncher`), `enemy`
 (`enemyPlanSchema`, `ScriptedEnemy`, `conditionHolds`), `knowledge` (`RtsKnowledge`), `end`
-(`rtsEndSchema`, `matchResult`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`;
+(`rtsEndSchema`, `matchResult`), `names` (Engine 0.16 polish Q, D2: `rtsNamesSchema`, the
+`rts-names` kind, a game's display names by unit type and building kind; `unitName`,
+`buildingName`, each falling back to the id), `decor` (Engine 0.16 polish Q, Q5:
+`rtsDecorSchema`, the `rts-decor` kind, a map's presentation-only decoration grid, usually
+`maps/<id>.decor.txt` beside `maps/<id>.world.json`, one `RTS_DECOR` character per terrain cell:
+trees, pines, stumps, bushes, rocks, boulders, pebbles, flowers, mushrooms, grass tufts, dirt,
+darker and lighter grass and bank reeds, `.` for nothing; `unknown_char`, `ragged_row`, and
+across files `size_mismatch` against its map and `missing_ref` with no map of its name;
+`presentWorld`'s `decor` option adds it as the map layer `decor`, which both 2D backends draw over
+the terrain and under the entities and fog, through the skin's `tiles`; never in the world, so no
+hash moves), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`;
 from Engine 0.16 F7 the status also names the one selected thing, `selectedName`, `selectedType`,
 `selectedRole`, gives each scenario key's health, progress, fate and life, `keyStatus`:
 `key.<key>.hp`, `.maxHp`, `.progress`, `.fate`, `.name`, `.alive`, and how near the enemy is to
-the player's buildings, `threatStatus`: `enemyNear`, for a 3D page's HUD objectives and music),
+the player's buildings, `threatStatus`: `enemyNear`, for a 3D page's HUD objectives and music;
+from polish Q, D2, with the `names` option `selectedName` is the display name and `trainingName`
+the training unit's, presentation only, and without it the status is as before),
 `controls` (`RtsControls`: pointer gestures through `RtsCamera` into selection and orders; from
 Engine 0.16 F2 through a ground-view `RtsCamera` too, a box then selecting what is drawn inside
 the picture rectangle, `Selection.boxWhere`),
@@ -39,7 +51,7 @@ the picture rectangle, `Selection.boxWhere`),
 `RtsWorldPort`, filled by `engine/sim`'s `rtsWorldPort(world)`; and from Engine 0.15 T6, gap M18,
 `rtsMissionHooks(game)`, the `canOpen` (`not_offered`) and `onChange` (`refresh()`) a
 `MissionHost` over the game takes, so no glue wraps the two), `rules` (`RTS_RULES`) and `schema` (the `rts-map`, `rts-types`, `rts-enemy` and (Engine 0.16 part D)
-`rts-end` content kinds, and from Engine 0.15 T15 `rtsScenario(map, types, seed)`: the map with the types table spawned first, the
+`rts-end` content kinds, and from polish Q `rts-names` and `rts-decor`; from Engine 0.15 T15 `rtsScenario(map, types, seed)`: the map with the types table spawned first, the
 scenario a game builds its world from). `kit.ts` exports `kit`, the hook the tools find by the name `rts`.
 
 - Engine 0.15 T7 (gap M25): `RtsMissionInfo.marker` may be a scenario key (a mission file's

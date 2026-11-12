@@ -2596,6 +2596,50 @@ Example (`docs/reference/examples/rts-end.json`):
 }
 ```
 
+### `rts-names`
+
+A game's display names for its unit types and building kinds, for the HUD (presentation only).
+
+- Defined by: kit rts
+- Where: `content/`, claimed in `game.json` under `content.rts-names`
+- Read from: `.json`
+
+| Field             | Type                | Required | Default | Limits                                   | Description                   |
+| ----------------- | ------------------- | -------- | ------- | ---------------------------------------- | ----------------------------- |
+| `units`           | `{ <key>: string }` | no       | `{}`    | keys: matches `^[A-Za-z][A-Za-z0-9_-]*$` | display name by unit type     |
+| `units.<key>`     | `string`            | no       |         | not empty                                | the display name              |
+| `buildings`       | `{ <key>: string }` | no       | `{}`    | keys: matches `^[A-Za-z][A-Za-z0-9_-]*$` | display name by building kind |
+| `buildings.<key>` | `string`            | no       |         | not empty                                | the display name              |
+
+Example (`docs/reference/examples/rts-names.json`):
+
+```json
+{
+  "units": { "worker": "Worker", "soldier": "Soldier" },
+  "buildings": { "hall": "Great Hall", "barracks": "Barracks" }
+}
+```
+
+### `rts-decor`
+
+An RTS map's decoration grid: one character per terrain cell, scenery a skin draws over the ground (presentation only).
+
+- Defined by: kit rts
+- Where: `content/`, claimed in `game.json` under `content.rts-decor`
+- Read from: `.json` or `.txt`
+
+| Field  | Type       | Required | Default | Limits          | Description                                                                                                                                                                                                                                                                                  |
+| ------ | ---------- | -------- | ------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rows` | `string[]` | yes      |         | at least 1 item | one string per map row, one character per terrain cell: `.` nothing, `T` a tree, `P` a pine, `S` a stump, `b` a bush, `r` a rock, `R` a boulder, `p` pebbles, `f` flowers, `m` mushrooms, `g` a grass tuft, `d` a dirt patch, `D` darker grass, `l` lighter grass, `\|` reeds (a river bank) |
+
+Example (`docs/reference/examples/rts-decor.txt`):
+
+```text
+T.g..PrS
+.d.||..b
+f..ggDlp
+```
+
 ### `room`
 
 A top-down room: id, map cell, music, chests and an 11x16 map grid of the kit legend.

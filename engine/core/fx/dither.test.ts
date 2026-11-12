@@ -67,13 +67,20 @@ describe('ditheredRadial', () => {
   const fill = { x: 20.5, y: 12, radius: 9.3, stops: lightStops(0.9, 0, 8) };
   const dither = { size: 8, levels: 16 } as const;
 
-  it('covers the circle square in whole pixels, cut to the bounds, with no rings of equal steps', () => {
+  it('covers the circle square in whole pixels, cut to the bounds only when huge, with no rings of equal steps', () => {
     const s = ditheredRadial(fill, dither)!;
     expect([s.x, s.y, s.w, s.h]).toEqual([11, 2, 19, 20]);
-    const cut = ditheredRadial(fill, dither, { width: 24, height: 10 })!;
-    expect([cut.x, cut.y, cut.w, cut.h]).toEqual([11, 2, 13, 8]);
-    // The same pixel has the same byte wherever the stamp starts: dithered by picture position.
-    expect(cut.alpha[3 * cut.w + 4]).toBe(s.alpha[3 * s.w + 4]);
+    // Across the bounds' edge: kept whole (the backend's drawing cuts it), the same bytes.
+    const across = ditheredRadial(fill, dither, { width: 24, height: 10 })!;
+    expect([across.x, across.y, across.w, across.h]).toEqual([11, 2, 19, 20]);
+    expect(across.alpha).toBe(s.alpha);
+    // A light far bigger than the picture is cut to it; the same pixel has the same byte
+    // wherever the stamp starts: dithered by picture position.
+    const huge = { x: 20, y: 12, radius: 300, stops: lightStops(0.9, 0, 8) };
+    const big = ditheredRadial({ ...huge, box: { x: -40, y: -40, w: 80, h: 80 } }, dither)!;
+    const cut = ditheredRadial(huge, dither, { width: 24, height: 10 })!;
+    expect([cut.x, cut.y, cut.w, cut.h]).toEqual([0, 0, 24, 10]);
+    expect(cut.alpha[3 * cut.w + 4]).toBe(big.alpha[(3 + 40) * big.w + 4 + 40]);
     // Bytes are steps of 255 / 16; the centre is lit, the corners are not.
     for (const a of s.alpha) expect(Math.abs(a / (255 / 16) - Math.round(a / (255 / 16)))).toBeLessThan(0.05);
     expect(s.alpha[10 * s.w + 9]).toBeGreaterThan(200);
@@ -99,6 +106,60 @@ describe('ditheredRadial', () => {
     expect([b.x, b.y, b.w, b.h]).toEqual([a.x, a.y, a.w, a.h]);
     expect(ditheredRadial({ ...fill, radius: 0 }, dither)).toBeNull();
     expect(ditheredRadial(fill, dither, { width: 5, height: 5 })).toBeNull();
+  });
+
+  it('matches the per-pixel ditherValue of stopsAlpha, but for a rare pixel one step off at a threshold', () => {
+    for (const f of [fill, { x: 40, y: 30, radius: 84, stops: lightStops(0.95, 0, 8) }]) {
+      const s = ditheredRadial(f, dither)!;
+      let off = 0;
+      for (let j = 0; j < s.h; j++)
+        for (let i = 0; i < s.w; i++) {
+          const px = s.x + i;
+          const py = s.y + j;
+          const d = Math.hypot(px + 0.5 - f.x, py + 0.5 - f.y) / f.radius;
+          const want = Math.round(ditherValue(stopsAlpha(f.stops, d), px, py, dither) * 255);
+          const got = s.alpha[j * s.w + i]!;
+          if (got !== want) {
+            off++;
+            expect(Math.abs(got - want)).toBeLessThanOrEqual(Math.ceil(255 / dither.levels));
+          }
+        }
+      expect(off / s.alpha.length).toBeLessThan(0.01);
+    }
+  });
+
+  it("shares a steady or scrolled fill's bytes, and gives a moved or changed one its bytes worked out afresh", () => {
+    const at = { x: 60, y: 50, radius: 30, stops: lightStops(0.9, 0, 8) };
+    const bounds = { width: 128, height: 96 };
+    const a = ditheredRadial(at, dither, bounds)!;
+    expect(ditheredRadial({ ...at, stops: lightStops(0.9, 0, 8) }, dither, bounds)!.alpha).toBe(a.alpha);
+    // Moved by a whole Bayer tile, inside the picture (the camera scrolling): the very same bytes
+    // one tile over, so a backend reuses what it made from them.
+    const moved = ditheredRadial({ ...at, x: 68, y: 42 }, dither, bounds)!;
+    expect([moved.x - a.x, moved.y - a.y]).toEqual([8, -8]);
+    expect(moved.alpha).toBe(a.alpha);
+    // Moved by one pixel: another Bayer phase, its own bytes (as worked out afresh), shared in turn.
+    const nudged = ditheredRadial({ ...at, x: 61 }, dither, bounds)!;
+    expect(nudged.alpha).not.toBe(a.alpha);
+    let off = 0;
+    for (let k = 0; k < nudged.alpha.length; k++) {
+      const px = nudged.x + (k % nudged.w);
+      const py = nudged.y + Math.floor(k / nudged.w);
+      const d = Math.hypot(px + 0.5 - 61, py + 0.5 - 50) / 30;
+      if (nudged.alpha[k] !== Math.round(ditherValue(stopsAlpha(at.stops, d), px, py, dither) * 255)) off++;
+    }
+    expect(off / nudged.alpha.length).toBeLessThan(0.01);
+    expect(ditheredRadial({ ...at, x: 61 + 16 }, dither, bounds)!.alpha).toBe(nudged.alpha);
+    // Scrolled half off the picture: still whole, so still the same bytes.
+    const edge = ditheredRadial({ ...at, x: 108, y: 2 }, dither, bounds)!;
+    expect([edge.x, edge.y, edge.w, edge.h]).toEqual([78, -28, 60, 60]);
+    expect(edge.alpha).toBe(a.alpha);
+    // Wholly off it: nothing.
+    expect(ditheredRadial({ ...at, x: 200 }, dither, bounds)).toBeNull();
+    // A changed falloff in place: new bytes, dimmer everywhere.
+    const dim = ditheredRadial({ ...at, stops: lightStops(0.5, 0, 8) }, dither, bounds)!;
+    expect(dim.alpha).not.toBe(a.alpha);
+    for (let i = 0; i < a.alpha.length; i++) expect(dim.alpha[i]).toBeLessThanOrEqual(a.alpha[i]!);
   });
 });
 

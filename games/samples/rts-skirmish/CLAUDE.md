@@ -24,7 +24,8 @@ the layered music with a danger layer, more sounds, the selected-unit panel and 
 ## How it was built (the worked example)
 
 1. **`game.json`**: kit `rts`, the picture size, a seed, `headless.ts` and `view.ts`, and the
-   content kinds it claims (the kit's `rts-map`, `rts-types`, `rts-enemy`, `rts-end`; the
+   content kinds it claims (the kit's `rts-map`, `rts-types`, `rts-enemy`, `rts-end`, `rts-names`,
+   `rts-decor`; the
    engine's `palette`, `sprite`, `skin`, `sfx`, `song`, `font`).
 2. **The world as data**: the map as a world scenario (`content/maps/*.world.json`, the sim's
    format with `"systems": "rts"`), the unit and building types (`content/types/`), the AI's plan
@@ -122,6 +123,34 @@ AI's knowledge only: no world rule reads it.
   the kit snapshot's `seen`, so it is in the hashes.
 - `content/end/ford.json` (`rts-end`, D8): red wins once blue has no `town-centre`, and loses once
   red has no `town-centre` or no unit (`lost` is checked first).
+- `content/names/skirmish.json` (`rts-names`, Engine 0.16 polish Q, D2): the HUD's display names,
+  "Worker", "Soldier", "Archer", "Hero", "Town Centre", "Barracks", loaded by `skirmishNames` and
+  passed to the kit's `presentWorld` as `names` (`SkirmishFrameOptions.names`, by `view.ts`,
+  `main.ts` and `play.test.ts`). Presentation only: kept out of `content/types/skirmish.json`,
+  which is copied into the world (it would move every hash). The selected-unit panel's name is
+  the status `selectedName` and its training line `trainingName`; `when` conditions keep reading
+  the ids (`selectedType`, `training`). A new unit type or building kind needs its name here too
+  (`skirmish.test.ts` checks the table covers the types).
+- `content/maps/ford.decor.txt` (`rts-decor`, Engine 0.16 polish Q, Q6): the map's scenery, a
+  64x40 grid of the kit's decoration characters over `ford.world.json`'s terrain, one per cell
+  (`T` big trees, `P` pines, `b` bushes, `S` stumps and logs, `r` rocks, `R` boulders, `p`
+  pebbles, `f` flowers, `m` mushrooms, `g` grass tufts, `d` dirt, `D` darker and `l` lighter
+  grass patches, `|` reeds on the river banks). Loaded by `skirmishDecor` (the `rts-decor`
+  entry of the map's own name) and passed to the kit's `presentWorld` as `decor`
+  (`SkirmishFrameOptions.decor`, by `view.ts`, `main.ts` and `play.test.ts`); the skin's
+  `tiles` draw it. Presentation only: never in the world, so no hash moves
+  (`tests/runs/rts-decor.test.ts`), and the minimap colours the terrain alone. The rules it
+  keeps (`decor.test.ts`): only on grass; nothing standing (`T`, `P`, `b`, `S`, `r`, `R`) on or
+  beside a road or ford, within 2 cells of a gold node, within a cell of a building, a building
+  site the AI (`content/enemy/blue.json`'s `build` cells) or a run (`runs/*.run.json`'s build
+  orders) uses, or a unit's starting cell; a big tree, which covers the two cells above it and
+  one either side, keeps all of those clear too; and the standing props point-symmetric like
+  the map (over 90%). Laid out by hand-tuned noise: forest and boulders thick at the map's
+  edges and round the rock outcrops between the bases, darker patches and flower meadows in the
+  open, light by the roads, reeds on both banks, the fords bare; and clear of every cell a
+  unit stands on in the six runs (played in full when it was laid; Q7's `big-fight` lines stand
+  clear of standing props too). To change it, edit the
+  grid; keep the tests green and look at it (`pnpm -s cli screenshot ... --scale 4`).
 - Art (Engine 0.16 part D, D7): the CC0 pack in `assets/kenney-medieval-rts/` (below) for the
   units, buildings, ground and props, and the text sheet `content/sprites/skirmish.txt` (palette
   `content/palettes/skirmish.json`) for what the pack has nothing for: `ring` (selection, white,
@@ -134,7 +163,12 @@ AI's knowledge only: no world rule reads it.
   and `<type>-blue` for worker (villager), soldier (sword and shield) and hero (the king), each
   with a `-step` copy anchored 1 px higher for walking, attacking, building and gathering;
   `town-centre` (the stone keep) and `barracks` (the green-roofed hall), anchored `bottom`) and
-  `ford` (`ford-tiles.png`, `FORD_FRAMES`). Every kind the kit presents: `unit:<type>` (red art)
+  `ford` (`ford-tiles.png`, `FORD_FRAMES`). `tiles` (polish Q, Q6) also map each decoration
+  character to `ford` frames, most with a `vary` so neighbours differ: `T` `tree-0..2`
+  (and `pine-0`), `P` `pine-0..2`, `S` `stump-0`, `log-0`, `b` `bush-0..1`, `r` `rock-small-0..1`,
+  `R` `boulder-0..2`, `p` `pebbles-0..1`, `f` `flowers-0..2`, `m` `mushrooms-0..1`, `g`
+  `tuft-0..2`, `d` `dirt-0..1`, `D` `grass-dark-0..2`, `l` `grass-light-0..2`, `|` `reeds-0..2`.
+  Every kind the kit presents: `unit:<type>` (red art)
   and `unit:<type>:enemy` (blue art) in `idle`, `walk`, `attack`, `build`, `gather`, facings
   `down`, `up`, `right` (the pack draws one front view; `flipFacing` mirrors it for the left), with
   `team` (`faction:` red `#e0442c`, blue `#1e8ce1`; the cloth's hue range, 5-22 on the red art,
@@ -151,7 +185,10 @@ AI's knowledge only: no world rule reads it.
   a plaza with notched inner corners; water counts as joined, so the road runs through the river
   as the ford), `2` grass (`vary`), `3` water (`join`: a bank on each side open to land). `fog`:
   unexplored `#0c0c1c` at 1, explored at 0.5, a 6 px edge. HUD: gold, own units and enemy units
-  seen (icon and number) at the top left; a `minimap` (128x80 at 348,186, the bottom right, 2 px a
+  seen (icon and number) at the top left, on a flat panel (polish Q, D3: the hud's first item, so
+  it draws over the world and fog and under the counters; 117x14 at 1,1, `#0c0c1c` with no alpha
+  so no sprite shows through, a `#fcfcfc` border like the selected-unit panel's; room for 4-digit
+  gold at 14 and 2-digit counts at 62 and 98, clear of the banner and minimap); a `minimap` (128x80 at 348,186, the bottom right, 2 px a
   tile, so the whole 64x40 map; `fog`, dots per kind coloured by `teams` own red and enemy blue,
   the view outlined; D8 sized it for the new map, as `minimapPointToWorld` needs every cell inside
   the box); the bark lines (D8: one `text` item per order at 4,256 in `ford-small`, white with a
@@ -251,8 +288,16 @@ ui?)` (the engine's `FrameStream` over the kit's `presentWorld` for red; `ui` ad
     all the player's units, with a 48 px margin, zoomed out to fit (1 down to 0.5); before D10 it
     was the map's centre, which showed neither base.
   - `tools/ford-tiles.ts` (D7): `fordTiles(packSheet)` makes `ford-tiles.png` from the pack's
-    sheet (`FORD_FRAMES`, `FORD_SIZE`, `SIDE_KEYS`, `CORNER_KEYS`; `pnpm exec tsx
-games/samples/rts-skirmish/tools/ford-tiles.ts` writes it); the same bytes every run.
+    sheet (`FORD_FRAMES`, `FORD_SIZE`, `SIDE_KEYS`, `CORNER_KEYS`, and for the scenery (polish
+    Q, Q6) `DECOR_SMALL` and `DECOR_PROPS`; `pnpm exec tsx
+games/samples/rts-skirmish/tools/ford-tiles.ts` writes it); the same bytes every run. The
+    scenery's frames: the pack's trees (`medievalEnvironment_01` to `04`) at their own size, its
+    bushes, stump, log and rocks (`05` to `09`, `13` to `15`, `20`) at half size, each over a
+    soft shadow and anchored `bottom`; pebbles from its small rocks at a quarter; dirt from its
+    dirt tile (`medievalTile_13`); the grass patches, 32 px and anchored `center` so neighbours
+    overlap into one rounded shape, its grass tinted darker or lighter, opaque (an overlap never
+    darkens twice); and, laid in its colours, tufts, flowers, mushrooms and reeds on a darker
+    bank strip.
   - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
   - `recording.ts`: `BattleRecorder(seed, hashEvery = 20)`: `reached(tick, snapshot)` (after
     every step, and at tick 0: a hash tick's snapshot is taken before that tick's orders, where
@@ -310,6 +355,11 @@ wy)` (world px to client px through the camera and the display's `toClient`, Eng
   end rule on views (won, lost by town centre, lost by units, both down is lost), a bark (voice,
   status, the HUD's line, gone after `BARK_TICKS`), and every run's golden hashes with the page's
   fog drawn on and off (D8: fog is presentation and AI knowledge only).
+- `decor.test.ts` (polish Q, Q6): the scenery grid's size and characters, on grass only, every
+  kind used and reeds on both banks, roads and fords clear, gold, buildings, the AI's and the
+  runs' building sites and starting cells clear, the standing props over 90% point-symmetric,
+  and the view's frame carrying it as the map's `decor` layer (and the minimap's colours being
+  terrain types only).
 - `assets.test.ts` (D7): the credits (OpenGameArt source, Kenney, CC0, the licence file), only
   the four files kept, `ford-tiles.png` byte for byte what `tools/ford-tiles.ts` makes from the
   pack's sheet, the skin's `ford` frames equal to `FORD_FRAMES` and every `rts` frame one of the
@@ -329,22 +379,25 @@ it: re-record the run files (below).
 
 The 0.15 runs (`battle`, `commands`, `hold`, `economy`, `lost`) were removed in D8; they live on,
 unchanged, in `games/rts-classic`. D8's runs are short guards of the AI and the interface; D9 added
-the ten-minute win and loss.
+the ten-minute win and loss; polish Q (Q7) added `big-fight`, a scripted battle for the
+zoomed-out review shot (no rule, type or plan changed).
 
-| run           | ticks | what happens                                                                                                                                                                                                                                                                                                 | guards                         |
-| ------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| `opening`     | 200   | the opening economy: a box over red's workers sends them to the northern gold (5), a click on the town centre and Train worker; gold 200 to 270, four workers                                                                                                                                                | gathers, the three enemy rules |
-| `ai-barracks` | 400   | no orders: blue gathers, its sentry scouts red's home box (19,17; 19,11; 13,11; 7,11; 7,17) and finds the town centre at 209, then rallies home; blue's barracks (22) is placed by 110 and done by 130; three soldiers by 400                                                                                | the three enemy rules          |
-| `fog`         | 480   | the hero walks to 40,8, near blue's base but out of its sight: by 420 blue has three idle soldiers and has not attacked him; he steps into sight (46,17), a box there selects only him, he attacks soldier 17, `defend` fires at 439, he falls                                                               | all six but gathers            |
-| `razed`       | 160   | a worker places a barracks site (20) on the scout's first cell (18,16) and stops; the sentry finds it at 69 and razes it at 80 (hp 1); blue forgets it and scouts on                                                                                                                                         | the three enemy rules          |
-| `match-won`   | 5900  | D9, a reasonable player: the opening through the interface, nine workers, two barracks, soldiers and archers held at a rally point (13,19) that fight what comes within 14 cells, all three waves and the push beaten at home, the army over the centre ford at 5700, blue's town centre down at 5803 (9:40) | all six                        |
-| `match-lost`  | 5700  | D9, a careless player: six workers, one barracks late (900), eight soldiers, the hero off to the far gold, the soldiers thrown at blue's town centre at 4600; the push takes red's town centre at 5681 (9:28) with seven units still standing                                                                | all six                        |
+| run           | ticks | what happens                                                                                                                                                                                                                                                                                                                                    | guards                         |
+| ------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `opening`     | 200   | the opening economy: a box over red's workers sends them to the northern gold (5), a click on the town centre and Train worker; gold 200 to 270, four workers                                                                                                                                                                                   | gathers, the three enemy rules |
+| `ai-barracks` | 400   | no orders: blue gathers, its sentry scouts red's home box (19,17; 19,11; 13,11; 7,11; 7,17) and finds the town centre at 209, then rallies home; blue's barracks (22) is placed by 110 and done by 130; three soldiers by 400                                                                                                                   | the three enemy rules          |
+| `fog`         | 480   | the hero walks to 40,8, near blue's base but out of its sight: by 420 blue has three idle soldiers and has not attacked him; he steps into sight (46,17), a box there selects only him, he attacks soldier 17, `defend` fires at 439, he falls                                                                                                  | all six but gathers            |
+| `razed`       | 160   | a worker places a barracks site (20) on the scout's first cell (18,16) and stops; the sentry finds it at 69 and razes it at 80 (hp 1); blue forgets it and scouts on                                                                                                                                                                            | the three enemy rules          |
+| `match-won`   | 5900  | D9, a reasonable player: the opening through the interface, nine workers, two barracks, soldiers and archers held at a rally point (13,19) that fight what comes within 14 cells, all three waves and the push beaten at home, the army over the centre ford at 5700, blue's town centre down at 5803 (9:40)                                    | all six                        |
+| `match-lost`  | 5700  | D9, a careless player: six workers, one barracks late (900), eight soldiers, the hero off to the far gold, the soldiers thrown at blue's town centre at 4600; the push takes red's town centre at 5681 (9:28) with seven units still standing                                                                                                   | all six                        |
+| `big-fight`   | 1800  | polish Q, Q7, for the review's big-fight shot: `match-won`'s orders to 1650, then red's 19 soldiers and the hero in a line at column 43 (rows 9-30) and its 9 archers at column 40, on blue's bank; blue's `defend` sends its soldiers at the line, and at 1755 each red unit attacks the nearest blue unit or building (the shot is tick 1763) | all six                        |
 
 - Every run file carries its sync `hashes` (every 20 ticks; every 100 for the two matches, D9) and
   has golden `<name>.hashes.json`; final hashes (D9, after the balance moved every one: the
   types, the map's gold and the plan's steps are in the world and the kit's snapshot):
   `opening` `5f5724b4b03cbf28`, `ai-barracks` `19b073e4e362ab13`, `fog` `606269cfac74a8bb`,
-  `razed` `bf1f52ad343cbbe3`, `match-won` `b55be4ea560a4f79`, `match-lost` `02facfba6cc041cc`.
+  `razed` `bf1f52ad343cbbe3`, `match-won` `b55be4ea560a4f79`, `match-lost` `02facfba6cc041cc`;
+  `big-fight` (Q7, hashes every 100) `261ddd7a36e67968`.
   D8's were `opening` `ba3cccd15c1aa5de`, `ai-barracks` `c5f146d0b4836da5`, `fog`
   `82fc61891e2e80b8`, `razed` `3c8ae6c8450507ff`; every assertion of the four held. Removed with the 0.15 map: `battle`
   `588fe33bb3ecfcfd`, `commands` `9f8fc0dc11549b95`, `hold` `dcf2c02f2cb6d266`, `economy`
@@ -525,3 +578,10 @@ taken away, `?backend=canvas2d`); the page and menus browser tests play on PixiJ
 - **Tuning**: from `pnpm -s cli screenshot <run> --tick <n> --scale 4 --out <file>` and the menus browser test's shots (`WW_SHOTS_DIR`), at page scale.
 - To change the ground: edit `tools/ford-tiles.ts`, run it, and keep the skin's `images.ford`
   frames equal to `FORD_FRAMES` (`assets.test.ts`).
+- **The scenery** (polish Q, Q6): `content/maps/ford.decor.txt` (above) on the frames
+  `tools/ford-tiles.ts` adds. Trees are the pack's at their own size, matching the units (a pine
+  about a unit and a half tall), while bushes and rocks are at half size like the map's own rock
+  cells; a big tree overlaps the two cells above it, which is why it keeps further from roads
+  and sites. Tuned from shots at scale 4: the start (`match-won` at 164,
+  `docs/reports/screenshots/0.16-Q/after-01-ford-scenery.png`), the base later in the match, a
+  ford, blue's base and the whole map zoomed out.

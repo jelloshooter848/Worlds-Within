@@ -94,7 +94,9 @@ repeat?, bands?, height?, x?, y?, depth? }`, exactly one of `frame` (a sprite fr
 'camera-shake')`: the same frame always shakes the same way. Whole picture px unless `subPixel`
   (off by default, for pixel art); `shakeScale` (0..1, the player's setting) scales it. A zoom
   punch (`zoomFactor`, `zoomLength`) eases from 1 to `to`, holds, and eases back with the curve
-  played backwards; punches multiply. A flash (`flashAlpha`) fades linearly from its alpha;
+  played backwards; punches multiply, the product held between `1 / FX_ZOOM_MAX` and
+  `FX_ZOOM_MAX` (4; polish Q, Q7: The River Ford's `big-fight`, with every effect on, stacked
+  enough punches on one frame to run the presentation test out of memory). A flash (`flashAlpha`) fades linearly from its alpha;
   `reduceFlashing` drops every flash. `FLASH_DEFAULT_COLOR`, `CameraFxSettings`.
 - `hit-pause.ts` (Engine 0.16 T4): `HitPause`, the browser shell's freeze-frame counter:
   `request(ticks)` (only lengthens: requests never add up), `hold()` (true, using one frame, while
@@ -178,10 +180,25 @@ dither)` with a dither is always the smooth ease, in `LIGHT_DITHER_STOPS` (32) s
   the step below beats the pixel's threshold; 0 and 1 exact, a tile averages to the value),
   `stopsAlpha(stops, d)` (a canvas radial gradient's linear stops, the PixiJS gradient texture
   uses it too) and `ditheredRadial(fill, dither, bounds?)`, a radial fill's `DitheredStamp`
-  `{ x, y, w, h, alpha }`: the whole picture pixels of its box (cut to `bounds`), each alpha byte
+  `{ x, y, w, h, alpha }`: the whole picture pixels of its box (null when wholly outside `bounds`, and cut to them only
+  when over `GEOMETRY_MAX_PIXELS`, a light far bigger than the picture; otherwise kept whole past
+  the picture's edge, which the backend's drawing cuts, so a light scrolled across the edge keeps
+  its bytes), each alpha byte
   the stops' value at the pixel centre's distance, dithered at the pixel's own picture position
   (so two stamps agree where they overlap and the same frame gives the same bytes). Both 2D
-  backends draw these bytes, so they draw the same pixels.
+  backends draw these bytes, so they draw the same pixels. It runs for every light twice a frame,
+  so it is cheap and cached (polish P review): the stops become a table of `FALLOFF_STEPS` (4096)
+  even distances (each pixel one square root and one read, not a scan of the stops; a rare pixel
+  may land one step off the exact `ditherValue(stopsAlpha(..))`), each box's table steps are kept
+  by radius and the centre's place in the box (`FillGeometry`, so a light moved by whole pixels
+  or dimmed in place reuses them), and recent fills' alpha bytes are kept (up to
+  `DITHER_CACHE_BYTES`, 24 MB, most recently used kept) by what they depend on but not the fill's
+  place: the dither, radius and stops, the centre's (and a cut box's) place in the box, and the
+  stamp's corner modulo the Bayer size. So a steady light, and one the camera scrolls, gets the very same `alpha` array in a new stamp at its new place
+  once each Bayer phase has been seen, and a backend keys what it made on that array (polish P
+  review round 2). Never write to a stamp's `alpha`.
+  With a dither, `SkinLighting.layout` keeps each light's radius whole and steps its flicker's
+  noise to `1 / LIGHT_DITHER_FLICKER_STEPS` (4), so a flickering torch repeats a few falloffs.
 - `skin-particles.ts` (Engine 0.16 part C T4): `update(frame, entities, map?)` with the full map
   shown also runs the skin's `lighting.particles` on their own `ambient` system: each entry whose
   `tags` (one of the map's) and `maps` (its id or a part's) fit spawns its emitters over the whole
@@ -253,7 +270,10 @@ schemas), `parallax.test.ts` (factors and origins, gradient bands, layers moving
 rates between two camera positions, repeats, a missing frame, the layer schema),
 `dither.test.ts` (polish P: the Bayer ranks and tiling, quantized values keeping 0, 1 and exact
 steps and averaging to the value over a tile, `stopsAlpha`, a stamp's box, steps and picture-pixel
-phase, the same fill twice byte-identical, the dithered `lightStops` and `lightDither`),
+phase, the same fill twice byte-identical, the table lookup against the exact per-pixel value,
+a steady or scrolled fill's shared alpha bytes and a moved, cut or dimmed one's bytes, the dithered `lightStops` and
+`lightDither`; the rough time budget for frames of the Old Crypt's lights is
+`tests/bench/dither-falloff.test.ts`, as this folder may not read the clock),
 `lighting.test.ts` (Engine 0.16 part C T4: smooth and banded falloffs, flicker determinism by
 seed and light and its scaling, darkness by map, tag and skin and blended over a slide's parts,
 the layout of kind lights by state, tile lights and placed lights in picture px, culling, event

@@ -21,6 +21,7 @@ import {
   skirmishEnd,
   skirmishEnemy,
   skirmishMap,
+  skirmishNames,
   skirmishScenario,
   skirmishTypes,
 } from './content';
@@ -107,6 +108,14 @@ describe('the skirmish content', () => {
     expect(skirmishEnemy(content).faction).toBe('blue');
     expect(skirmishEnemy(content).knowledge).toBe('fog');
     expect(skirmishEnd(content).faction).toBe(PLAYER);
+  });
+
+  it('names every unit type and building kind for the HUD (content/names, polish Q, D2)', () => {
+    const names = skirmishNames(content);
+    const types = skirmishTypes(content);
+    expect(Object.keys(names.units).sort()).toEqual(Object.keys(types.units).sort());
+    expect(Object.keys(names.buildings).sort()).toEqual(Object.keys(types.buildings).sort());
+    expect(names.buildings['town-centre']).toBe('Town Centre');
   });
 
   it('has the river with three fords, and two bases mirrored across it', () => {
@@ -341,6 +350,24 @@ describe('the skirmish picture', () => {
     expect(last.status['bark']).toBe('attack');
   });
 
+  it('names the selection and the training unit from content/names, not by id (polish Q, D2)', () => {
+    const view = createView(content, 9);
+    const run = runFile('match-won');
+    let frame: PresentFrame | null = null;
+    for (let t = 0; t <= 4; t++) {
+      for (const { tick, ...o } of run.orders ?? []) if (tick === t) view.order(o as JsonObject);
+      frame = view.frame!() as PresentFrame;
+      view.step(NO_INPUT);
+    }
+    // Tick 4 (before-02-selection-name.png): the town centre selected, training a worker.
+    expect(frame!.status).toMatchObject({
+      selectedName: 'Town Centre',
+      selectedType: 'town-centre',
+      training: 'worker',
+      trainingName: 'Worker',
+    });
+  });
+
   it('the director frames the fight, else the selection, else the own units, zoomed out to fit (D10)', () => {
     const game = createGame(content, 9);
     const screen = content.manifest.screen;
@@ -371,8 +398,8 @@ describe('the finished skirmish: art, sound and its end (Engine 0.15 T14; the ma
   const { skin } = skirmishLook(content);
   const FALLBACK = skin.sheets?.fallbackColor;
 
-  it('has the guard run files (D8) and the full win and loss (D9)', () => {
-    expect(runs).toEqual(['ai-barracks', 'fog', 'match-lost', 'match-won', 'opening', 'razed']);
+  it('has the guard run files (D8), the full win and loss (D9) and the big fight (polish Q, Q7)', () => {
+    expect(runs).toEqual(['ai-barracks', 'big-fight', 'fog', 'match-lost', 'match-won', 'opening', 'razed']);
   });
 
   it('names no placeholder look: no kind, tag look or tile has its own fallback colour', () => {

@@ -207,7 +207,8 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   (`HUD_HIDDEN_STATUS`); labels that would cover a HUD panel are left out; the page's controls
   move to the bottom-right corner over a centred screen and the title; `three.json`'s
   `scene3d.skirt` lays grass past the map's edges (the view showed the background at its
-  corners); the night keys are lighter. The run tests present the mini siege as its 3D page does
+  corners; from Engine 0.16 polish P9 it is the grass's own `#8cc24a`, shaded as the grass model
+  is, so it no longer shows lighter at dawn); the night keys are lighter. The run tests present the mini siege as its 3D page does
   (`tests/runs/three-page.ts`). Presentation only: no hash moved.
 - Engine 0.16 F10, **part F written up**: nine full-HD screenshots of the 3D page in
   `docs/reports/screenshots/0.16-F/` (the siege at the mockup's angle beside the mockup, the title,
@@ -215,6 +216,26 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   `docs/BUILD-LOG.md`, "Engine 0.16 part F", with the Done when, the outstanding issues and the
   build decisions 533 to 553 (553: the owner's playtest and screenshot review, open). No hash
   moved in part F.
+- Engine 0.16 polish P7 (F2, F3): on the 3D page the controls also move to the bottom-right
+  corner while a hosted round shows on its 2D layer (`body[data-round='layer']`), in one narrow
+  column in the picture's side margin, clear of the round's bar and panel (the page test checks
+  the boxes at 640x520 and 960x540); `three.json`'s `mission-open` flash is a warm, low-alpha
+  event `flash` (`#fce0a8` at 0.25, fading over 18 frames) instead of a full-white picture.
+  Presentation only: no hash moved.
+- Engine 0.16 polish Q8 (P1, P3): the results' losses line ("Raiders: 4 raiders, ram, Grell,
+  Vosk") stays whole (the shell's results columns move their split to fit it); over a centred
+  screen and the title and pause menus the 3D page's controls stand in one row at the
+  bottom-right, in the letterbox when it is 36 px high or more, else just over the HUD's
+  key-hint panel, never over it (the page test checks the boxes on the results at 640x520 and
+  960x540). Presentation only: no hash moved.
+- Engine 0.16 polish Q9 (P2, P4): the 3D labels' health and progress bars are 3 px high, so
+  their black border leaves a px for the fill (at 2 px a hurt unit showed an empty black bar; the
+  UI kit's bars now drop a border that would leave no inside, `barBorder`), and `canvas2d.json`'s
+  `mission-open` flash is the same warm, low-alpha event `flash` as the 3D one (`#fce0a8` at
+  0.25 over 18 frames) instead of two full-white ticks. Presentation only: no hash moved.
+- Engine 0.16 polish Q10: `canvas2d.json` draws the hall's walls and wall towers
+  (`building:wall`, `building:wall-tower`) with two new 16x16 frames in `siege.txt`, `wall` and
+  `wall-tower`, where the 2D page showed magenta missing-frame boxes. Presentation only.
 
 ## Imports allowed
 

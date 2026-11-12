@@ -365,8 +365,15 @@ export function outcomeScreen(
 
 /** A centred screen's panel width at most. */
 const CENTRED_WIDTH = 232;
-/** The results panel's width at most on a wide picture (Engine 0.16 F6: a 16:9 picture has room for two columns). */
-const WIDE_RESULTS_WIDTH = 304;
+/**
+ * The results panel's width at most on a wide picture (Engine 0.16 F6: a 16:9 picture has room for
+ * two columns). 312 on a 320 px picture (Engine 0.16 P8): each column is 144 px, room for a losses
+ * line with its plurals (`Raiders: 4 raiders, Grell, Vosk`) on one line.
+ */
+const WIDE_RESULTS_WIDTH = 312;
+/** The px between the results' two columns, and the least they close to when a line needs it (Engine 0.16 Q8). */
+const COLUMN_GAP = 8;
+const MIN_COLUMN_GAP = 6;
 /** A picture at least this wide shows the results' changes in two columns. */
 const TWO_COLUMNS_FROM = 300;
 
@@ -487,47 +494,78 @@ export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiS
       ]);
       const font = ctx.menus.font;
       const lineH = (ctx.fonts(font)?.line ?? 10) + 0;
-      const half = Math.floor((col.w - 8) / 2);
-      const halves = () => [
-        new Column(ctx, col.x, col.y, half),
-        new Column(ctx, col.x + half + 8, col.y, half),
-      ];
-      // On a wide picture the first section (the missions' records, the longest lines) spans the
-      // panel and the rest flow down a left column, then a right one (Engine 0.16 F9, gap M39: a
-      // record wrapped over three lines of a half column left no room for the people).
-      let spanning = two && sections.length > 1;
-      let columns = two && !spanning ? halves() : [col];
-      let at = 0;
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]!;
-        if (spanning && row.section > 0) {
-          spanning = false;
-          columns = halves();
-          at = 0;
-        }
-        const c = columns[at]!;
-        const h = heightOf(ctx.fonts, font, row.text, c.w);
-        // A heading stays with its first line: it never ends a column (gap M39).
-        const next = rows[i + 1];
-        const keep =
-          row.heading && next !== undefined && !next.heading ? heightOf(ctx.fonts, font, next.text, c.w) : 0;
-        const left = rows.length - i;
-        const last = at === columns.length - 1;
-        if (c.y + h + Math.max(keep, left > 1 && last ? lineH : 0) > limit && left > 1) {
-          if (!last) {
-            // The column is full: this row starts the next one.
-            at++;
-            i--;
-            continue;
+      const half = Math.floor((col.w - COLUMN_GAP) / 2);
+      // Flows the rows: on a wide picture the first section (the missions' records, the longest
+      // lines) spans the panel and the rest flow down a left column `leftW` px wide, then a right
+      // one (Engine 0.16 F9, gap M39: a record wrapped over three lines of a half column left no
+      // room for the people).
+      const flow = (leftW: number, gap = COLUMN_GAP) => {
+        const top = new Column(ctx, col.x, col.y, col.w);
+        const sides = () => [
+          new Column(ctx, col.x, top.y, leftW),
+          new Column(ctx, col.x + leftW + gap, top.y, col.w - gap - leftW),
+        ];
+        let spanning = two && sections.length > 1;
+        let columns = two && !spanning ? sides() : [top];
+        const placed: { row: number; column: number }[] = [];
+        let at = 0;
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i]!;
+          if (spanning && row.section > 0) {
+            spanning = false;
+            columns = sides();
+            at = 0;
           }
-          c.text(`and ${rows.slice(i).filter((r) => !r.heading).length} more`, { color: p.dim });
-          break;
+          const c = columns[at]!;
+          const h = heightOf(ctx.fonts, font, row.text, c.w);
+          // A heading stays with its first line: it never ends a column (gap M39).
+          const next = rows[i + 1];
+          const keep =
+            row.heading && next !== undefined && !next.heading
+              ? heightOf(ctx.fonts, font, next.text, c.w)
+              : 0;
+          const left = rows.length - i;
+          const last = at === columns.length - 1;
+          if (c.y + h + Math.max(keep, left > 1 && last ? lineH : 0) > limit && left > 1) {
+            if (!last) {
+              // The column is full: this row starts the next one.
+              at++;
+              i--;
+              continue;
+            }
+            c.text(`and ${rows.slice(i).filter((r) => !r.heading).length} more`, { color: p.dim });
+            break;
+          }
+          c.text(row.text, row.heading ? { color: p.heading } : {});
+          if (columns.length > 1) placed.push({ row: i, column: at });
         }
-        c.text(row.text, row.heading ? { color: p.heading } : {});
+        return { top, columns, placed };
+      };
+      let laid = flow(half);
+      // A line a half column would wrap moves the columns' split (and closes their gap to as little
+      // as MIN_COLUMN_GAP) when both sides then fit their widest lines (Engine 0.16 Q8, P1: a half
+      // column wrapped "Raiders: 4 raiders, ram, Grell, Vosk" and left "Vosk" alone on a line).
+      // Presentation only: the same rows, in the same order.
+      if (laid.columns.length > 1 && face !== null) {
+        const need = (column: number) =>
+          Math.max(
+            0,
+            ...laid.placed
+              .filter((x) => x.column === column)
+              .map((x) =>
+                Math.max(...layoutText(face, rows[x.row]!.text, { width: col.w }).lines.map((l) => l.width)),
+              ),
+          );
+        const [leftNeed, rightNeed] = [need(0), need(1)];
+        const gap = Math.min(COLUMN_GAP, col.w - leftNeed - rightNeed);
+        if ((leftNeed > half || rightNeed > col.w - COLUMN_GAP - half) && gap >= MIN_COLUMN_GAP)
+          laid = flow(Math.min(Math.max(half, leftNeed), col.w - gap - rightNeed), gap);
       }
-      if (columns.length > 1) {
-        for (const c of columns) col.widgets.push(...c.widgets);
-        col.y = Math.max(...columns.map((c) => c.y));
+      col.widgets.push(...laid.top.widgets);
+      col.y = laid.top.y;
+      if (laid.columns.length > 1) {
+        for (const c of laid.columns) col.widgets.push(...c.widgets);
+        col.y = Math.max(...laid.columns.map((c) => c.y));
       }
       if (view.code !== '') {
         col.gap(codeGap);

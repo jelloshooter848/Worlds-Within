@@ -498,6 +498,30 @@
         }
       ]
     },
+    "building:wall": {
+      "frames": {
+        "idle": "wall"
+      },
+      "fallbackColor": "#7c7c7c",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "building:wall-tower": {
+      "frames": {
+        "idle": "wall-tower"
+      },
+      "fallbackColor": "#7c7c7c",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
     "resource:gold": {
       "frames": {
         "idle": "gold",
@@ -572,10 +596,10 @@
   "events": {
     "mission-open": {
       "sound": "launch",
-      "effect": {
-        "kind": "flash",
-        "color": "#fcfcfc",
-        "ticks": 2
+      "flash": {
+        "color": "#fce0a8",
+        "alpha": 0.25,
+        "ticks": 18
       }
     },
     "mini-game-end:pass": {

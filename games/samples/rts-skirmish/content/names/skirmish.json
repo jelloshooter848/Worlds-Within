@@ -1,0 +1,12 @@
+{
+  "units": {
+    "worker": "Worker",
+    "soldier": "Soldier",
+    "archer": "Archer",
+    "hero": "Hero"
+  },
+  "buildings": {
+    "town-centre": "Town Centre",
+    "barracks": "Barracks"
+  }
+}

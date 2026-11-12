@@ -10,7 +10,7 @@ import type { PointerGesture } from '@engine/core/input/pointer-logic';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { skinMinimap } from '@engine/core/ui';
 import { RTS_TILE_SIZE } from '@kits/rts';
-import { loadSkirmish } from './content';
+import { loadSkirmish, skirmishDecor, skirmishNames } from './content';
 import { createGame } from './headless';
 import { skirmishLook, skirmishPicture } from './picture';
 import { SkirmishPlay, STEPS_PER_TICK, TICKS_PER_SECOND } from './play';
@@ -65,7 +65,12 @@ function newPlay(pointer: ScriptedPointer, stepsPerTick = 1) {
     content,
     seed: 9,
     pointer,
-    picture: (_r, opts) => skirmishPicture(presenter, content.manifest.screen, opts),
+    picture: (_r, opts) =>
+      skirmishPicture(presenter, content.manifest.screen, {
+        ...opts,
+        names: skirmishNames(content),
+        decor: skirmishDecor(content),
+      }),
     minimap: skinMinimap(skirmishLook(content).skin),
     stepsPerTick,
   });

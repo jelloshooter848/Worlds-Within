@@ -4,7 +4,7 @@ import type { JsonObject, MissionStepRefusal } from '../headless';
 import { ActionState, frameTaps, type InputFrame } from '../input/input-manager';
 import type { MiniGame } from '../minigame';
 import type { MissionDef, MissionRecord } from '../missions';
-import { buildFont, menusSchema, type UiScreenFile } from '../ui';
+import { buildFont, layoutText, menusSchema, type UiScreenFile } from '../ui';
 import { noChanges } from '../world-changes';
 import { MissionLaunch, type LaunchGame } from './mission-launch';
 import {
@@ -134,7 +134,7 @@ function flow(
     pointer: { cursor: () => cursor },
     facts: (game, def) => ({
       hero: 'Hale',
-      foes: '2 raider',
+      foes: '2 raiders',
       ticksLeft: def.id === 'raid' ? 20 - game.tick : null,
     }),
     changes: (game, since) => ({ ...noChanges(since, game.tick), records: game.records() }),
@@ -341,6 +341,30 @@ describe('the results in two columns on a wide picture (Engine 0.16 F9, gap M39)
     const narrow = textWidgets(resultsScreen(CTX, view(3)));
     const code = narrow.find((w) => w.text === 'ABCDE-12345')!;
     expect(code.y).toBeGreaterThan(narrow.find((w) => w.text === 'Save code')!.y!);
+  });
+
+  it('moves the columns apart for a line a half column would wrap, when both sides then fit (Q8)', () => {
+    const long = 'Someone with a name too long for half';
+    const base = view(2);
+    const file = resultsScreen(wide, {
+      ...base,
+      changes: { ...base.changes, people: [{ ...person(0), name: long }, person(1)] },
+    });
+    const shown = textWidgets(file);
+    const at = (text: string) => shown.find((w) => w.text === text)!;
+    const line = at(`  ${long}: dead`);
+    const half = Math.floor((at('Missions').w! - 8) / 2);
+    expect(layoutText(FONT, line.text).width).toBeGreaterThan(half);
+    // One line in its column, its heading as wide; the rest of the column as wide too.
+    expect(layoutText(FONT, line.text, { width: line.w! }).lines).toHaveLength(1);
+    expect(at('People').w).toBe(line.w);
+    expect(at('  Person 1: dead').w).toBe(line.w);
+    // A line no split can fit keeps the half columns, wrapped as before.
+    const huge = resultsScreen(wide, {
+      ...base,
+      changes: { ...base.changes, people: [{ ...person(0), name: long.repeat(3) }] },
+    });
+    expect(textWidgets(huge).find((w) => w.text === 'People')!.w).toBe(half);
   });
 
   it('never ends a column with a heading: it moves on with its first line', () => {

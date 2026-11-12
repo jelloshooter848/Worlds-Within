@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PresentEntity, SkinLabel } from '../present';
 import { buildFont, type FontLookup } from './font';
 import { DEFAULT_LABEL_BAR, layoutLabels, type LabelProject } from './labels';
+import { LABEL_EDGE_MARGIN } from '../present';
 
 // World-anchored labels (Engine 0.16 T12): laid out in picture px around a projected anchor.
 
@@ -55,6 +56,32 @@ describe('layoutLabels', () => {
     expect(fills.at(-1)).toMatchObject({ x: 46, y: 10, w: 4, h: 2 });
   });
 
+  it('draws a bar too thin for its border as its back and fill, never an empty frame', () => {
+    // Engine 0.16 polish Q, P2: the siege's 14x2 health bars with a border drew only the border
+    // (no px left inside for the fill): an empty black bar over a hurt unit at the dawn.
+    const label: SkinLabel = {
+      from: { tag: 'hp:' },
+      as: 'bar',
+      max: 4,
+      color: '#40d040',
+      back: '#301010',
+      border: '#000000',
+      w: 14,
+      h: 2,
+    };
+    const { draws, views } = layoutLabels([label], e, {}, at, fonts);
+    expect(views).toHaveLength(1);
+    expect(draws).toEqual([
+      { kind: 'fill', x: 43, y: 16, w: 14, h: 2, color: '#301010' },
+      { kind: 'fill', x: 43, y: 16, w: 7, h: 2, color: '#40d040' },
+    ]);
+    expect(draws.some((d) => d.kind === 'fill' && d.color === '#000000')).toBe(false);
+    // With room for the border, it frames the back and fill as before.
+    const roomy = layoutLabels([{ ...label, h: 3 }], e, {}, at, fonts).draws;
+    expect(roomy.filter((d) => d.kind === 'fill' && d.color === '#000000')).toHaveLength(4);
+    expect(roomy.at(-1)).toMatchObject({ w: 6, h: 1, color: '#40d040' });
+  });
+
   it('hangs bottom labels below, centres center labels and applies the offset', () => {
     const { views } = layoutLabels(
       [
@@ -89,5 +116,56 @@ describe('layoutLabels', () => {
     expect(layoutLabels([tagged], { ...e, tags: ['progress:12'] }, {}, at, fonts).views[0]!.text).toBe(
       'Pip 12',
     );
+  });
+});
+
+describe('layoutLabels inside the picture (Engine 0.16 polish P6, gap M45)', () => {
+  const labels: SkinLabel[] = [
+    { from: { tag: 'name:' }, as: 'text', font: 'f' },
+    { from: { tag: 'hp:' }, as: 'bar', max: 4, w: 16, h: 3, color: '#00ff00' },
+  ];
+  const near =
+    (x: number, y: number): LabelProject =>
+    () => ({ x, y });
+  const boxes = (project: LabelProject, picture?: { width: number; height: number }) =>
+    layoutLabels(labels, e, {}, project, fonts, picture).views.map((v) => v.box);
+
+  it('moves a name and its bar as one box, keeping their stacking', () => {
+    // Anchor 3 px from the left edge, 6 down: unclamped, the name starts at x -2 and the bar
+    // stacked over it at x -5, y -4.
+    expect(boxes(near(3, 6))).toEqual([
+      { x: -2, y: 0, w: 11, h: 4 },
+      { x: -5, y: -4, w: 16, h: 3 },
+    ]);
+    // Clamped: the union (x -5..11, y -4..4) moves right 7 and down 6.
+    expect(boxes(near(3, 6), { width: 100, height: 60 })).toEqual([
+      { x: 5, y: 6, w: 11, h: 4 },
+      { x: 2, y: 2, w: 16, h: 3 },
+    ]);
+  });
+
+  it('moves labels in from the right and bottom edges too, and leaves ones inside alone', () => {
+    const pic = { width: 100, height: 60 };
+    const right = boxes(near(97, 30), pic);
+    expect(Math.max(...right.map((b) => b.x + b.w))).toBe(100 - LABEL_EDGE_MARGIN);
+    const bottom = layoutLabels(
+      [{ from: { tag: 'name:' }, as: 'text', font: 'f', anchor: 'bottom', offset: { x: 0, y: 2 } }],
+      e,
+      {},
+      near(50, 57),
+      fonts,
+      pic,
+    ).views[0]!.box;
+    expect(bottom.y + bottom.h).toBe(60 - LABEL_EDGE_MARGIN);
+    expect(boxes(near(50, 30), pic)).toEqual(boxes(near(50, 30)));
+  });
+
+  it('draws the moved boxes, and still shows nothing for a hidden anchor', () => {
+    const { draws } = layoutLabels([labels[1]!], e, {}, near(3, 30), fonts, { width: 100, height: 60 });
+    expect(draws).toEqual([{ kind: 'fill', x: 2, y: 25, w: 8, h: 3, color: '#00ff00' }]);
+    expect(layoutLabels(labels, e, {}, () => null, fonts, { width: 100, height: 60 })).toEqual({
+      draws: [],
+      views: [],
+    });
   });
 });

@@ -17,9 +17,18 @@ import type { FlashSpec, ShakeSpec, ZoomSpec } from './schema';
  *   shakes the same way. Whole picture px unless `subPixel` (off: pixel art stays on the grid).
  *   The player's `shakeScale` (0..1) scales it; 0 turns shaking off.
  * - Zoom: a punch goes from 1 to `to` over `ticks` with `ease`, holds `hold`, then back to 1 over
- *   `back` (default `ticks`) with the curve played backwards; punches running together multiply.
+ *   `back` (default `ticks`) with the curve played backwards; punches running together multiply,
+ *   the product held between `1 / FX_ZOOM_MAX` and `FX_ZOOM_MAX` (polish Q, Q7: a battle's dozens
+ *   of punches at once multiplied past any picture).
  * - Flash: `color` at `alpha` fading linearly to 0 over `ticks`; none with `reduceFlashing`.
  */
+
+/**
+ * The most the zoom punches running together may zoom in (and `1 / FX_ZOOM_MAX` out): their
+ * product is held to it, so a crowd of events on one frame (a big battle's hits and footsteps)
+ * cannot multiply the zoom past any picture (Engine 0.16 polish Q, Q7).
+ */
+export const FX_ZOOM_MAX = 4;
 
 /** The flash colour when a flash gives none. */
 export const FLASH_DEFAULT_COLOR = '#fcfcfc';
@@ -156,6 +165,7 @@ export class CameraFx {
     }
     let zoom = 1;
     for (const z of this.zooms) zoom *= zoomFactor(z.spec, frame - z.start);
+    zoom = Math.min(FX_ZOOM_MAX, Math.max(1 / FX_ZOOM_MAX, zoom));
     const flashes: CameraFxState['flashes'] = [];
     if (!settings.reduceFlashing) {
       for (const f of this.flashList) {

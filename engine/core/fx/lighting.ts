@@ -88,6 +88,11 @@ export const LIGHT_SMOOTH_STOPS = 8;
  * between stops do not show through the dither as faint rings.
  */
 export const LIGHT_DITHER_STOPS = 32;
+/**
+ * With a dither, a flicker's noise (in [-1, 1]) is rounded to steps of `1 / LIGHT_DITHER_FLICKER_STEPS`
+ * (9 values): a pixel-art flicker in a few steps, whose falloffs a backend keeps between frames.
+ */
+export const LIGHT_DITHER_FLICKER_STEPS = 4;
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
@@ -321,6 +326,7 @@ export class SkinLighting {
     if (lighting === undefined) return null;
     const { frame, view, size } = input;
     const reduce = input.reduceFlashing === true ? 0.5 : 1;
+    const dithered = lightDither({ bands: lighting.bands ?? 0, dither: lighting.dither ?? 0 }) !== undefined;
     this.flashes = this.flashes.filter((f) => frame >= f.start && frame - f.start < f.light.ticks);
     const world = {
       x: view.x / view.zoom,
@@ -347,12 +353,16 @@ export class SkinLighting {
         intensity: (spec.intensity ?? LIGHT_DEFAULTS.intensity) * fade,
         glow: (spec.glow ?? LIGHT_DEFAULTS.glow) * fade,
       };
-      const noise =
+      let noise =
         spec.flicker === undefined
           ? 0
           : flickerNoise(this.seed, key, frame, spec.flicker.rate ?? LIGHT_DEFAULTS.flickerRate);
+      // Dithered, a flicker steps between a few values, so a flickering light's falloffs repeat
+      // and `ditheredRadial` reuses them instead of working out every pixel again each frame.
+      if (dithered) noise = Math.round(noise * LIGHT_DITHER_FLICKER_STEPS) / LIGHT_DITHER_FLICKER_STEPS;
       const l = flickered(base, spec.flicker, noise, reduce);
-      const radius = l.radius * view.zoom;
+      // Dithered, a light is whole pixels across too, so its pixels' distances are reused (`ditheredRadial`).
+      const radius = dithered ? Math.round(l.radius * view.zoom) : l.radius * view.zoom;
       const x = Math.round(wx * view.zoom) - view.x;
       const y = Math.round(wy * view.zoom) - view.y;
       if (radius <= 0 || (l.intensity <= 0 && l.glow <= 0)) return;

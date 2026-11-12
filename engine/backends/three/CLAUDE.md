@@ -184,11 +184,24 @@ are no longer 3D only: the 2D presenter draws a skin's `labels` too (`engine/cor
   `margin` px (default `DEFAULT_SKIRT_MARGIN`, 2048) past each edge: a view tilted toward the map's
   corners shows ground there, lit, shadowed and fogged as the map, not the background. Side view
   and skins without it: none. Disposed with the map.
+- From Engine 0.16 polish P9 the skirt is drawn with `skirtMaterial`: a copy of the material of
+  the base grid's most common tile's loaded model (its first mesh's), in the skirt's colour, its
+  texture and vertex colours dropped; Lambert when that tile has no model (block tiles are
+  Lambert). So the skirt takes every light as the floor does: the Kenney packs' ground tiles are
+  rough metals (`metallicFactor` 1), which take no ambient or hemisphere light, so a Lambert
+  skirt stayed lit by them at dawn and night and showed lighter past the map's edge. Give the
+  skirt the floor model's recoloured colour (the mini siege: its `grass`, `#8cc24a`). Tests:
+  `lighting.test.ts` (the skirt lit as the floor at each time-of-day key).
 - `updateLabels` leaves out an entity's labels (or a place's name) when any of them would cover a
   shown HUD `panel` or `minimap` (`hudPanelBoxes`, `boxesOverlap` from `@engine/core/present`), so
   no label shows through or under the HUD; a frame whose status sets `HUD_HIDDEN_STATUS` (a
   page's title screen) shows none, and its HUD hides too (`hudItemShown`). Tests:
   `decor.test.ts`.
+- From Engine 0.16 polish P6 (gap M45), `updateLabels` and `layoutPlaces` pass the picture size to
+  `layoutLabels`, so an entity's labels (or a place's name) whose anchor is in the picture but
+  whose box runs past an edge are moved inside it as one box (`clampBoxInside`, 2 px clear); the
+  HUD-panel rule above is checked on the moved boxes. Tests: `ground.test.ts` (labels near the
+  left and right edges), `decor.test.ts` (a place name in the corner, then under a panel).
 
 ## Tweens, per-map looks, 3D joins, scenery and model looks (Engine 0.16 part B, T10)
 

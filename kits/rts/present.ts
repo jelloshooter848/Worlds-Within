@@ -8,8 +8,10 @@ import {
   type PresentMap,
   type PresentStatusValue,
 } from '@engine/core/present';
+import { decorLayerRows } from './decor';
 import { RTS_MARKER_MAX, RTS_MARKER_TICKS, type RtsOrderFeedback, type RtsOrderMarker } from './feedback';
 import { fogView, RtsFogMemory } from './fog';
+import { buildingName, unitName, type RtsNames } from './names';
 import type { WorldBox } from './selection';
 import {
   facingOfDir,
@@ -50,6 +52,10 @@ import {
  * and a `bark` event (`RtsPresentState.accept`, from `RtsControls.feedback`); a selected own unit
  * with a way to walk shows `path-dot`s; an own building training shows a `train` progress bar under
  * it, tagged with the queue's length (`queue:<n>`).
+ *
+ * Decoration (Engine 0.16 polish Q, Q5; presentation only, no hash moves): with `decor` (an
+ * `rts-decor` grid) the map carries the layer `decor`, which the 2D backends draw over the
+ * terrain, under the entities and the fog, through the skin's `tiles`.
  */
 
 /** The depth (`layer`) of each thing the kit presents, drawn low to high. */
@@ -200,13 +206,29 @@ export interface RtsPresentOptions {
    * keeps the memory), and the HUD's enemy counts from what is seen.
    */
   fog?: boolean;
+  /**
+   * The game's display names (Engine 0.16 polish Q, D2; the `rts-names` kind, presentation only):
+   * with them the status's `selectedName` is a unit's or building's display name (a named person
+   * still shows by name) and `trainingName` the training unit's. Left out, the status is as before.
+   */
+  names?: RtsNames;
+  /**
+   * The map's decoration grid (Engine 0.16 polish Q, Q5; an `rts-decor` file's `rows`,
+   * presentation only): the map gets the layer `decor`, drawn over the terrain and under the
+   * entities and the fog. Left out, the map has no layers, as before.
+   */
+  decor?: readonly string[];
 }
 
 /** The id of the map `presentWorld` sends when its options name none. */
 export const RTS_MAP_ID = 'rts';
 
-/** A 32-bit FNV-1a hash of the terrain cells and size: the map's version. */
-function terrainVersion(view: RtsView): number {
+/**
+ * A 32-bit FNV-1a hash of the terrain cells and size: the map's version. A decoration (Engine
+ * 0.16 polish Q, Q5) is mixed in too, so a backend's cached map redraws when it changes; without
+ * one the version is as before.
+ */
+function terrainVersion(view: RtsView, decor?: readonly string[]): number {
   const t = view.terrain;
   if (t === null) return 0;
   let h = 0x811c9dc5;
@@ -220,23 +242,37 @@ function terrainVersion(view: RtsView): number {
   mix(t.height);
   for (const c of t.cells) mix(c);
   for (const ty of t.types) for (const ch of ty.name) mix(ch.charCodeAt(0));
+  for (const row of decor ?? []) for (const ch of row) mix(ch.charCodeAt(0));
   return h;
 }
 
-/** The terrain as a present map (id `id`): tile ids are the terrain type indexes; tags `type:<i>:<name>`. */
-export function presentMap(view: RtsView, tileSize = RTS_TILE_SIZE, id = RTS_MAP_ID): PresentMap | null {
+/**
+ * The terrain as a present map (id `id`): tile ids are the terrain type indexes; tags
+ * `type:<i>:<name>`. With `decor` (Engine 0.16 polish Q, Q5) it adds the layer `decor`: the
+ * grid's characters, empty cells as spaces (`decorLayerRows`), at the terrain's size, and the
+ * grid is mixed into `version` (so a changed decoration redraws a backend's cached map).
+ */
+export function presentMap(
+  view: RtsView,
+  tileSize = RTS_TILE_SIZE,
+  id = RTS_MAP_ID,
+  decor?: readonly string[],
+): PresentMap | null {
   const t = view.terrain;
   if (t === null) return null;
   const tiles: number[][] = [];
   for (let y = 0; y < t.height; y++) tiles.push(t.cells.slice(y * t.width, (y + 1) * t.width));
   return {
     id,
-    version: terrainVersion(view),
+    version: terrainVersion(view, decor),
     tileSize,
     cols: t.width,
     rows: t.height,
     tiles,
     tags: t.types.map((ty, i) => `type:${i}:${ty.name}${ty.passable ? '' : ':blocked'}`),
+    ...(decor !== undefined && {
+      layers: [{ name: 'decor', tiles: decorLayerRows(decor, t.width, t.height) }],
+    }),
   };
 }
 
@@ -510,14 +546,14 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     });
   }
 
-  const map = presentMap(view, ts, opts.mapId);
+  const map = presentMap(view, ts, opts.mapId, opts.decor);
   const frame: PresentFrame = {
     frame: tick,
     size: { width: opts.size.width, height: opts.size.height },
     entities,
     events: [...(opts.events ?? []), ...(state?.takeEvents() ?? [])],
     status: {
-      ...presentStatus(seen, player, [...selected], opts.placing ?? null),
+      ...presentStatus(seen, player, [...selected], opts.placing ?? null, opts.names),
       ...missionStatus(view, opts.missions ?? []),
       ...keyStatus(view, opts.keys ?? {}),
       ...threatStatus(seen, player),
@@ -653,12 +689,17 @@ export function threatStatus(view: RtsView, player: string): Record<string, Pres
  * `queue` (units queued at the selected own buildings), `training` (the first of them, or '') and
  * `trainingProgress` (0-100), `trainButtons` (the unit types the selection can train, space
  * separated) and `placing` (the building being placed, or '').
+ *
+ * With `names` (Engine 0.16 polish Q, D2): `selectedName` is the type's or kind's display name
+ * when no named person is selected (`selectedType` keeps the id, for `when` conditions), and
+ * `trainingName` is `training`'s display name (or ''). Without it there is no `trainingName`.
  */
 export function presentStatus(
   view: RtsView,
   player: string,
   selection: readonly number[],
   placing: RtsPlacing | null,
+  names?: RtsNames,
 ): Record<string, PresentStatusValue> {
   const status: Record<string, PresentStatusValue> = { faction: player, tick: view.tick };
   for (const [item, n] of Object.entries(view.stock[player] ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
@@ -674,9 +715,9 @@ export function presentStatus(
   const sel = new Set(selection);
   const units = view.units.filter((u) => sel.has(u.id));
   const buildings = view.buildings.filter((b) => sel.has(b.id));
-  const names = new Set([...units.map((u) => u.type ?? 'unit'), ...buildings.map((b) => b.kind)]);
+  const kinds = new Set([...units.map((u) => u.type ?? 'unit'), ...buildings.map((b) => b.kind)]);
   status['selected'] = units.length + buildings.length;
-  status['selection'] = names.size === 0 ? '' : names.size === 1 ? [...names][0]! : 'mixed';
+  status['selection'] = kinds.size === 0 ? '' : kinds.size === 1 ? [...kinds][0]! : 'mixed';
   const one = units.length + buildings.length === 1 ? (units[0] ?? buildings[0])! : null;
   if (one !== null) {
     status['selectedHp'] = one.hp;
@@ -685,7 +726,8 @@ export function presentStatus(
     // else its type or building kind).
     const kind = units[0] !== undefined ? (units[0].type ?? 'unit') : buildings[0]!.kind;
     const named = view.named.find((n) => n.id === one.id);
-    status['selectedName'] = named?.name ?? kind;
+    const label = units[0] !== undefined ? unitName(names, kind) : buildingName(names, kind);
+    status['selectedName'] = named?.name ?? label;
     status['selectedType'] = kind;
     status['selectedRole'] = named?.role ?? '';
   }
@@ -695,6 +737,7 @@ export function presentStatus(
   const first = own.find((b) => b.producer!.queue.length > 0);
   const head = first?.producer!.queue[0];
   status['training'] = head?.unit ?? '';
+  if (names !== undefined) status['trainingName'] = head !== undefined ? unitName(names, head.unit) : '';
   status['trainingProgress'] =
     head !== undefined ? Math.min(100, Math.floor((first!.producer!.progress * 100) / head.ticks)) : 0;
   const buttons: string[] = [];

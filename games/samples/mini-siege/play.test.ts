@@ -13,7 +13,7 @@ import { SceneStack } from '@engine/core/scene';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { screenAtCell } from '@kits/towerdefense';
 import { campaignOrder, entryId } from '@engine/core/campaign';
-import { loadMiniSiege, siegeCampaign, siegeMissions } from './content';
+import { loadMiniSiege, siegeCampaign, siegeMissions, siegeTypes } from './content';
 import { siegePicture } from './picture';
 import { SiegePlay } from './play';
 
@@ -349,6 +349,27 @@ describe('the page glue, headless', () => {
     const fortify = siegeMissions(content).find((m) => m.id === 'fortify')!;
     for (const o of fortify.outcomes)
       expect(main!.events?.[`mission-commit:outcome=${o.id}`], o.id).toBeDefined();
+  });
+
+  it('gives every unit type and building kind a 2D look drawn from the sheet (Engine 0.16 polish Q, Q10)', () => {
+    // The walls and wall towers had none, so the 2D page drew them as magenta fallback boxes.
+    const main = skinSet(content, 'canvas2d').main!;
+    const art = readFileSync(new URL('./content/sprites/siege.txt', import.meta.url), 'utf8');
+    const frames = new Set([...art.matchAll(/^frame (\S+)$/gm)].map((m) => m[1]));
+    const types = siegeTypes(content);
+    const kinds = [
+      ...Object.keys(types.units).map((t) => `unit:${t}`),
+      ...Object.keys(types.buildings).map((b) => `building:${b}`),
+    ];
+    for (const kind of kinds) {
+      const idle = (main.kinds[kind] as { frames?: { idle?: unknown } } | undefined)?.frames?.idle;
+      expect(idle, kind).toBeDefined();
+      const named = [...JSON.stringify(idle).matchAll(/"([a-z][a-z0-9-]*-\d|[a-z][a-z-]*)"/g)]
+        .map((m) => m[1]!)
+        .filter((f) => !['down', 'up', 'right', 'left'].includes(f));
+      expect(named.length, kind).toBeGreaterThan(0);
+      for (const f of named) expect(frames.has(f), `${kind}: ${f}`).toBe(true);
+    }
   });
 
   it('draws both rounds in 2D on the 3D page with the round packs and their feel (Engine 0.16 F8)', () => {

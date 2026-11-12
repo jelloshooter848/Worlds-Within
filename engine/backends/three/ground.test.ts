@@ -11,6 +11,7 @@ import {
 import {
   freezeFrame,
   groundFacingTurn,
+  LABEL_EDGE_MARGIN,
   facingVector,
   RtsCamera,
   skinGroundCamera,
@@ -208,6 +209,21 @@ describe('ThreeScene ground view (Engine 0.16 F2)', () => {
     expect(view!.box.x + view!.box.w / 2).toBeCloseTo(head.x, 0);
     expect(view!.box.y + view!.box.h).toBeLessThanOrEqual(head.y + 0.5);
     expect(view!.box.y + view!.box.h).toBeGreaterThan(head.y - 12);
+  });
+
+  it('moves a label whose anchor is near the picture edge inside it (polish P6, M45)', () => {
+    const { scene, frame } = setup();
+    const named = (x: number, y: number) => soldier({ x, y, tags: ['name:AdaAda'] }); // 17 px wide: six 2-px glyphs, 1 px apart
+    // The first soldier's head lands about 5 px from the left edge, the second's 5 px from the right.
+    scene.sync(freezeFrame(frame({ entities: [named(64, 140), { ...named(192, 88), id: 's2' }] })));
+    const [left, right] = scene.labelViews();
+    expect(drawnAt(scene, 72, 16, 148).x).toBeLessThan(8);
+    expect(drawnAt(scene, 200, 16, 96).x).toBeGreaterThan(SIZE.width - 8);
+    expect(left!.box.x).toBe(LABEL_EDGE_MARGIN);
+    expect(right!.box.x + right!.box.w).toBe(SIZE.width - LABEL_EDGE_MARGIN);
+    // An anchor off the picture still hides its label.
+    scene.sync(freezeFrame(frame({ entities: [named(0, 140)] })));
+    expect(scene.labelViews()).toEqual([]);
   });
 
   it('flies particles over the ground at their world x, y', () => {

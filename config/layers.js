@@ -194,6 +194,7 @@ export const PURE_CORE = [
   'engine/core/campaign.ts',
   'engine/core/clock.ts',
   'engine/core/world-changes.ts',
+  'engine/core/plural.ts',
   'engine/core/campaign-code.ts',
   'engine/core/carried.ts',
   'engine/core/rts-types.ts',

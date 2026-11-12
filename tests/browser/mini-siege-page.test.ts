@@ -391,10 +391,96 @@ async function typeRound(
       expect(
         await page.locator('canvas.ww-round-layer').evaluate((c) => getComputedStyle(c).visibility),
       ).toBe('visible');
+      // The page's controls stand clear of the round's picture (Engine 0.16 polish P7).
+      await controlsClear(page);
     } else if (!(await hook(page, 'playing'))) break;
   }
   for (const k of held) await page.keyboard.up(k);
   return ticks + 1;
+}
+
+/**
+ * The hosted rounds' picture (the sabotage and rescue rooms, the walls' map with its bar and
+ * panel): 256 picture px wide, centred in the 320x180 picture (Engine 0.16 F6), its full height.
+ */
+const ROUND_PICTURE: Box = { x: 32, y: 0, w: 256, h: 180 };
+/** The page's controls: the shell's sound control and pause button, and the 2D link. */
+const CONTROLS = ['#ww-volume', '#ww-pause', '#backend'];
+
+/**
+ * The 3D skin's HUD key-hint panel ("Esc pause  RMB order", `content/skins/three.json`), in the
+ * picture's bottom-right corner, under a centred screen's dim.
+ */
+const KEY_HINTS: Box = { x: 234, y: 166, w: 83, h: 11 };
+
+/** Each shown control's box (client px): all of them shown. */
+async function controlBoxes(
+  page: Page,
+): Promise<{ id: string; x: number; y: number; w: number; h: number }[]> {
+  const shown = await page.evaluate(
+    (ids) =>
+      ids.flatMap((id) => {
+        const r = document.querySelector(id)?.getBoundingClientRect();
+        return r && r.width > 0 && r.height > 0 ? [{ id, x: r.x, y: r.y, w: r.width, h: r.height }] : [];
+      }),
+    CONTROLS,
+  );
+  expect(shown.map((c) => c.id)).toEqual(CONTROLS);
+  return shown;
+}
+
+/** Each shown control's box (client px) shares no pixel with a picture box's (picture px). */
+async function controlsClearOf(page: Page, box: Box, what: string): Promise<void> {
+  const a = await toClient(page, box.x, box.y);
+  const b = await toClient(page, box.x + box.w, box.y + box.h);
+  for (const c of await controlBoxes(page)) {
+    const over = c.x < b.x && c.x + c.w > a.x && c.y < b.y && c.y + c.h > a.y;
+    expect(over, `${c.id} at ${JSON.stringify(c)} over ${what} at ${JSON.stringify({ a, b })}`).toBe(false);
+  }
+}
+
+/**
+ * The page's controls are clear of a round's picture while it shows on its 2D layer (Engine 0.16
+ * polish P7, F2): each shown control's box (client px) shares no pixel with the round's.
+ */
+async function controlsClear(page: Page): Promise<void> {
+  expect(await page.evaluate(() => document.body.dataset.round)).toBe('layer');
+  await controlsClearOf(page, ROUND_PICTURE, 'the round');
+}
+
+/**
+ * Over a centred screen (the results, a briefing) the page's controls are clear of the HUD's
+ * key-hint panel, inside the window and clear of each other, on a 640x520 window (the picture
+ * letterboxed) and a 960x540 one (16:9, the picture to the window's bottom) (Engine 0.16 polish
+ * Q8, P3). Leaves the page at 640x520.
+ */
+async function controlsClearOfHints({ page, frames }: Opened): Promise<void> {
+  for (const [width, height] of [
+    [640, 520],
+    [960, 540],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    );
+    await frames(1);
+    await controlsClearOf(page, KEY_HINTS, `the key hints at ${width}x${height}`);
+    const boxes = await controlBoxes(page);
+    for (const c of boxes) {
+      expect(c.x >= 0 && c.y >= 0 && c.x + c.w <= width && c.y + c.h <= height, `${c.id} in the window`).toBe(
+        true,
+      );
+      for (const d of boxes)
+        if (c.id < d.id)
+          expect(
+            c.x < d.x + d.w && c.x + c.w > d.x && c.y < d.y + d.h && c.y + c.h > d.y,
+            `${c.id} over ${d.id} at ${width}x${height}`,
+          ).toBe(false);
+    }
+  }
+  await page.setViewportSize({ width: 640, height: 520 });
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+  await frames(1);
 }
 
 /** Loop steps after a round starts by which the iris has opened on it (`game.json`'s 28 + 6 + 28). */
@@ -567,6 +653,20 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         expect(await hook(page, 'layer')).toBe('round');
         expect(await hook(page, 'round')).toMatchObject({ gold: 100, towers: 0 });
         await shoot(page, 'walls');
+        // Clear of it on a 16:9 window too, where the picture fills the window and only its side
+        // margins are left (Engine 0.16 polish P7).
+        await controlsClear(page);
+        await page.setViewportSize({ width: 960, height: 540 });
+        await frames(1);
+        await controlsClear(page);
+        await shoot(page, 'walls-16x9');
+        await page.setViewportSize({ width: 640, height: 520 });
+        await frames(1);
+        // Let the resize reach the page (two animation frames) before the cell is found on it.
+        await page.evaluate(
+          () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+        );
+        await frames(1);
         const at = await wallsCellClient(page, 11, 1);
         await page.mouse.click(at.x, at.y);
         await frames(1);
@@ -626,7 +726,7 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
             'Missions',
             '  The ram burnt, the catapult saved by its crew (delegated)',
             'Losses',
-            '  Village: 2 soldier',
+            '  Village: 2 soldiers',
             'People',
             'Buildings',
             '  Hall: 120 hp lost (280/400)',
@@ -636,6 +736,8 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         );
         expect((await hook(o.page, 'texts')).some((t) => t.startsWith('and '))).toBe(false);
         await shoot(o.page, 'results');
+        await controlsClearOfHints(o);
+        expect(await hook(o.page, 'screen')).toBe('results');
         await toNext(o, 'dawn');
         expect((await hook(o.page, 'named'))['captain']).toMatchObject({ alive: true, hp: 110 });
         expect(await hook(o.page, 'captive')).toBe('');

@@ -250,6 +250,9 @@ worldTick, missionsOpen })`, the one entry-end rule; save code v2 (`SAVE_CODE_VE
   `durationText(ticks, ticksPerHour?)` in `clock.ts`. `engine/sim` computes the values
   (`worldChanges`, `missionCardFacts`); the shell's `MissionScreens` shows them. A mission's
   `text` is presentation only (never stored by the sim).
+- English plurals for counted text (Engine 0.16 P8, `plural.ts`): `plural(word)` (`raider` ->
+  `raiders`, `army` -> `armies`, `torch` -> `torches`) and `countText(n, word, plural?)` (`ram`,
+  `2 soldiers`); `lossText` and the mission card's foes use them. Named people are never counted.
 - Other files in `engine/core` (relative paths) and npm packages.
 - Never `engine/backends`, `engine/sim`, `engine/tools`, kits or games.
 - Files on `PURE_CORE` in `config/layers.js` must stay pure: no `Math.random`, `Date.now`,

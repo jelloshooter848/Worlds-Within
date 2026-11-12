@@ -17,6 +17,7 @@ import {
   threatStatus,
   unitAnim,
 } from './present';
+import { buildingName, unitName, type RtsNames } from './names';
 import { readWorld } from './snapshot';
 
 const SIZE = { width: 320, height: 240 };
@@ -172,6 +173,33 @@ describe('presentWorld', () => {
     expect(presentWorld(view, { faction: 'red', size: SIZE, selection: [5, 6] }).status).not.toHaveProperty(
       'selectedName',
     );
+  });
+
+  it('names the selection and the training unit from the display names, else by id (polish Q, D2)', () => {
+    const names = { units: { soldier: 'Footman', worker: 'Peasant' }, buildings: { hall: 'Great Hall' } };
+    const one = (id: number, n?: RtsNames) =>
+      presentWorld(view, { faction: 'red', size: SIZE, selection: [id], ...(n && { names: n }) }).status;
+    expect(one(6, names)).toMatchObject({ selectedName: 'Footman', selectedType: 'soldier' });
+    expect(one(7, names)).toMatchObject({ selectedName: 'Ada', selectedType: 'soldier' });
+    expect(one(3, names)).toMatchObject({
+      selectedName: 'Great Hall',
+      selectedType: 'hall',
+      selection: 'hall',
+      training: 'worker',
+      trainingName: 'Peasant',
+    });
+    // An id the table lacks shows as itself; an empty table is no table's names.
+    expect(one(3, { units: {}, buildings: {} })).toMatchObject({
+      selectedName: 'hall',
+      trainingName: 'worker',
+    });
+    expect(one(5, names)['trainingName']).toBe('');
+    // Without the option the status is as before: no trainingName.
+    expect(one(3)).toMatchObject({ selectedName: 'hall', training: 'worker' });
+    expect(one(3)).not.toHaveProperty('trainingName');
+    expect(unitName(undefined, 'archer')).toBe('archer');
+    expect(unitName(names, 'toString')).toBe('toString');
+    expect(buildingName(names, 'hall')).toBe('Great Hall');
   });
 
   it("gives each scenario key's health, progress, fate and whether it lives (Engine 0.16 F7)", () => {

@@ -550,6 +550,243 @@
           "w": 44,
           "h": 36,
           "anchor": "bottom"
+        },
+        "grass-dark-0": {
+          "x": 0,
+          "y": 112,
+          "w": 32,
+          "h": 32,
+          "anchor": "center"
+        },
+        "grass-light-0": {
+          "x": 96,
+          "y": 112,
+          "w": 32,
+          "h": 32,
+          "anchor": "center"
+        },
+        "grass-dark-1": {
+          "x": 32,
+          "y": 112,
+          "w": 32,
+          "h": 32,
+          "anchor": "center"
+        },
+        "grass-light-1": {
+          "x": 128,
+          "y": 112,
+          "w": 32,
+          "h": 32,
+          "anchor": "center"
+        },
+        "grass-dark-2": {
+          "x": 64,
+          "y": 112,
+          "w": 32,
+          "h": 32,
+          "anchor": "center"
+        },
+        "grass-light-2": {
+          "x": 160,
+          "y": 112,
+          "w": 32,
+          "h": 32,
+          "anchor": "center"
+        },
+        "tuft-0": {
+          "x": 0,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "tuft-1": {
+          "x": 16,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "tuft-2": {
+          "x": 32,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "flowers-0": {
+          "x": 48,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "flowers-1": {
+          "x": 64,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "flowers-2": {
+          "x": 80,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "mushrooms-0": {
+          "x": 96,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "mushrooms-1": {
+          "x": 112,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "pebbles-0": {
+          "x": 128,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "pebbles-1": {
+          "x": 144,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "dirt-0": {
+          "x": 160,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "dirt-1": {
+          "x": 176,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "reeds-0": {
+          "x": 192,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "reeds-1": {
+          "x": 208,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "reeds-2": {
+          "x": 224,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "tree-0": {
+          "x": 0,
+          "y": 160,
+          "w": 22,
+          "h": 50,
+          "anchor": "bottom"
+        },
+        "tree-1": {
+          "x": 22,
+          "y": 160,
+          "w": 30,
+          "h": 52,
+          "anchor": "bottom"
+        },
+        "tree-2": {
+          "x": 52,
+          "y": 160,
+          "w": 36,
+          "h": 52,
+          "anchor": "bottom"
+        },
+        "pine-0": {
+          "x": 88,
+          "y": 160,
+          "w": 22,
+          "h": 37,
+          "anchor": "bottom"
+        },
+        "pine-1": {
+          "x": 110,
+          "y": 160,
+          "w": 18,
+          "h": 36,
+          "anchor": "bottom"
+        },
+        "pine-2": {
+          "x": 128,
+          "y": 160,
+          "w": 30,
+          "h": 37,
+          "anchor": "bottom"
+        },
+        "bush-0": {
+          "x": 158,
+          "y": 160,
+          "w": 14,
+          "h": 14,
+          "anchor": "bottom"
+        },
+        "bush-1": {
+          "x": 172,
+          "y": 160,
+          "w": 14,
+          "h": 14,
+          "anchor": "bottom"
+        },
+        "stump-0": {
+          "x": 186,
+          "y": 160,
+          "w": 12,
+          "h": 10,
+          "anchor": "bottom"
+        },
+        "log-0": {
+          "x": 198,
+          "y": 160,
+          "w": 20,
+          "h": 10,
+          "anchor": "bottom"
+        },
+        "rock-small-0": {
+          "x": 218,
+          "y": 160,
+          "w": 12,
+          "h": 10,
+          "anchor": "bottom"
+        },
+        "rock-small-1": {
+          "x": 230,
+          "y": 160,
+          "w": 12,
+          "h": 10,
+          "anchor": "bottom"
+        },
+        "boulder-0": {
+          "x": 0,
+          "y": 212,
+          "w": 20,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "boulder-1": {
+          "x": 20,
+          "y": 212,
+          "w": 20,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "boulder-2": {
+          "x": 40,
+          "y": 212,
+          "w": 18,
+          "h": 16,
+          "anchor": "bottom"
         }
       }
     }
@@ -1492,6 +1729,110 @@
           "top right bottom left": "water-top-right-bottom-left"
         }
       }
+    },
+    "T": {
+      "sheet": "ford",
+      "frame": "tree-0",
+      "vary": {
+        "frames": ["tree-0", "tree-1", "tree-2", "pine-0"],
+        "weights": [3, 3, 2, 2]
+      }
+    },
+    "P": {
+      "sheet": "ford",
+      "frame": "pine-0",
+      "vary": {
+        "frames": ["pine-0", "pine-1", "pine-2"],
+        "weights": [3, 2, 2]
+      }
+    },
+    "S": {
+      "sheet": "ford",
+      "frame": "stump-0",
+      "vary": {
+        "frames": ["stump-0", "log-0"],
+        "weights": [2, 1]
+      }
+    },
+    "b": {
+      "sheet": "ford",
+      "frame": "bush-0",
+      "vary": {
+        "frames": ["bush-0", "bush-1"],
+        "weights": [3, 1]
+      }
+    },
+    "r": {
+      "sheet": "ford",
+      "frame": "rock-small-0",
+      "vary": {
+        "frames": ["rock-small-0", "rock-small-1"],
+        "weights": [3, 1]
+      }
+    },
+    "R": {
+      "sheet": "ford",
+      "frame": "boulder-0",
+      "vary": {
+        "frames": ["boulder-0", "boulder-1", "boulder-2"],
+        "weights": [3, 2, 1]
+      }
+    },
+    "p": {
+      "sheet": "ford",
+      "frame": "pebbles-0",
+      "vary": {
+        "frames": ["pebbles-0", "pebbles-1"]
+      }
+    },
+    "f": {
+      "sheet": "ford",
+      "frame": "flowers-0",
+      "vary": {
+        "frames": ["flowers-0", "flowers-1", "flowers-2"]
+      }
+    },
+    "m": {
+      "sheet": "ford",
+      "frame": "mushrooms-0",
+      "vary": {
+        "frames": ["mushrooms-0", "mushrooms-1"]
+      }
+    },
+    "g": {
+      "sheet": "ford",
+      "frame": "tuft-0",
+      "vary": {
+        "frames": ["tuft-0", "tuft-1", "tuft-2"]
+      }
+    },
+    "d": {
+      "sheet": "ford",
+      "frame": "dirt-0",
+      "vary": {
+        "frames": ["dirt-0", "dirt-1"]
+      }
+    },
+    "D": {
+      "sheet": "ford",
+      "frame": "grass-dark-0",
+      "vary": {
+        "frames": ["grass-dark-0", "grass-dark-1", "grass-dark-2"]
+      }
+    },
+    "l": {
+      "sheet": "ford",
+      "frame": "grass-light-0",
+      "vary": {
+        "frames": ["grass-light-0", "grass-light-1", "grass-light-2"]
+      }
+    },
+    "|": {
+      "sheet": "ford",
+      "frame": "reeds-0",
+      "vary": {
+        "frames": ["reeds-0", "reeds-1", "reeds-2"]
+      }
     }
   },
   "fog": {
@@ -1699,6 +2040,15 @@
   },
   "hud": [
     {
+      "as": "panel",
+      "x": 1,
+      "y": 1,
+      "w": 117,
+      "h": 14,
+      "color": "#0c0c1c",
+      "border": "#fcfcfc"
+    },
+    {
       "status": "stock.gold",
       "as": "icon",
       "x": 4,
@@ -1905,7 +2255,7 @@
     },
     {
       "as": "text",
-      "status": "training",
+      "status": "trainingName",
       "x": 8,
       "y": 237,
       "font": "ford-small",

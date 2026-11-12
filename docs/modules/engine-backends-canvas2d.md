@@ -100,7 +100,8 @@ checks `canvasDisplay` on fake canvases. `rts-camera.test.ts` checks that `RtsCa
 `presenter.test.ts`'s `lighting` block (Engine 0.16 part C T4) checks the light map's holes, its
 order after the entities and before the HUD, glows and the vignette, states, placed sprites, event
 flashes fading and with reduced flashing, the surface made once and on a resize, the flat box
-without one and the same calls per seed.
+without one and the same calls per seed. Its `world labels inside the picture` block (Engine
+0.16 polish P6, gap M45) checks labels near the picture's edges moved inside it.
 `fog.test.ts` (Engine 0.16 part D, D3) draws a fogged frame onto a small software 2D context and reads its pixels (hidden, half dark, clear), checks a frame without fog draws the same calls and the fog placed at a camera and zoom; `tests/browser/fog-parity.test.ts` compares it with PixiJS in Chromium. `readability.test.ts` (Engine 0.16 part D, D4) draws outlined, team-coloured sprites onto a software context with `drawImage` and reads the pixels (mask, tint, a team outline, a box, each sheet recoloured once, nothing without a recolour) and checks zoom-stable bars keep 16x2 at zoom 0.5, 1 and 2; `tests/browser/readability-parity.test.ts` compares both backends.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for each kind on a recording
 context; `tests/browser/fx-lab.test.ts` shoots an iris, a wipe and a fade mid-transition.

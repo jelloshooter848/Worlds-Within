@@ -11,7 +11,7 @@ import {
   Texture,
   TextureSource,
 } from 'pixi.js';
-import { ditheredRadial, stopsAlpha } from '@engine/core/fx';
+import { ditheredRadial, stopsAlpha, type DitheredStamp } from '@engine/core/fx';
 import type { BlendMode, RadialFill, Renderer, Rotation } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
@@ -191,18 +191,29 @@ export function radialTexture(stops: readonly { at: number; alpha: number }[]): 
   return texture;
 }
 
-/** The side a dithered fill's texture is rounded up to, so a flickering light reuses its texture. */
+/** The side a dithered fill's texture is rounded up to, so a texture let go can hold another fill. */
 const STAMP_STEP = 32;
 
 /**
+ * How many bytes of dithered fills' textures (RGBA, 4 a texel) a renderer keeps past the frame
+ * that drew them: enough for a scene's lights at each Bayer phase a scrolling camera steps them
+ * through and a stepped flicker's steps, so walking about makes and uploads none.
+ */
+export const DITHER_TEXTURE_BYTES = 32 * 1024 * 1024;
+
+/**
  * A dithered fill's texture (Engine 0.16 polish P, C1): a white buffer whose alpha is the fill's
- * bytes, at least `cap` texels a side, its frame cut to the fill's size. Pooled per renderer and
- * rewritten each frame (`PixiRenderer.gradient` with `dither`), so a steady scene makes none.
+ * bytes, at least `cap` texels a side, its frame cut to the fill's size. Kept per renderer by the
+ * fill's `alpha` array (`PixiRenderer.gradient` with `dither`): `ditheredRadial` gives every fill
+ * with the same bytes the same array, so a steady light, or one the camera scrolls, is written
+ * and uploaded once and drawn from it after.
  */
 class DitherStamp {
   readonly bytes: Uint8Array;
   readonly source: BufferImageSource;
   readonly texture: Texture;
+  /** The renderer's frame (`beginFrame` count) that last drew it. */
+  drawn = 0;
   constructor(
     readonly capW: number,
     readonly capH: number,
@@ -223,8 +234,14 @@ class DitherStamp {
     });
   }
 
-  /** Writes `alpha` (`w` x `h` bytes) as premultiplied white and cuts the frame to it. */
-  write(alpha: Uint8Array, w: number, h: number): void {
+  /** Bytes on the GPU (and in `bytes`). */
+  get size(): number {
+    return this.capW * this.capH * 4;
+  }
+
+  /** Writes the stamp's bytes as premultiplied white and cuts the frame to it. */
+  write(stamp: DitheredStamp): void {
+    const { alpha, w, h } = stamp;
     const px = this.bytes;
     px.fill(0);
     for (let y = 0; y < h; y++)
@@ -314,9 +331,14 @@ export class PixiRenderer implements Renderer {
   private readonly texts = new Pool(
     () => new Text({ text: '', style: { fontFamily: 'monospace', fontSize: 8, fill: 0xffffff } }),
   );
-  /** Dithered fills' textures, one per dithered fill this frame (`gradient` with `dither`). */
-  private readonly stamps: DitherStamp[] = [];
-  private stampsUsed = 0;
+  /**
+   * Dithered fills' textures by their stamp's `alpha` array (`gradient` with `dither`), least
+   * recently drawn first, up to `DITHER_TEXTURE_BYTES` (`stampBytes`) past this frame's.
+   */
+  private readonly stamps = new Map<Uint8Array, DitherStamp>();
+  private stampBytes = 0;
+  /** How many frames have begun: which textures this frame draws, so none of them is let go. */
+  private frames = 0;
   private readonly sheets = new WeakMap<SpriteSheet, SheetTextures>();
   private readonly tints = new Map<string, Tint>();
   private readonly size: ScreenSize;
@@ -362,7 +384,7 @@ export class PixiRenderer implements Renderer {
     this.containers.used = 0;
     this.masks.used = 0;
     this.texts.used = 0;
-    this.stampsUsed = 0;
+    this.frames++;
   }
 
   /** Pooled objects in use this frame (`used`) and made so far (`made`). */
@@ -600,21 +622,13 @@ export class PixiRenderer implements Renderer {
   /**
    * A dithered radial fill (Engine 0.16 polish P, C1): `ditheredRadial`'s pixels (the same bytes
    * the Canvas2D backend puts) as one sprite of a pooled {@link DitherStamp} at their whole-pixel
-   * place, scale 1, tinted `g.color`, blended as `gradient`. The box is already cut into the bytes.
+   * place, scale 1, tinted `g.color`, blended as `gradient`. A stamp past the picture's edge is cut
+   * by the drawing.
    */
   private dithered(g: RadialFill): void {
     const stamp = ditheredRadial(g, g.dither!, this.size);
     if (stamp === null || this.culled(stamp.x, stamp.y, stamp.w, stamp.h)) return;
-    let t = this.stamps[this.stampsUsed];
-    if (t === undefined || t.capW < stamp.w || t.capH < stamp.h) {
-      const up = (n: number, have = 0) => Math.max(have, Math.ceil(n / STAMP_STEP) * STAMP_STEP);
-      const next = new DitherStamp(up(stamp.w, t?.capW), up(stamp.h, t?.capH));
-      t?.destroy();
-      this.stamps[this.stampsUsed] = next;
-      t = next;
-    }
-    this.stampsUsed++;
-    t.write(stamp.alpha, stamp.w, stamp.h);
+    const t = this.stampTexture(stamp);
     const s = this.sprites.take();
     s.texture = t.texture;
     s.anchor.set(0, 0);
@@ -625,6 +639,37 @@ export class PixiRenderer implements Renderer {
     s.alpha = this.opacity;
     s.blendMode = g.mode === 'erase' ? 'erase' : g.mode === 'add' ? 'add' : this.mode;
     this.parent.addChild(s);
+  }
+
+  /**
+   * The texture of a dithered fill's bytes: the one kept for its `alpha` array, or a new one
+   * written once. Over budget, the least recently drawn (none drawn this frame) are let go, and
+   * the first big enough holds the new fill instead of a new texture being made.
+   */
+  private stampTexture(stamp: DitheredStamp): DitherStamp {
+    const kept = this.stamps.get(stamp.alpha);
+    if (kept !== undefined) {
+      // Most recently drawn goes last.
+      this.stamps.delete(stamp.alpha);
+      this.stamps.set(stamp.alpha, kept);
+      kept.drawn = this.frames;
+      return kept;
+    }
+    let t: DitherStamp | undefined;
+    for (const [bytes, old] of this.stamps) {
+      if (this.stampBytes <= DITHER_TEXTURE_BYTES || old.drawn === this.frames) break;
+      this.stamps.delete(bytes);
+      this.stampBytes -= old.size;
+      if (t === undefined && old.capW >= stamp.w && old.capH >= stamp.h) t = old;
+      else old.destroy();
+    }
+    const up = (n: number) => Math.ceil(n / STAMP_STEP) * STAMP_STEP;
+    t ??= new DitherStamp(up(stamp.w), up(stamp.h));
+    t.write(stamp);
+    t.drawn = this.frames;
+    this.stamps.set(stamp.alpha, t);
+    this.stampBytes += t.size;
+    return t;
   }
 
   transform(

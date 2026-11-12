@@ -1080,17 +1080,81 @@ are not touched.
 
 **Done when:**
 
-- [ ] C1: the crypt's and the warden hall's lights fall off without visible rings, the same on
-      every run, in both 2D backends.
-- [ ] C2: each of the crypt's eight rooms is dressed from its data, and no dungeon hash moved.
-- [ ] F1: no world label is cut at the picture's edge (M45 closed).
-- [ ] F2: the page's controls do not cover a round's picture (the fortify and sabotage rounds).
-- [ ] F3: the mission-open flash after Delegate no longer whites out the picture.
-- [ ] F4: the results' losses use plurals ("4 raiders", "2 soldiers").
-- [ ] F5: at dawn the skirt matches the map's light past its edges.
-- [ ] F6: the siege's open fields are fuller, from decor data, with no hash moved.
-- [ ] Before and after shots of every item sit side by side in the build log, and the checks
+- [x] C1: the crypt's and the warden hall's lights fall off without visible rings, the same on
+      every run, in both 2D backends. ([Build log](BUILD-LOG.md#engine-016-polish-p), shots
+      01-02; P3's dithered falloff, decision P-5.)
+- [x] C2: each of the crypt's eight rooms is dressed from its data, and no dungeon hash moved.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shots 01-08; P4's decor grid, P5's eight
+      `rooms/<id>.decor.txt`.)
+- [x] F1: no world label is cut at the picture's edge (M45 closed).
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 09; P6.)
+- [x] F2: the page's controls do not cover a round's picture (the fortify and sabotage rounds).
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shots 12-13; P7, decision P-7.)
+- [x] F3: the mission-open flash after Delegate no longer whites out the picture.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 14; P7, decision P-6.)
+- [x] F4: the results' losses use plurals ("4 raiders", "2 soldiers").
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 15; P8, decision P-8.)
+- [x] F5: at dawn the skirt matches the map's light past its edges.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 11; P9, decision P-9.)
+- [x] F6: the siege's open fields are fuller, from decor data, with no hash moved.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 10; P10, decision P-13.)
+- [x] Before and after shots of every item sit side by side in the build log, and the checks
       pass: `pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test && pnpm build`.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p): "Before and after shots" and "Finalize
+      pass (checks)".)
+
+### 0.16 polish Q: part D review notes and polish P leftovers
+
+A polish pass on the orchestrator's review notes on part D (The River Ford) and on what polish P
+left over in the mini siege, built on track 2 (tasks Q1 to Q10) to the bar of owner item 316
+(b), modern pixel-art indie quality. The [build log](BUILD-LOG.md#engine-016-polish-q) has the
+before and after shots of every item, in `docs/reports/screenshots/0.16-Q/`.
+
+**Scope:**
+
+- **D1 ford scenery:** The River Ford's map is plain grass, a road and a river; dress it from
+  data: decor, trees, rocks, ground variation and river banks.
+- **D2 display names:** the selection panel shows ids ("town-centre", "worker"); show each
+  unit's and building's display name from data.
+- **D3 the top resource bar:** the gold, unit and enemy counters float over the map with
+  sprites showing under them; put them on a UI-kit panel.
+- **D4 a real big fight:** the zoomed-out "big fight" shot (0.16-D's 08) is a thin line of units
+  at blue's town centre; retake it at a real battle, at a later tick or from a scripted scenario,
+  with no rule change.
+- **P1 "Vosk" wrapping:** the siege's results wrap "Vosk" from "Raiders: 4 raiders, ram, Grell,
+  Vosk" onto a line of its own; keep the losses' line whole.
+- **P2 the black bar at dawn:** an empty black bar floats over a soldier at the dawn; draw no
+  empty bar.
+- **P3 controls over the key hints:** on the centred screens (a briefing, the results) the
+  page's pause, 2D and sound controls sit over the HUD's key-hint panel; keep them clear of it.
+- **P4 the 2D flash:** in the 2D skin the mission-open flash after Delegate whites out the whole
+  picture; make it the gentle warm wash the 3D skin has had since polish P (F3).
+
+**Rules:** presentation and data only: no golden hash, save code or run file hash moves.
+`games/td-classic`, `kits/towerdefense`, the tower-defense sample (`games/samples/tower-defense`)
+and its pages are not touched.
+
+**Done when:**
+
+- [x] D1: The River Ford's map is dressed from data (decor, trees, rocks, ground variation and
+      river banks), with no hash moved. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 01; Q5, Q6, decisions Q-3 and Q-4.)
+- [x] D2: the selection panel shows display names from data, not ids. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 02; Q3,
+      decision Q-1.)
+- [x] D3: the top resource bar sits on a UI-kit panel, with no sprite showing under its counters.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 03; Q4, decision Q-2.)
+- [x] D4: the big-fight zoomed-out shot shows a real battle, with no rule change.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 04 and "D4: the big fight (Q7)"; decisions Q-5 and Q-6.)
+- [x] P1: "Vosk" no longer wraps onto a line of its own in the siege's results.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 05; Q8, decision Q-7.)
+- [x] P2: no empty black bar over a soldier at the dawn. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 06; Q9,
+      decision Q-9.)
+- [x] P3: the page's controls do not cover the key-hint panel on the centred screens.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shots 07 and 05; Q8, decision Q-8.)
+- [x] P4: the 2D skin's mission-open flash after Delegate is a gentle warm wash, as in 3D.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 08; Q9, decision Q-10.)
+- [x] Before and after shots of every item sit side by side in the build log, and the checks
+      pass: `pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test && pnpm build`.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q): "Before and after shots" and "Finalize pass (checks)".)
 
 **Done when (the release):** parts A to F are done, `pnpm lint && pnpm typecheck && pnpm test &&
 pnpm build` pass, and the owner has playtested every sample and accepts it as at the bar of item 316.

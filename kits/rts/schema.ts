@@ -3,8 +3,10 @@ import { carryFromSchema } from '@engine/core/carried';
 import type { ContentKind, ContentLookup, KindIssue } from '@engine/core/content/kinds';
 import { addGridIssues } from '@engine/core/content/text-grid';
 import { rtsTypesSchema, type RtsTypes } from '@engine/core/rts-types';
+import { decorSizeIssues, readRtsDecorText, rtsDecorSchema, writeRtsDecorText } from './decor';
 import { enemyPlanSchema, type EnemyPlan, type PlanCondition } from './enemy';
 import { rtsEndSchema, type RtsEnd } from './end';
+import { rtsNamesSchema, type RtsNames } from './names';
 
 /**
  * The RTS kit's content kinds (docs/BUILD-LOG.md, Engine 0.9, decision 7, item 131):
@@ -22,6 +24,12 @@ import { rtsEndSchema, type RtsEnd } from './end';
  *   component in an `rts-map` (when the game has either).
  * - `rts-end` (Engine 0.16 part D, D6): a game's end rule (`end.ts`), `won` and `lost` in the
  *   plan's conditions; its unit and building types are checked across files the same way.
+ * - `rts-names` (Engine 0.16 polish Q, D2): a game's display names (`names.ts`), presentation
+ *   only; across files every unit type and building kind it names must be in the game's types.
+ * - `rts-decor` (Engine 0.16 polish Q, Q5): a map's decoration grid (`decor.ts`), presentation
+ *   only, usually `maps/<id>.decor.txt` beside `maps/<id>.world.json`; the schema reports a
+ *   character not in `RTS_DECOR` (`unknown_char`) and a short row (`ragged_row`), and across files
+ *   a grid not its map's size (`size_mismatch`) or with no `rts-map` of its name (`missing_ref`).
  */
 
 const Key = z
@@ -175,6 +183,16 @@ export function endTypeIssues(name: string, end: RtsEnd, types: readonly RtsType
   return issues;
 }
 
+/** Problems with the types a names table names (none when the game has no types to check against). */
+export function namesTypeIssues(name: string, names: RtsNames, types: readonly RtsTypes[]): KindIssue[] {
+  if (types.length === 0) return [];
+  const issues: KindIssue[] = [];
+  const { units, buildings, check } = typeChecker(name, types, issues);
+  for (const id of Object.keys(names.units)) check(units, id, ['units', id], 'unit');
+  for (const id of Object.keys(names.buildings)) check(buildings, id, ['buildings', id], 'building');
+  return issues;
+}
+
 /** The `rts-map` content kind. */
 export function rtsMapKind(): ContentKind<typeof rtsMapSchema> {
   return {
@@ -217,6 +235,44 @@ export function rtsEndKind(): ContentKind<typeof rtsEndSchema> {
     checkAll(entries, others) {
       const types = gameTypes(others, others('rts-types') as { name: string; value: RtsTypes }[]);
       return entries.flatMap((e) => endTypeIssues(e.name, e.value, types));
+    },
+  };
+}
+
+/** The `rts-names` content kind: a game's display names, their types checked across files. */
+export function rtsNamesKind(): ContentKind<typeof rtsNamesSchema> {
+  return {
+    name: 'rts-names',
+    description:
+      "A game's display names for its unit types and building kinds, for the HUD (presentation only)",
+    schema: rtsNamesSchema,
+    checkAll(entries, others) {
+      const types = gameTypes(others, others('rts-types') as { name: string; value: RtsTypes }[]);
+      return entries.flatMap((e) => namesTypeIssues(e.name, e.value, types));
+    },
+  };
+}
+
+/**
+ * The `rts-decor` content kind (Engine 0.16 polish Q, Q5): a map's decoration grid, `.txt` (or
+ * `.json` `{ rows }`), checked across files against the `rts-map` of the same entry name.
+ */
+export function rtsDecorKind(): ContentKind<typeof rtsDecorSchema> {
+  return {
+    name: 'rts-decor',
+    description:
+      "An RTS map's decoration grid: one character per terrain cell, scenery a skin draws over the ground (presentation only)",
+    schema: rtsDecorSchema,
+    readText: readRtsDecorText,
+    writeText: writeRtsDecorText,
+    checkAll(entries, others) {
+      const maps = new Map(others('rts-map').map((m) => [m.name, m.value as RtsMap]));
+      return entries.flatMap((e) => {
+        const map = maps.get(e.name);
+        if (map !== undefined) return decorSizeIssues(e.name, e.value, map.terrain.rows);
+        const message = `no rts-map called "${e.name}" to decorate (name the grid like its map: maps/${e.name}.decor.txt beside maps/${e.name}.world.json)`;
+        return [{ name: e.name, path: [], code: 'missing_ref', message }];
+      });
     },
   };
 }

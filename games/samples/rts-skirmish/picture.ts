@@ -20,6 +20,7 @@ import {
   RtsEventTracker,
   RtsPresentState,
   type RtsOrderFeedback,
+  type RtsNames,
   type RtsPresentOptions,
   type RtsView,
 } from '@kits/rts';
@@ -105,6 +106,16 @@ export interface SkirmishFrameOptions {
   fog?: boolean;
   /** The feedback of the orders the page issued and the game accepted since the last frame (taken). */
   feedback?: () => readonly RtsOrderFeedback[];
+  /**
+   * The HUD's display names (`skirmishNames`, `content/names/`; polish Q, D2): the selection
+   * panel's `selectedName` and the training line's `trainingName`. Left out, the kit's ids.
+   */
+  names?: RtsNames;
+  /**
+   * The map's decoration grid (`skirmishDecor`, `content/maps/ford.decor.txt`; polish Q, Q6),
+   * drawn over the terrain under everything else. Left out, the map is bare terrain.
+   */
+  decor?: readonly string[] | undefined;
 }
 
 /** One stream's state: the kit's presentation state, its event tracker, the end seen so far and the last bark. */
@@ -145,6 +156,8 @@ export function skirmishSource(
         events,
         state: state.present,
         fog: opts.fog ?? true,
+        ...(opts.names && { names: opts.names }),
+        ...(opts.decor && { decor: opts.decor }),
       });
       frame.events = heardEvents(frame);
       if (result !== null) frame.status[result] = true;

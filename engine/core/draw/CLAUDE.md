@@ -53,7 +53,10 @@ so two backends drawing the same frame get the same calls.
   `team` recolour while it shows), and
   the skin's `labels` (the 3D backend's world-anchored labels, `layoutLabels`) are drawn on a 2D
   skin too, after the entities, particles and lighting and before part D's fog and the HUD, anchored on the box's top
-  centre, centre or bottom centre on the picture (an anchor off the picture hides the label).
+  centre, centre or bottom centre on the picture (an anchor off the picture hides the label);
+  from Engine 0.16 polish P6 (gap M45) `layoutLabels` gets the picture size, so a label whose
+  anchor is in the picture but whose box runs past an edge is moved inside it (with its bar, as
+  one box), as in 3D.
 - Readable at every zoom (Engine 0.16 part D, D4), in `drawEntity`: a kind's (or its tag look's)
   `outline` draws the sheet's silhouette (every pixel with alpha, in the outline colour) one
   picture pixel left, right, up and down under the sprite, or a box one pixel larger under a box;

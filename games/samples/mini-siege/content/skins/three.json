@@ -673,10 +673,10 @@
   "events": {
     "mission-open": {
       "sound": "launch",
-      "effect": {
-        "kind": "flash",
-        "color": "#fcfcfc",
-        "ticks": 2
+      "flash": {
+        "color": "#fce0a8",
+        "alpha": 0.25,
+        "ticks": 18
       }
     },
     "mini-game-end:pass": {
@@ -1419,7 +1419,7 @@
         },
         "as": "bar",
         "w": 14,
-        "h": 2,
+        "h": 3,
         "color": "#e83020",
         "back": "#301010",
         "border": "#000000",
@@ -1448,7 +1448,7 @@
         },
         "as": "bar",
         "w": 14,
-        "h": 2,
+        "h": 3,
         "color": "#e83020",
         "back": "#301010",
         "border": "#000000",
@@ -1464,7 +1464,7 @@
       },
       "as": "bar",
       "w": 14,
-      "h": 2,
+      "h": 3,
       "color": "#e83020",
       "back": "#301010",
       "border": "#000000",
@@ -1479,7 +1479,7 @@
       },
       "as": "bar",
       "w": 14,
-      "h": 2,
+      "h": 3,
       "color": "#40d040",
       "back": "#301010",
       "border": "#000000",
@@ -1494,7 +1494,7 @@
       },
       "as": "bar",
       "w": 14,
-      "h": 2,
+      "h": 3,
       "color": "#40d040",
       "back": "#301010",
       "border": "#000000",
@@ -1510,7 +1510,7 @@
         },
         "as": "bar",
         "w": 14,
-        "h": 2,
+        "h": 3,
         "color": "#40d040",
         "back": "#301010",
         "border": "#000000",
@@ -1541,7 +1541,7 @@
       },
       "as": "bar",
       "w": 14,
-      "h": 2,
+      "h": 3,
       "color": "#40d040",
       "back": "#301010",
       "border": "#000000",
@@ -1556,7 +1556,7 @@
       },
       "as": "bar",
       "w": 14,
-      "h": 2,
+      "h": 3,
       "color": "#40d040",
       "back": "#301010",
       "border": "#000000",
@@ -1587,7 +1587,7 @@
         "as": "bar",
         "max": 100,
         "w": 22,
-        "h": 2,
+        "h": 3,
         "color": "#f8b800",
         "back": "#301800",
         "border": "#000000",
@@ -1652,7 +1652,7 @@
     "colorSpace": "srgb",
     "renderScale": 6,
     "skirt": {
-      "color": "#497018"
+      "color": "#8cc24a"
     },
     "timeOfDay": {
       "tween": 45,
@@ -2534,7 +2534,7 @@
         },
         "x": {
           "model": "assets/kenney-nature-kit/stump_old.glb",
-          "scale": 14,
+          "scale": [12, 17],
           "yaw": "random",
           "materials": {
             "grass": "#8cc24a",
@@ -2556,6 +2556,42 @@
             "_defaultMat": "#b0b0a8"
           },
           "jitter": 3,
+          "castShadow": true
+        },
+        "v": {
+          "model": [
+            "assets/kenney-nature-kit/flower_yellowA.glb",
+            "assets/kenney-nature-kit/flower_redA.glb",
+            "assets/kenney-nature-kit/flower_purpleA.glb"
+          ],
+          "scale": [34, 44],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 6
+        },
+        "z": {
+          "model": "assets/quaternius-medieval-village/hay.glb",
+          "scale": [30, 38],
+          "yaw": "random",
+          "jitter": 4,
           "castShadow": true
         }
       }
@@ -3250,7 +3286,7 @@
         },
         "x": {
           "model": "assets/kenney-nature-kit/stump_old.glb",
-          "scale": 14,
+          "scale": [12, 17],
           "yaw": "random",
           "materials": {
             "grass": "#8cc24a",
@@ -3272,6 +3308,42 @@
             "_defaultMat": "#b0b0a8"
           },
           "jitter": 3,
+          "castShadow": true
+        },
+        "v": {
+          "model": [
+            "assets/kenney-nature-kit/flower_yellowA.glb",
+            "assets/kenney-nature-kit/flower_redA.glb",
+            "assets/kenney-nature-kit/flower_purpleA.glb"
+          ],
+          "scale": [34, 44],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 6
+        },
+        "z": {
+          "model": "assets/quaternius-medieval-village/hay.glb",
+          "scale": [30, 38],
+          "yaw": "random",
+          "jitter": 4,
           "castShadow": true
         }
       }
@@ -3966,7 +4038,7 @@
         },
         "x": {
           "model": "assets/kenney-nature-kit/stump_old.glb",
-          "scale": 14,
+          "scale": [12, 17],
           "yaw": "random",
           "materials": {
             "grass": "#8cc24a",
@@ -3988,6 +4060,42 @@
             "_defaultMat": "#b0b0a8"
           },
           "jitter": 3,
+          "castShadow": true
+        },
+        "v": {
+          "model": [
+            "assets/kenney-nature-kit/flower_yellowA.glb",
+            "assets/kenney-nature-kit/flower_redA.glb",
+            "assets/kenney-nature-kit/flower_purpleA.glb"
+          ],
+          "scale": [34, 44],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 6
+        },
+        "z": {
+          "model": "assets/quaternius-medieval-village/hay.glb",
+          "scale": [30, 38],
+          "yaw": "random",
+          "jitter": 4,
           "castShadow": true
         }
       }

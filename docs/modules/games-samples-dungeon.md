@@ -18,7 +18,10 @@ pack's PNG plus two text sheets cut from it, walls and doors joined by neighbour
 an animated knight, monsters with white hit flashes, particles, a framed HUD and restyled menus;
 from T4 lighting and mood: dark rooms with brazier pools, the hero's small light, the bat hall and
 crypt darker, blasts lighting the room, a vignette and dust in the air, all in the skin's
-`lighting` block).
+`lighting` block; from Engine 0.16 polish P5 every room dressed from data: each room's
+`content/rooms/<id>.decor.txt` decoration grid places cracks, rubble, moss, bones, skulls, blood,
+cobwebs, chains, weapon racks and banners, drawn by the skin's `tiles` from `dec-*` frames in
+`crypt-art.txt` and the pack's banners, with no rule reading it).
 A thin scene runs the kit's world, hands the kit's presentation frames to the page display's
 presenter (Canvas2D by default, PixiJS with `?backend=pixi`; or its own `SkinnedCanvasPresenter` for the view and screenshots), shows the end banner and starts a new run on Z
 or X where the shell does not show the end itself; from Engine 0.16 part C T7 `game.json`'s

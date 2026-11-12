@@ -1421,3 +1421,32 @@ describe('lighting (Engine 0.16 part C T4)', () => {
     expect(play(3)).not.toEqual(play(4));
   });
 });
+
+describe('world labels inside the picture (Engine 0.16 polish P6, gap M45)', () => {
+  it('moves a health bar whose anchor is near an edge inside the picture', () => {
+    const screen = recorder();
+    const skin: SkinFile = {
+      ...SKIN,
+      labels: { hero: { from: { tag: 'hp:' }, as: 'bar', max: 4, w: 24, h: 2, color: '#f00', back: '#111' } },
+    };
+    new SkinnedCanvasPresenter(screen.r, skin, lookup).present(
+      freezeFrame(
+        frame({
+          entities: [
+            hero({ id: 'a', y: 8, tags: ['hp:2'] }), // anchor x 8: the bar would start at -4
+            hero({ id: 'b', x: 32, y: 8, tags: ['hp:2'] }), // anchor x 40: it would end at 52
+          ],
+        }),
+      ),
+    );
+    // The 48 px picture keeps 2 px clear: the bars start at 2 and end at 46.
+    expect(screen.calls.filter((c) => c.endsWith('#111'))).toEqual([
+      'rect 2,4 24x2 #111',
+      'rect 22,4 24x2 #111',
+    ]);
+    expect(screen.calls.filter((c) => c.endsWith('#f00'))).toEqual([
+      'rect 2,4 12x2 #f00',
+      'rect 22,4 12x2 #f00',
+    ]);
+  });
+});

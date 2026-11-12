@@ -1024,7 +1024,8 @@ export class SkinnedPresenter implements Presenter {
    * The skin's `labels` over the entities (Engine 0.16 F8: the 3D backend's world-anchored labels
    * on a 2D skin, such as enemies' health bars): each label's anchor is the box's top centre,
    * centre or bottom centre on the picture, laid out by the UI kit's `layoutLabels` and painted
-   * like the HUD; an anchor off the picture hides the label.
+   * like the HUD; an anchor off the picture hides the label, and a box that runs past an edge is
+   * moved inside the picture (Engine 0.16 polish P6, gap M45), as in 3D.
    */
   private drawLabels(frame: Frame, view: View, size: ScreenSize): void {
     const labels = this.skin.labels;
@@ -1039,7 +1040,7 @@ export class SkinnedPresenter implements Presenter {
         const y = Math.round(wy * view.zoom) - view.y;
         return x < 0 || x >= size.width || y < 0 || y >= size.height ? null : { x, y };
       };
-      draws.push(...layoutLabels(list, e, frame.status, project, this.opts.fonts).draws);
+      draws.push(...layoutLabels(list, e, frame.status, project, this.opts.fonts, size).draws);
     }
     if (draws.length > 0) paintUi(draws, this.uiPainter);
   }

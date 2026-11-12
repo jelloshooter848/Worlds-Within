@@ -4,8 +4,8 @@ import { mustLoad } from '@engine/core/content/game-content';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { mixWhenHolds, type MixStatus } from '@engine/core/audio/mix';
-import { contentDecor, skinSet, type PresentMap } from '@engine/core/present';
-import { contentFonts, SkinHud } from '@engine/core/ui';
+import { contentDecor, skinLabels, skinSet, type PresentEntity, type PresentMap } from '@engine/core/present';
+import { contentFonts, layoutLabels, SkinHud } from '@engine/core/ui';
 import { loadMiniSiege, siegeMap } from './content';
 import { createGame, starts } from './headless';
 import { siegeFrames } from './picture';
@@ -94,6 +94,42 @@ describe('the mini siege in 3D low-poly', () => {
     expect(looks('unit:soldier')).toEqual(['frozen', 'hero']);
     for (const kind of ['unit:raider', 'unit:soldier', 'unit:ram'])
       expect(skin.labels?.[kind], kind).toBeDefined();
+  });
+
+  it('draws every bar label with its fill inside its border, never as an empty black bar', () => {
+    // Engine 0.16 polish Q, P2: the 14x2 health bars with a border left no px for the fill, so a
+    // hurt captain at the dawn showed an empty black bar. Each is now 3 high: a 1-px fill inside.
+    const hurt = (kind: string): PresentEntity => ({
+      id: 'x',
+      kind,
+      x: 100,
+      y: 100,
+      w: 16,
+      h: 16,
+      facing: 'down',
+      anim: { state: 'idle', t: 0 },
+      tags: ['hp:5/10', 'progress:50'],
+    });
+    const project = () => ({ x: 160, y: 90 });
+    let bars = 0;
+    for (const kind of Object.keys(skin.labels ?? {})) {
+      for (const label of skinLabels(skin.labels, kind)) {
+        if (label.as !== 'bar') continue;
+        bars++;
+        const { draws } = layoutLabels([label], hurt(kind), {}, project, contentFonts(content));
+        const fills = draws.filter((d) => d.kind === 'fill');
+        expect(
+          fills.filter((d) => d.color === label.color),
+          kind,
+        ).toHaveLength(1);
+        if (label.border !== undefined)
+          expect(
+            fills.filter((d) => d.color === label.border),
+            kind,
+          ).toHaveLength(4);
+      }
+    }
+    expect(bars).toBeGreaterThanOrEqual(10);
   });
 });
 
