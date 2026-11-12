@@ -2,9 +2,9 @@
 
 This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A (with part A2, the
 PixiJS backend), B, C, D, E (the tower defense) and F (the mini siege in 3D), and the polish
-pass P (the review notes on C and F; P1-P3 merged in E, P4-P11 on track 2), on
-branch `engine/build-0.15`, for the owner's review. Nothing in it is merged to `master`, tagged or
-published.
+pass P (the review notes on C and F; P1-P3 merged in E, P4-P11 on track 2) and polish Q (part D's
+review notes and P's leftovers, in progress on track 2), on branch `engine/build-0.15`, for the
+owner's review. Nothing in it is merged to `master`, tagged or published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
@@ -247,6 +247,54 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
   `1.0-11`).
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
+
+## Engine 0.16 polish Q
+
+A polish pass on the orchestrator's review notes on part D (The River Ford: D1-D4) and polish P's
+leftovers in the mini siege (P1-P4), the roadmap's "0.16 polish Q: part D review notes and polish
+P leftovers", on branch `engine/0.16-track2` in tasks Q1 to Q10. In progress: Q1 merged track 1's
+part D and E so far (`7c081b4`); Q2 wrote the roadmap section and took the before shots below.
+
+### Before shots
+
+Eight 1920x1080 PNGs in [`docs/reports/screenshots/0.16-Q/`](reports/screenshots/0.16-Q/), taken
+at `7c081b4` (Q1, before any change); the after shots come at Q10 with the same commands and
+names (`after-` for `before-`). Each was looked at full size and shows its problem.
+
+| Shot                                                                                              | Item | What it shows                                                                                                                    |
+| ------------------------------------------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------- |
+| [before-01-ford-scenery.png](reports/screenshots/0.16-Q/before-01-ford-scenery.png)               | D1   | `match-won` at 164 (0.16-D's 03): red's base on plain flat grass, a few rocks and pines at the edges, no ground variation        |
+| [before-02-selection-name.png](reports/screenshots/0.16-Q/before-02-selection-name.png)           | D2   | `match-won` at 4 (0.16-D's 02): the selection panel reads the ids "town-centre" and "worker"                                     |
+| [before-03-resource-bar.png](reports/screenshots/0.16-Q/before-03-resource-bar.png)               | D3   | `match-won` at 5790: the gold, unit and enemy counters bare on the map, red's soldiers showing under "64" and "8"                |
+| [before-04-big-fight.png](reports/screenshots/0.16-Q/before-04-big-fight.png)                     | D4   | `match-won` at 5790, byte for byte 0.16-D's 08: a thin line of units at blue's town centre, the wide fogged ford bare            |
+| [before-05-results-vosk.png](reports/screenshots/0.16-Q/before-05-results-vosk.png)               | P1   | The 3D page's siege results at 260 (polish P's 15): "Raiders: 4 raiders, ram, Grell," and "Vosk" alone on the next line          |
+| [before-06-dawn-black-bar.png](reports/screenshots/0.16-Q/before-06-dawn-black-bar.png)           | P2   | The 3D page at the dawn, tick 30 (polish P's 11): an empty black bar over the soldier by the hall's gate                         |
+| [before-07-controls-over-hints.png](reports/screenshots/0.16-Q/before-07-controls-over-hints.png) | P3   | The dawn's briefing, a centred screen: the pause, 2D and sound controls over the HUD's "ESC PAUSE RMB ORDER" panel (05 the same) |
+| [before-08-flash-2d.png](reports/screenshots/0.16-Q/before-08-flash-2d.png)                       | P4   | The 2D page (`?backend=canvas2d`) at the first loop step of world tick 41 after Delegate at 40: the picture all white            |
+
+### Commands
+
+From the repo root. The CLI shots (01-04) repeat byte for byte (04 has the same sha256 as
+0.16-D's 08); the page shots (05-08) are not checked to repeat byte for byte (the page's loop
+steps, as in polish P). For the after shots, `after` in place of `before`:
+
+```sh
+R=games/samples/rts-skirmish/runs; O=docs/reports/screenshots/0.16-Q
+pnpm -s cli screenshot $R/match-won.run.json --tick 164 --scale 4 --out $O/before-01-ford-scenery.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 4 --scale 4 --out $O/before-02-selection-name.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 5790 --scale 4 --out $O/before-03-resource-bar.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 5790 --scale 4 --out $O/before-04-big-fight.png --json
+# 05-08, the mini siege's page (seed 11, 1920x1080 window; 05-07 3D, 08 2D):
+pnpm exec tsx tests/browser/siege-q-shots.ts $O before
+```
+
+`tests/browser/siege-q-shots.ts` (added in Q2) builds and serves the repo as polish P's
+`siege-review-shots.ts` does and drives the page with the same `wwSiege` hooks, now shared in
+`tests/browser/siege-page.ts`: in 3D, Begin, Delegate at 40 and on to the results at 260 (05),
+Continue to the dawn's briefing (07), Begin and the dawn at tick 30 (06); in 2D
+(`?backend=canvas2d&ui=picture`, the mission screens in the picture so the hooks can click them),
+Begin, Delegate at 40 and the first loop step of tick 41 (08). D4's after shot may come from a
+later tick or a scripted scenario instead of 5790 (Q7); the build log will say which.
 
 ## Engine 0.16 part E
 

@@ -1103,6 +1103,51 @@ are not touched.
       ([Build log](BUILD-LOG.md#engine-016-polish-p): "Before and after shots" and "Finalize
       pass (checks)".)
 
+### 0.16 polish Q: part D review notes and polish P leftovers
+
+A polish pass on the orchestrator's review notes on part D (The River Ford) and on what polish P
+left over in the mini siege, built on track 2 (tasks Q1 to Q10) to the bar of owner item 316
+(b), modern pixel-art indie quality. The [build log](BUILD-LOG.md#engine-016-polish-q) has the
+before and after shots of every item, in `docs/reports/screenshots/0.16-Q/`.
+
+**Scope:**
+
+- **D1 ford scenery:** The River Ford's map is plain grass, a road and a river; dress it from
+  data: decor, trees, rocks, ground variation and river banks.
+- **D2 display names:** the selection panel shows ids ("town-centre", "worker"); show each
+  unit's and building's display name from data.
+- **D3 the top resource bar:** the gold, unit and enemy counters float over the map with
+  sprites showing under them; put them on a UI-kit panel.
+- **D4 a real big fight:** the zoomed-out "big fight" shot (0.16-D's 08) is a thin line of units
+  at blue's town centre; retake it at a real battle, at a later tick or from a scripted scenario,
+  with no rule change.
+- **P1 "Vosk" wrapping:** the siege's results wrap "Vosk" from "Raiders: 4 raiders, ram, Grell,
+  Vosk" onto a line of its own; keep the losses' line whole.
+- **P2 the black bar at dawn:** an empty black bar floats over a soldier at the dawn; draw no
+  empty bar.
+- **P3 controls over the key hints:** on the centred screens (a briefing, the results) the
+  page's pause, 2D and sound controls sit over the HUD's key-hint panel; keep them clear of it.
+- **P4 the 2D flash:** in the 2D skin the mission-open flash after Delegate whites out the whole
+  picture; make it the gentle warm wash the 3D skin has had since polish P (F3).
+
+**Rules:** presentation and data only: no golden hash, save code or run file hash moves.
+`games/td-classic`, `kits/towerdefense`, the tower-defense sample (`games/samples/tower-defense`)
+and its pages are not touched.
+
+**Done when:**
+
+- [ ] D1: The River Ford's map is dressed from data (decor, trees, rocks, ground variation and
+      river banks), with no hash moved.
+- [ ] D2: the selection panel shows display names from data, not ids.
+- [ ] D3: the top resource bar sits on a UI-kit panel, with no sprite showing under its counters.
+- [ ] D4: the big-fight zoomed-out shot shows a real battle, with no rule change.
+- [ ] P1: "Vosk" no longer wraps onto a line of its own in the siege's results.
+- [ ] P2: no empty black bar over a soldier at the dawn.
+- [ ] P3: the page's controls do not cover the key-hint panel on the centred screens.
+- [ ] P4: the 2D skin's mission-open flash after Delegate is a gentle warm wash, as in 3D.
+- [ ] Before and after shots of every item sit side by side in the build log, and the checks
+      pass: `pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test && pnpm build`.
+
 **Done when (the release):** parts A to F are done, `pnpm lint && pnpm typecheck && pnpm test &&
 pnpm build` pass, and the owner has playtested every sample and accepts it as at the bar of item 316.
 
