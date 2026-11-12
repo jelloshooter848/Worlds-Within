@@ -57,6 +57,7 @@ export {
   type RollSpec,
 } from './widgets';
 export {
+  barBorder,
   borderDraws,
   clockHudText,
   skinMinimap,

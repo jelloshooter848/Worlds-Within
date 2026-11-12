@@ -323,8 +323,9 @@ export class SkinHud {
         h: box.h - ins.top - ins.bottom,
       };
     } else if (item.border !== undefined) {
-      out.push(...borderDraws(box, item.border));
-      inner = { x: box.x + 1, y: box.y + 1, w: box.w - 2, h: box.h - 2 };
+      const framed = barBorder(box, item.border);
+      out.push(...framed.draws);
+      inner = framed.inner;
     }
     if (inner.w <= 0 || inner.h <= 0) return out;
     if (item.back !== undefined) out.push({ kind: 'fill', ...inner, color: item.back });
@@ -456,6 +457,20 @@ export const DEFAULT_PREVIEW_SPACING = 4;
 
 /** The side of a `preview` group's stand-in box when its kind has no frame (the classic HUD's). */
 export const PREVIEW_MISSING_SIDE = HUD_FALLBACK_SIZE;
+
+/**
+ * A bar's one-px `border` round `box` and the inside left for its back and fill. A box too thin
+ * or narrow to leave any inside (2 px or less) takes no border, so the bar's back and fill cover
+ * the whole box: a border with nothing in it would draw an empty frame (Engine 0.16 polish Q, P2:
+ * the siege's 2-px health bars showed as empty black bars).
+ */
+export function barBorder(box: Box, border: string): { draws: UiFill[]; inner: Box } {
+  if (box.w <= 2 || box.h <= 2) return { draws: [], inner: box };
+  return {
+    draws: borderDraws(box, border),
+    inner: { x: box.x + 1, y: box.y + 1, w: box.w - 2, h: box.h - 2 },
+  };
+}
 
 /** A one-px frame round `box` in `color`: top, bottom, left and right. */
 export function borderDraws(box: Box, color: string): UiFill[] {

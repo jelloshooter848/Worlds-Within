@@ -188,6 +188,18 @@ describe('SkinHud (Engine 0.16 T6)', () => {
     expect(framed.at(-1)).toEqual({ kind: 'fill', x: 2, y: 2, w: 18, h: 2, color: '#00a800' });
   });
 
+  it('leaves the border off a bar too thin for one, so it never shows as an empty frame', () => {
+    // Engine 0.16 polish Q, P2: a 2-px bar with a border had no inside and drew only its frame.
+    const thin = new SkinHud(
+      skin([{ status: 'hp', as: 'bar', x: 0, y: 0, w: 22, h: 2, max: 4, back: '#111', border: '#fff' }]),
+      { fonts: FONTS },
+    );
+    expect(thin.layout(input({ hp: 2 }))).toEqual([
+      { kind: 'fill', x: 0, y: 0, w: 22, h: 2, color: '#111' },
+      { kind: 'fill', x: 0, y: 0, w: 11, h: 2, color: '#00a800' },
+    ]);
+  });
+
   it('draws a counter as its icon and a rolling number', () => {
     const hud = new SkinHud(
       skin([

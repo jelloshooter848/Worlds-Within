@@ -69,7 +69,9 @@ color }`, a nine-slice `panel` frame whose insets are the inset, else a one-px `
   `{text}`/`{value}`, default `Day {day} {time}`) in its `font` at the top of the box, centred
   unless `align` says otherwise, and the day bar along the bottom (`dayBar { h? (3), back?,
 bands?, marks?, markColor?, marker? }`); nothing without the clock). `hudValueText(item, value)`,
-  `borderDraws`.
+  `borderDraws`. A bar's `border` (a HUD `bar` and a world label's `bar`) goes through
+  `barBorder(box, color)`: a box 2 px or less high or wide takes no border, its back and fill
+  covering the whole box, so a thin bar never draws as an empty frame (Engine 0.16 polish Q9).
   From Engine 0.16 part C T3 an item with `when` (a status key) is left out while that value is
   falsy (`hudItemShown`, `@engine/core/present`; from F7 `when` may also be a status test), and
   `hearts` with `half` count halves.

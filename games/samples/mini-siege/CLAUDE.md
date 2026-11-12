@@ -708,7 +708,9 @@ hash, save code or path moved; the backend parity test plays every run through i
   ring a ring of small green blocks; the health and progress bars draw nothing (a 0.01 px box):
   they are labels instead.
 - **Labels**: a health bar over each unit and building whose bar the RTS kit shows (the kit's
-  `hp:<hp>/<max>` tag, F6), red for raiders; `Battering ram` and `Catapult` under the engines;
+  `hp:<hp>/<max>` tag, F6), red for raiders, each at least 3 px high so its 1-px black border
+  leaves room for the fill (polish Q9, P2: at 2 px a hurt captain showed an empty black bar;
+  the UI kit now also drops a border that would leave no inside, `barBorder`); `Battering ram` and `Catapult` under the engines;
   `Watchtower <n>%` and a progress bar over the site (`progress:`); places THE HALL and
   RAIDERS' CAMP on every map, in `siege-small`.
 - **Terrain and decor**: grass, road and rock cells are Nature Kit ground tiles (recoloured by the
@@ -798,11 +800,11 @@ links the other one. Presentation only: no hash, save code or run file moved.
   danger layer up while a mission is open (`missionLeft`) or raiders are within 3 cells of the
   village's buildings (the RTS kit's `enemyNear`), mixed by the shell's mixer. The title plays
   the same (calm). Event and UI sounds as before.
-- **Mission-open flash** (Engine 0.16 polish P7, F3): `three.json`'s `mission-open` gives an
-  event `flash` (`#fce0a8`, a warm cream, at alpha 0.25 fading over 18 presentation frames, three
-  world ticks on the page) in place of the 2D skin's full-white two-tick `effect` flash, which
-  whited out the whole 3D picture after Delegate. Like every flash it is skipped with the
-  player's reduced-flashing setting.
+- **Mission-open flash** (Engine 0.16 polish P7, F3; polish Q9, P4): `three.json`'s and
+  `canvas2d.json`'s `mission-open` give the same event `flash` (`#fce0a8`, a warm cream, at alpha
+  0.25 fading over 18 presentation frames, three world ticks on the page), in place of the old
+  full-white two-tick `effect` flash, which whited out the whole picture after Delegate. Like
+  every flash it is skipped with the player's reduced-flashing setting.
 
 `three.test.ts` checks the HUD (the UI kit's, every key it reads on the frames, the title, clock
 and objectives drawn, no watchtower line at the dawn) and the music's danger layer while a

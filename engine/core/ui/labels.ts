@@ -11,7 +11,7 @@ import {
   type SkinLabel,
 } from '../present';
 import type { FontLookup } from './font';
-import { DEFAULT_BAR_COLOR, borderDraws } from './hud';
+import { DEFAULT_BAR_COLOR, barBorder } from './hud';
 import type { Box } from './nine-slice';
 import { DEFAULT_TEXT_COLOR, textDraws, type UiDraw } from './paint';
 import { measureLine } from './text';
@@ -144,8 +144,9 @@ function labelItem(
         const out: UiDraw[] = [];
         let inner = box;
         if (label.border !== undefined) {
-          out.push(...borderDraws(box, label.border));
-          inner = { x: box.x + 1, y: box.y + 1, w: box.w - 2, h: box.h - 2 };
+          const framed = barBorder(box, label.border);
+          out.push(...framed.draws);
+          inner = framed.inner;
         }
         if (inner.w <= 0 || inner.h <= 0) return out;
         if (label.back !== undefined) out.push({ kind: 'fill', ...inner, color: label.back });

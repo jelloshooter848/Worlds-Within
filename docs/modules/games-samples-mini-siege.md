@@ -228,6 +228,11 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   bottom-right, in the letterbox when it is 36 px high or more, else just over the HUD's
   key-hint panel, never over it (the page test checks the boxes on the results at 640x520 and
   960x540). Presentation only: no hash moved.
+- Engine 0.16 polish Q9 (P2, P4): the 3D labels' health and progress bars are 3 px high, so
+  their black border leaves a px for the fill (at 2 px a hurt unit showed an empty black bar; the
+  UI kit's bars now drop a border that would leave no inside, `barBorder`), and `canvas2d.json`'s
+  `mission-open` flash is the same warm, low-alpha event `flash` as the 3D one (`#fce0a8` at
+  0.25 over 18 frames) instead of two full-white ticks. Presentation only: no hash moved.
 
 ## Imports allowed
 

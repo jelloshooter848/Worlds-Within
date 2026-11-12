@@ -56,6 +56,32 @@ describe('layoutLabels', () => {
     expect(fills.at(-1)).toMatchObject({ x: 46, y: 10, w: 4, h: 2 });
   });
 
+  it('draws a bar too thin for its border as its back and fill, never an empty frame', () => {
+    // Engine 0.16 polish Q, P2: the siege's 14x2 health bars with a border drew only the border
+    // (no px left inside for the fill): an empty black bar over a hurt unit at the dawn.
+    const label: SkinLabel = {
+      from: { tag: 'hp:' },
+      as: 'bar',
+      max: 4,
+      color: '#40d040',
+      back: '#301010',
+      border: '#000000',
+      w: 14,
+      h: 2,
+    };
+    const { draws, views } = layoutLabels([label], e, {}, at, fonts);
+    expect(views).toHaveLength(1);
+    expect(draws).toEqual([
+      { kind: 'fill', x: 43, y: 16, w: 14, h: 2, color: '#301010' },
+      { kind: 'fill', x: 43, y: 16, w: 7, h: 2, color: '#40d040' },
+    ]);
+    expect(draws.some((d) => d.kind === 'fill' && d.color === '#000000')).toBe(false);
+    // With room for the border, it frames the back and fill as before.
+    const roomy = layoutLabels([{ ...label, h: 3 }], e, {}, at, fonts).draws;
+    expect(roomy.filter((d) => d.kind === 'fill' && d.color === '#000000')).toHaveLength(4);
+    expect(roomy.at(-1)).toMatchObject({ w: 6, h: 1, color: '#40d040' });
+  });
+
   it('hangs bottom labels below, centres center labels and applies the offset', () => {
     const { views } = layoutLabels(
       [
