@@ -718,7 +718,12 @@ hash, save code or path moved; the backend parity test plays every run through i
   road and the battle rows 12-19 and at the south gold node, so no unit is ever drawn inside a
   wall; houses, smithy, market, well and carts inside; the river (columns 27-29, the bridge on
   the road; the raiders wade it elsewhere, as their paths always did); fields, the sheep pen and
-  the windmill in the south; woods to the north and south; the raiders' camp east of the river
+  the windmill in the south; woods to the north and south; the open fields round the battle rows
+  dressed as countryside (polish P10): a fenced corn plot north of the corridor, hay bales (`z`),
+  flowers (`v`), grass, bushes, small rocks, stumps (`x`) and a few trees on the banks and field
+  edges, each turned, sized and nudged per cell by the legend's `yaw`, `scale` range and
+  `jitter`, every model one the skin already loads (the battle rows stay bare grass); the
+  raiders' camp east of the river
   (tents, red banners, log piles and campfires, each with a flickering point light, smoke and
   flame: the legend's `light` and `emit`, F6). The dawn's camp is half struck; the ridge's sits
   among the ridge's rocks. Every legend entry is presentation only and drawn from the
