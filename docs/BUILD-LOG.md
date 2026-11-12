@@ -181,8 +181,9 @@ enough; silence so far has meant the build kept its default):
   smaller choices of T5-T7), **463-467** (the final review's five more build choices).
 - Engine 0.16 part F: **F-1 to F-22** and **T2-18 to T2-42** in its section (F-21 the owner's
   playtest and screenshot review), to be numbered into FEEDBACK-LOG.md at merge.
-- Engine 0.16 polish P: **P-1 to P-14** in its section (with two questions on P-5, the light's
-  look, and P-6, the flash), to be numbered into FEEDBACK-LOG.md at merge.
+- Engine 0.16 polish P: **P-1 to P-15** and **T2-43 to T2-65** in its section (with two
+  questions on P-5, the light's look, and P-6, the flash), to be numbered into FEEDBACK-LOG.md at
+  merge.
 
 ### Items not met, and where they went
 
@@ -263,6 +264,23 @@ owner's playtest.
   stamp every frame; Canvas2D keeps its coloured image data and PixiJS skips the rewrite and the
   upload), and with a dither a light's radius is whole and its flicker steps (P-15). A rough time
   budget test runs 240 frames of the crypt's lights in well under a second (about 10 s before).
+
+### How to try it
+
+```sh
+pnpm install
+pnpm dev
+# The Old Crypt (C1, C2): http://localhost:5173/games/samples/dungeon/
+#   (?backend=pixi draws it in PixiJS: the same dithered light)
+# The mini siege in 3D (F1-F6): http://localhost:5173/games/samples/mini-siege/
+#   play or delegate the walls (tick 10) and the sabotage (tick 40) to see the controls,
+#   the flash and the results; Continue to the dawn for the skirt
+pnpm -s cli run games/samples/dungeon/runs/win.run.json           # hashes unchanged
+pnpm -s cli run games/samples/mini-siege/runs/delegated.run.json  # hashes unchanged
+pnpm -s cli validate games/samples/dungeon                        # checks the decor grids
+```
+
+The before and after shots and their commands are below.
 
 ### Before and after shots
 
@@ -370,7 +388,9 @@ Checked against "0.16 polish P: parts C and F review notes" in the roadmap.
 ### Finalize pass (checks)
 
 On the committed tree: `pnpm lint`, `pnpm typecheck`, `pnpm docs:check` and `pnpm build` pass;
-`pnpm test`: 291 files, 3557 passed, 1 skipped (a first run at load 15, beside another track's
+`pnpm test`: 291 files, 3557 passed, 1 skipped at P11; at the release's last finalize (after the
+review fixes) 292 files, 3562 passed, 1 skipped, and all 75 run files and every game folder's
+`validate` green again (a first run at load 15, beside another track's
 tests, had one failure among 3558 that its truncated output did not name; the full rerun, and the
 browser and architecture folders on their own, all passed). All 75 run files (`git ls-files
 '*.run.json'`: 62 game run files and the 13 `engine/sim` fixtures) exit 0 through `pnpm -s cli
@@ -484,6 +504,89 @@ Questions for the owner (answer by number once numbered into FEEDBACK-LOG.md):
   stepped look with soft edges (`bands` with `dither`)?
 - On **P-6** (the flash): keep the warm, low-alpha `mission-open` flash, dim it further, or drop
   it (and should the 2D skin's white flash follow)?
+
+### Deviations from the roadmap
+
+- The roadmap had no polish P section when the polish started; P2 wrote it from the task's item
+  list, with a last Done when item for the before and after shots and the full checks.
+- F5 is fixed in the skirt's material, not by matching its colour per time of day (P-9).
+- F4 also widens the wide results panel from 304 to 312 px so the longer losses line fits (P-8),
+  a shell layout change beyond the plural text.
+- C2's shots cover all eight rooms, not four (P-4).
+- The rule "`games/rts` and `games/rts-classic` are not touched" holds trivially: neither folder
+  exists in this repo.
+
+### Build decisions to review (track 2)
+
+Smaller choices the P1-P11 builders and the release review made, for the owner to check;
+labelled after T2-42 and, like the `P-n` items, to be numbered into FEEDBACK-LOG.md at merge.
+Those already covered by a `P-n` item are not repeated.
+
+- **T2-43.** The 2D presenter draws the light map before the world labels, so the darkness dims
+  the world but not the F8 labels (names, bars) over it.
+- **T2-44.** P1's merge of the skin schema: `labels` is no longer 3D-only (F8 made it work in
+  2D); part B's `scenery` is 3D-only; `join` stays a sprite field (part B allows it in 3D).
+- **T2-45.** P1's merge kept track 1's 30 s global `testTimeout` over track 2's 20 s (T2-41), the
+  larger of the two, so both suites' slow tests fit.
+- **T2-46.** P1 regenerated `docs/reference/schemas.md` with `pnpm docs:gen` rather than merging
+  it by hand, since it is generated from the schemas.
+- **T2-47.** P1's merge of this log: the header names parts A (with A2), B, C and F; the summary
+  keeps part F's "built, awaiting review" line; the samples table takes track 1's rows plus the
+  3D mini siege's. The `F-n`, `T2-n` and `P-n` items stay unnumbered for the orchestrator.
+- **T2-48.** The shots are numbered 01 to 15 in one sequence (the dungeon 01-08, the siege's CLI
+  shots 09-10, the page shots 11-15), not grouped by item; the tables map each to its item.
+- **T2-49.** The F3 shot shows the old white flash lasting 12 loop steps (world ticks 41 and 42),
+  which matches the roadmap's "two world ticks" rather than part F's "one frame" note.
+- **T2-50.** The dithered fill is an optional `dither` on the core `RadialFill`; both backends
+  draw the same alpha bytes from `ditheredRadial`, dithered by absolute picture position so
+  overlapping lights line up. PixiJS keeps one buffer texture per dithered fill and rewrites it,
+  so a flickering light makes no new GPU texture; its gradient builder now uses the core
+  `stopsAlpha`.
+- **T2-51.** Without `dither`, `lightStops` is unchanged (8 stops), so the fx lab and every other
+  skin draw exactly as before.
+- **T2-52.** Empty decor cells reach the presenter as spaces, not `.` (the platformer sends its
+  decor grid as written): top-down skins map `.` to the floor tile, which would redraw floor over
+  walls and doors.
+- **T2-53.** Decor characters may not clash with the kit's `LEGEND` or the presented tiles
+  (`PRESENT_TILES`, adding `d`); a game's own `extraLegend` is not excluded, as it never reaches
+  the presented tiles. One fixed set keeps the docs simple.
+- **T2-54.** A wrongly sized or malformed decor grid is reported alongside the room's own map
+  errors, not instead of them; `docs/reference/examples/room.decor.txt` was added because
+  `pnpm docs:gen` needs an example for every grid part.
+- **T2-55.** The crypt's moss greens reuse palette slots 10, 11 and 15 so the palette keeps 32
+  colours (`edit.test.ts` expects a 33rd at index 32): two door-frame pixels became `#222222` and
+  one statue shade moved to its near twin, index 14. The `dec-*` frames are original (the pack has
+  no cobwebs, chains, bones, moss, puddles or blood) and live in `crypt-art.txt`, not a new sprite
+  file, since `dungeon.test.ts` lists the content ids.
+- **T2-56.** Moving the chasm's lightless skull and banner "lights" into its decor grid left it
+  two lights, under `dungeon.test.ts`'s minimum of three, so a real faint cold glow over the pits
+  was added (radius 64, `#5fcde4`, intensity 0.3).
+- **T2-57.** Crypt placement rules: wall props only on the top wall, off doors and torch columns;
+  no solid-looking props anywhere; floor decals never under the HUD panel or on a cell the hero's
+  box covers in any run (one ossuary and one warden-hall skull moved for this); rubble sits by the
+  store room's cracked wall on purpose; in the warden hall two banners by the right wall stay
+  visible under the boss bar.
+- **T2-58.** A label box wider or taller than the picture starts at the left or top margin, so
+  the start of the text shows.
+- **T2-59.** F2's page test uses a fixed round box (picture x 32 to 288, full height) and also
+  checks a 16:9 960x540 window, saving an extra shot `mini-siege-page-walls-16x9` when
+  `WW_SHOTS_DIR` is set. The sound slider stands upright during a round (still 0-100).
+- **T2-60.** The sim's refusal "cannot afford 2 soldier" (`engine/sim/economy.ts`) keeps its
+  singular wording: it is a sim refusal message, not results or mission text.
+- **T2-61.** The skirt's material copy drops the floor model's texture and vertex colours (its
+  colour is the skirt colour); the floor is the most common tile key in the base grid.
+- **T2-62.** P9 made `tests/browser/mini-siege-page.test.ts` wait two animation frames after
+  resizing to 640x520, because that P7 test failed with and without P9's change.
+- **T2-63.** No decor at all on the siege's battle rows (rows 12-19, columns 13-44), not even
+  flowers, so that strip stays bare grass while the mockup has flowers there; adding some is a
+  data-only change. Roads, starting cells, rock, the river and the castle ring stay clear too.
+- **T2-64.** The siege fields were scattered once by a throwaway seeded script kept out of the
+  repo, then the corn plot and hay bales placed by hand; the grids are plain text to edit by
+  hand. New legend characters `v` and `z` were added rather than enlarging `g` and `b`, which
+  would have changed every place already using them. The 2D siege skins have no decor and are
+  unchanged.
+- **T2-65.** `after-15-results-losses.png` from P8 was replaced by P11's retake; the summary has
+  no table, so polish P went into its state list and open items instead.
 
 ### Outstanding issues
 
