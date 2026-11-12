@@ -1065,17 +1065,28 @@ are not touched.
 
 **Done when:**
 
-- [ ] C1: the crypt's and the warden hall's lights fall off without visible rings, the same on
-      every run, in both 2D backends.
-- [ ] C2: each of the crypt's eight rooms is dressed from its data, and no dungeon hash moved.
-- [ ] F1: no world label is cut at the picture's edge (M45 closed).
-- [ ] F2: the page's controls do not cover a round's picture (the fortify and sabotage rounds).
-- [ ] F3: the mission-open flash after Delegate no longer whites out the picture.
-- [ ] F4: the results' losses use plurals ("4 raiders", "2 soldiers").
-- [ ] F5: at dawn the skirt matches the map's light past its edges.
-- [ ] F6: the siege's open fields are fuller, from decor data, with no hash moved.
-- [ ] Before and after shots of every item sit side by side in the build log, and the checks
+- [x] C1: the crypt's and the warden hall's lights fall off without visible rings, the same on
+      every run, in both 2D backends. ([Build log](BUILD-LOG.md#engine-016-polish-p), shots
+      01-02; P3's dithered falloff, decision P-5.)
+- [x] C2: each of the crypt's eight rooms is dressed from its data, and no dungeon hash moved.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shots 01-08; P4's decor grid, P5's eight
+      `rooms/<id>.decor.txt`.)
+- [x] F1: no world label is cut at the picture's edge (M45 closed).
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 09; P6.)
+- [x] F2: the page's controls do not cover a round's picture (the fortify and sabotage rounds).
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shots 12-13; P7, decision P-7.)
+- [x] F3: the mission-open flash after Delegate no longer whites out the picture.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 14; P7, decision P-6.)
+- [x] F4: the results' losses use plurals ("4 raiders", "2 soldiers").
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 15; P8, decision P-8.)
+- [x] F5: at dawn the skirt matches the map's light past its edges.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 11; P9, decision P-9.)
+- [x] F6: the siege's open fields are fuller, from decor data, with no hash moved.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 10; P10, decision P-13.)
+- [x] Before and after shots of every item sit side by side in the build log, and the checks
       pass: `pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test && pnpm build`.
+      ([Build log](BUILD-LOG.md#engine-016-polish-p): "Before and after shots" and "Finalize
+      pass (checks)".)
 
 **Done when (the release):** parts A to F are done, `pnpm lint && pnpm typecheck && pnpm test &&
 pnpm build` pass, and the owner has playtested every sample and accepts it as at the bar of item 316.

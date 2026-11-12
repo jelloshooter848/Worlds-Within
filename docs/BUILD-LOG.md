@@ -1,8 +1,8 @@
 # Build log
 
 This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A (with part A2, the
-PixiJS backend), B, C and F (the mini siege in 3D) on branch `engine/build-0.15`, for the
-owner's review. Nothing in it is merged to `master`, tagged or published.
+PixiJS backend), B, C, F (the mini siege in 3D) and polish P (the review notes on C and F) on
+branch `engine/build-0.15`, for the owner's review. Nothing in it is merged to `master`, tagged or published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
@@ -100,6 +100,13 @@ the API review listed (`1.0-1` to `1.0-11`).
   (briefing, Play or Delegate, results), the hosted rounds in 2D over it; no hash moved. Not
   met: the owner's playtest and screenshot review (decision F-21; ten screenshots and the
   mockup comparison in its section).
+- **0.16 polish P Parts C and F review notes: done, awaiting review.** The crypt's and the
+  warden hall's lights fall off smoothly (dithered, both 2D backends; item 436 revisited, P-5);
+  The Old Crypt's eight rooms dressed from per-room decor grids (a new top-down kit option);
+  world labels kept inside the picture (M45 closed); the mini siege page's controls clear of a
+  round; a gentle mission-open flash; plurals in the losses; the dawn skirt matching the map;
+  fuller siege fields from decor data. Fifteen before and after shot pairs in its section; no hash or run
+  file moved. Not met: the owner's review of the shots and of decisions P-1 to P-14.
 
 ### How to try each sample
 
@@ -174,6 +181,8 @@ enough; silence so far has meant the build kept its default):
   smaller choices of T5-T7), **463-467** (the final review's five more build choices).
 - Engine 0.16 part F: **F-1 to F-22** and **T2-18 to T2-42** in its section (F-21 the owner's
   playtest and screenshot review), to be numbered into FEEDBACK-LOG.md at merge.
+- Engine 0.16 polish P: **P-1 to P-14** in its section (with two questions on P-5, the light's
+  look, and P-6, the flash), to be numbered into FEEDBACK-LOG.md at merge.
 
 ### Items not met, and where they went
 
@@ -202,50 +211,114 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
 
 A polish pass on the orchestrator's review notes on parts C and F (the roadmap's "0.16 polish P:
 parts C and F review notes": C1, C2 and F1 to F6), on branch `engine/0.16-track2` in tasks P1 to
-P11. Presentation and data only: no golden hash, save code or run file is to move. In progress:
-this section is a stub until P11.
+P11. Presentation and data only: no golden hash, save code or run file moved in P2-P11 (below).
+Every item of the polish's Done when is met; the release's own Done when still waits for the
+owner's playtest.
 
-### Before shots (P2)
+### What was built
 
-Fifteen 1920x1080 PNGs in [`docs/reports/screenshots/0.16-P/`](reports/screenshots/0.16-P/),
-taken before any change (at `5be26ee`), each looked at in full and showing its problem. The
-after shots (P11) take the same names with `after-` and the same commands.
+- **P1, parts B and C on track 2:** track 1's D1 merge commit (`22e7706`) merged in, so the
+  dungeon (The Old Crypt) and Hopper's Way stand beside part F's mini siege; their hashes came in
+  unchanged from `22e7706`.
+- **P2, the scope and the before shots:** the roadmap's polish P section and fifteen 1920x1080
+  before shots of the eight items, with a committed script for the page's shots
+  (`tests/browser/siege-review-shots.ts`).
+- **P3, C1, dithered light falloff** (`engine/core/fx/dither.ts`, both 2D backends): a skin's
+  `lighting.dither` (4 or 8) draws each light's falloff smooth and ordered-dithers it by picture
+  pixel with a Bayer matrix, no RNG, the same bytes in Canvas2D and PixiJS. The Old Crypt goes
+  from `bands: 6` to `bands: 0, dither: 8` (P-5, revisits item 436).
+- **P4, a decoration grid per top-down room** (`kits/topdown`): an optional
+  `rooms/<id>.decor.txt` grid, checked by the schema (`unknown_char`, `ragged_row`,
+  `size_mismatch`) and presented as the map layer `decor`; no rule reads it, so no hash moves.
+- **P5, C2, The Old Crypt's eight rooms dressed from data:** a `.decor.txt` per room (floor
+  cracks, rubble, moss, a puddle, blood, bones and skulls; cobwebs, chains, weapon racks, wall
+  cracks, wall moss and banners on the top wall), one theme per room, drawn with new original
+  `dec-*` frames in the pack's colours. Only flat decals sit on walkable floor, off every cell the
+  runs walk. No `.ts` changed.
+- **P6, F1, world labels kept inside the picture (M45 closed):** the pure `clampBoxInside` and
+  `unionBox` (`engine/core/present/label-clamp.ts`, 2 px margin); `layoutLabels` takes the
+  picture size and moves an entity's name and bar as one box; the 3D scene and the shared 2D walk
+  (Canvas2D, PixiJS) pass it.
+- **P7, F2 and F3, the mini siege's page:** while a round shows, the pause, 2D and sound controls
+  stand in one narrow column in the picture's bottom-right margin, clear of the round (P-7); the
+  `mission-open` flash is a warm, low-alpha event flash instead of a full-white picture (P-6).
+- **P8, F4, plurals:** `engine/core/plural.ts` (`plural`, `countText`) for the results' losses
+  and the mission card's foes: "4 raiders", "2 soldiers" (P-8).
+- **P9, F5, the skirt at dawn:** the skirt copies the material of the map's most common tile's
+  model (`skirtMaterial`) in its own colour, so it takes the same light as the map at every hour
+  (P-9).
+- **P10, F6, fuller siege fields:** the village, dawn and ridge decor grids dressed round the
+  battle rows (a fenced corn plot north of the corridor, hay bales, flowers, grass, bushes, small
+  rocks, stumps and trees on the banks and field edges), two new legend entries (`v` flowers,
+  `z` hay) and a stump size range, all from models the skin already loads: 489/486/519 decor
+  instances become 667/685/685. Roads, starting cells and the battle rows stay clear.
+- **P11, this write-up:** the fifteen after shots, each looked at full size against its before
+  shot, this section, part F's and part C's notes, the roadmap's Done when and the full checks.
 
-| File                                    | Item | What it shows                                                                                           |
-| --------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
-| `before-01-crypt-lighting.png`          | C1   | The crypt (0.16-C's 03, escape at 950): hard rings in the braziers' and the hero's light                |
-| `before-02-warden-hall-lighting.png`    | C1   | The warden hall (0.16-C's 07, win at 1085): rings round the four torches and the Warden's glow          |
-| `before-03-courtyard.png`               | C2   | The courtyard, room-wide (win at 30): four crates and a heart on bare floor                             |
-| `before-04-guard-room.png`              | C2   | The guard room (lost-in-the-guard-room at 345): the orcs and bats on bare floor                         |
-| `before-05-chasm.png`                   | C2   | The chasm (win at 130): the pits, a chest and two skulls; the rest bare                                 |
-| `before-06-ossuary.png`                 | C2   | The ossuary (win at 490): pits, a few skulls, the key; the south half bare                              |
-| `before-07-store-room.png`              | C2   | The store room (escape at 120): a chest and two empty braziers on bare floor                            |
-| `before-08-bat-hall.png`                | C2   | The bat hall (escape at 560): four pillars and the key, the room mostly dark bare floor                 |
-| `before-09-label-cut-at-edge.png`       | F1   | The siege at 14:30 (delegated at 30, CLI 3D): "WATCHTOWER 37%" cut at the left edge ("CHTOWER")         |
-| `before-10-siege-fields.png`            | F6   | The siege at 14:00 (delegated at 0, CLI 3D): plain grass between the village, the river and the camp    |
-| `before-11-dawn-skirt.png`              | F5   | The page at the dawn, day 3 06:00 (F's 09 state): the skirt past the map's bottom-right edge is lighter |
-| `before-12-fortify-round-controls.png`  | F2   | The page's walls round mid-wave: the pause, 2D and sound controls over the round's bottom panel         |
-| `before-13-sabotage-round-controls.png` | F2   | The page's sabotage room mid-round: the controls over the room's progress bar and bottom wall           |
-| `before-14-mission-open-flash.png`      | F3   | The page at the first loop step of world tick 41 after Delegate at 40: the 3D picture all white         |
-| `before-15-results-losses.png`          | F4   | The page's siege results at 260: "Raiders: 4 raider, ram, Grell, Vosk", "Village: 2 soldier"            |
+### Before and after shots
 
-Made with (from the repo root). The CLI shots (01-10) repeat byte for byte when rerun (09 was
-rerun and compared by its sha256):
+Thirty 1920x1080 PNGs in [`docs/reports/screenshots/0.16-P/`](reports/screenshots/0.16-P/): the
+before shots taken at `5be26ee` (P2, before any change), the after shots at P11 with the same
+commands and names (`after-` for `before-`). Each pair was looked at full size side by side.
+
+| Item | Before                                                                         | After                                                                        |
+| ---- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| C1   | ![before 01](reports/screenshots/0.16-P/before-01-crypt-lighting.png)          | ![after 01](reports/screenshots/0.16-P/after-01-crypt-lighting.png)          |
+| C1   | ![before 02](reports/screenshots/0.16-P/before-02-warden-hall-lighting.png)    | ![after 02](reports/screenshots/0.16-P/after-02-warden-hall-lighting.png)    |
+| C2   | ![before 03](reports/screenshots/0.16-P/before-03-courtyard.png)               | ![after 03](reports/screenshots/0.16-P/after-03-courtyard.png)               |
+| C2   | ![before 04](reports/screenshots/0.16-P/before-04-guard-room.png)              | ![after 04](reports/screenshots/0.16-P/after-04-guard-room.png)              |
+| C2   | ![before 05](reports/screenshots/0.16-P/before-05-chasm.png)                   | ![after 05](reports/screenshots/0.16-P/after-05-chasm.png)                   |
+| C2   | ![before 06](reports/screenshots/0.16-P/before-06-ossuary.png)                 | ![after 06](reports/screenshots/0.16-P/after-06-ossuary.png)                 |
+| C2   | ![before 07](reports/screenshots/0.16-P/before-07-store-room.png)              | ![after 07](reports/screenshots/0.16-P/after-07-store-room.png)              |
+| C2   | ![before 08](reports/screenshots/0.16-P/before-08-bat-hall.png)                | ![after 08](reports/screenshots/0.16-P/after-08-bat-hall.png)                |
+| F1   | ![before 09](reports/screenshots/0.16-P/before-09-label-cut-at-edge.png)       | ![after 09](reports/screenshots/0.16-P/after-09-label-cut-at-edge.png)       |
+| F6   | ![before 10](reports/screenshots/0.16-P/before-10-siege-fields.png)            | ![after 10](reports/screenshots/0.16-P/after-10-siege-fields.png)            |
+| F5   | ![before 11](reports/screenshots/0.16-P/before-11-dawn-skirt.png)              | ![after 11](reports/screenshots/0.16-P/after-11-dawn-skirt.png)              |
+| F2   | ![before 12](reports/screenshots/0.16-P/before-12-fortify-round-controls.png)  | ![after 12](reports/screenshots/0.16-P/after-12-fortify-round-controls.png)  |
+| F2   | ![before 13](reports/screenshots/0.16-P/before-13-sabotage-round-controls.png) | ![after 13](reports/screenshots/0.16-P/after-13-sabotage-round-controls.png) |
+| F3   | ![before 14](reports/screenshots/0.16-P/before-14-mission-open-flash.png)      | ![after 14](reports/screenshots/0.16-P/after-14-mission-open-flash.png)      |
+| F4   | ![before 15](reports/screenshots/0.16-P/before-15-results-losses.png)          | ![after 15](reports/screenshots/0.16-P/after-15-results-losses.png)          |
+
+What each pair shows (`before-<nn>` / `after-<nn>`):
+
+| Pair                             | Item | Before                                                                                                  | After                                                                                                         |
+| -------------------------------- | ---- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `01-crypt-lighting.png`          | C1   | The crypt (0.16-C's 03, escape at 950): hard rings in the braziers' and the hero's light                | A smooth falloff with a faint 8x8 dither texture, no ring; chains, skulls and bones on the floor and wall     |
+| `02-warden-hall-lighting.png`    | C1   | The warden hall (0.16-C's 07, win at 1085): rings round the four torches and the Warden's glow          | The four torches and the Warden's red glow fall off smoothly; banners, bones, skulls and cracks               |
+| `03-courtyard.png`               | C2   | The courtyard, room-wide (win at 30): four crates and a heart on bare floor                             | Moss, rubble, cracks and a puddle on the floor, moss and a crack on the wall; crates and heart clear          |
+| `04-guard-room.png`              | C2   | The guard room (lost-in-the-guard-room at 345): the orcs and bats on bare floor                         | Weapon racks and chains on the wall, blood, bones and skulls on the floor; the orcs and bats stand out        |
+| `05-chasm.png`                   | C2   | The chasm (win at 130): the pits, a chest and two skulls; the rest bare                                 | Blue banners on the wall, bones, rubble and cracks beside the pits; the pits, chest and door clear            |
+| `06-ossuary.png`                 | C2   | The ossuary (win at 490): pits, a few skulls, the key; the south half bare                              | Skull piles, bones and green banners; the south half dressed; the key and its glow clear                      |
+| `07-store-room.png`              | C2   | The store room (escape at 120): a chest and two empty braziers on bare floor                            | Rubble, bones, a puddle and cracks on the floor, chains and a crack on the wall                               |
+| `08-bat-hall.png`                | C2   | The bat hall (escape at 560): four pillars and the key, the room mostly dark bare floor                 | Still the dark room it is meant to be, now with bones, rubble, blood, a skull and chains in the torch's reach |
+| `09-label-cut-at-edge.png`       | F1   | The siege at 14:30 (delegated at 30, CLI 3D): "WATCHTOWER 37%" cut at the left edge ("CHTOWER")         | "WATCHTOWER 37%" whole, moved 2 px inside the left edge (and the P10 fields)                                  |
+| `10-siege-fields.png`            | F6   | The siege at 14:00 (delegated at 0, CLI 3D): plain grass between the village, the river and the camp    | The corn plot north of the road, flowers, hay, bushes, rocks and stumps across the fields and banks           |
+| `11-dawn-skirt.png`              | F5   | The page at the dawn, day 3 06:00 (F's 09 state): the skirt past the map's bottom-right edge is lighter | The skirt as dark as the map at the bottom-right edge, no step                                                |
+| `12-fortify-round-controls.png`  | F2   | The page's walls round mid-wave: the pause, 2D and sound controls over the round's bottom panel         | The controls in one column in the bottom-right margin, clear of the panel and the field                       |
+| `13-sabotage-round-controls.png` | F2   | The page's sabotage room mid-round: the controls over the room's progress bar and bottom wall           | The progress bar and bottom wall whole, the controls in the right margin                                      |
+| `14-mission-open-flash.png`      | F3   | The page at the first loop step of world tick 41 after Delegate at 40: the 3D picture all white         | The same step: the siege readable under a faint warm wash                                                     |
+| `15-results-losses.png`          | F4   | The page's siege results at 260: "Raiders: 4 raider, ram, Grell, Vosk", "Village: 2 soldier"            | "Raiders: 4 raiders, ram, Grell, Vosk", "Village: 2 soldiers" (the wider panel, P-8)                          |
+
+### Commands
+
+From the repo root. The CLI shots (01-10) repeat byte for byte (01 and 09 were rerun at P11 and
+compared by their sha256); the page shots (11-15) are not checked to repeat byte for byte (the
+page's loop steps, not run ticks; P-2). For the before shots, `before` in place of `after`:
 
 ```sh
 D=games/samples/dungeon/runs; S=games/samples/mini-siege/runs; O=docs/reports/screenshots/0.16-P
-pnpm -s cli screenshot $D/escape.run.json --tick 950 --scale 6 --out $O/before-01-crypt-lighting.png --json
-pnpm -s cli screenshot $D/win.run.json --tick 1085 --scale 6 --out $O/before-02-warden-hall-lighting.png --json
-pnpm -s cli screenshot $D/win.run.json --tick 30 --scale 6 --out $O/before-03-courtyard.png --json
-pnpm -s cli screenshot $D/lost-in-the-guard-room.run.json --tick 345 --scale 6 --out $O/before-04-guard-room.png --json
-pnpm -s cli screenshot $D/win.run.json --tick 130 --scale 6 --out $O/before-05-chasm.png --json
-pnpm -s cli screenshot $D/win.run.json --tick 490 --scale 6 --out $O/before-06-ossuary.png --json
-pnpm -s cli screenshot $D/escape.run.json --tick 120 --scale 6 --out $O/before-07-store-room.png --json
-pnpm -s cli screenshot $D/escape.run.json --tick 560 --scale 6 --out $O/before-08-bat-hall.png --json
-pnpm -s cli screenshot $S/delegated.run.json --tick 30 --backend three --allow-software-gl --out $O/before-09-label-cut-at-edge.png --json
-pnpm -s cli screenshot $S/delegated.run.json --tick 0 --backend three --allow-software-gl --out $O/before-10-siege-fields.png --json
+pnpm -s cli screenshot $D/escape.run.json --tick 950 --scale 6 --out $O/after-01-crypt-lighting.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 1085 --scale 6 --out $O/after-02-warden-hall-lighting.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 30 --scale 6 --out $O/after-03-courtyard.png --json
+pnpm -s cli screenshot $D/lost-in-the-guard-room.run.json --tick 345 --scale 6 --out $O/after-04-guard-room.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 130 --scale 6 --out $O/after-05-chasm.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 490 --scale 6 --out $O/after-06-ossuary.png --json
+pnpm -s cli screenshot $D/escape.run.json --tick 120 --scale 6 --out $O/after-07-store-room.png --json
+pnpm -s cli screenshot $D/escape.run.json --tick 560 --scale 6 --out $O/after-08-bat-hall.png --json
+pnpm -s cli screenshot $S/delegated.run.json --tick 30 --backend three --allow-software-gl --out $O/after-09-label-cut-at-edge.png --json
+pnpm -s cli screenshot $S/delegated.run.json --tick 0 --backend three --allow-software-gl --out $O/after-10-siege-fields.png --json
 # 11-15, the 3D page (seed 11, 1920x1080 window, the skin's render scale 6, software WebGL):
-pnpm exec tsx tests/browser/siege-review-shots.ts $O before
+pnpm exec tsx tests/browser/siege-review-shots.ts $O after
 ```
 
 `tests/browser/siege-review-shots.ts` (added in P2) builds and serves the repo with
@@ -253,8 +326,50 @@ pnpm exec tsx tests/browser/siege-review-shots.ts $O before
 hooks: Begin, then the walls' card at 10 played with `fortify-played`'s recorded keys for 100
 loop steps (12); the sabotage's card at 40 played with `played`'s keys for 160 steps (13);
 Delegate at 40, the first step of tick 41 (14), on to the results at 260 (15), Continue, Begin
-and the dawn at tick 30 (11). The page shots are not checked to repeat byte for byte (the page's
-loop steps, not run ticks; P-2).
+and the dawn at tick 30 (11).
+
+### Golden hashes
+
+None moved in P2-P11. `git diff 5b0ebaf -- '*.hashes.json'` lists fourteen files (the dungeon's
+`boss-lost`, `cross-the-chasm`, `to-the-boss-door` and `win`; Hopper's Way's `boss-lost`, `boss`,
+`full-game`, `level-1-hurt`, `level-1-lost`, `level-1`, `level-2-lost`, `level-2`, `level-3-lost`
+and `level-3`), every one identical to `22e7706` (`git diff --quiet 22e7706 HEAD` on each): they
+came in unchanged with parts B and C in P1. `git diff 5be26ee HEAD -- '*.hashes.json'
+'*.run.json'` is empty, and `git diff 5b0ebaf..HEAD` touches nothing under `games/rts`,
+`games/rts-classic`, `kits/rts`, `kits/towerdefense` or `games/samples/tower-defense`.
+
+### Done when
+
+Checked against "0.16 polish P: parts C and F review notes" in the roadmap.
+
+- **C1, the lights fall off without visible rings, the same on every run, in both 2D backends:
+  met.** After shots 01 and 02; the crypt's shot repeats byte for byte; the dither is pure
+  (`dither.test.ts`) and both renderers draw the same stamps (P3's renderer tests).
+- **C2, each of the eight rooms dressed from its data, no dungeon hash moved: met.** After shots
+  01-08 (the crypt and the warden hall in 01 and 02); all eight `rooms/<id>.decor.txt`.
+- **F1, no world label cut at the picture's edge (M45 closed): met.** After shot 09; clamp,
+  layout and presenter tests in all three backends.
+- **F2, the page's controls do not cover a round's picture: met.** After shots 12 and 13; the
+  page test checks the boxes at 640x520 and 960x540.
+- **F3, the mission-open flash no longer whites out the picture: met.** After shot 14 (P-6).
+- **F4, the losses use plurals: met.** After shot 15 (P-8).
+- **F5, at dawn the skirt matches the map's light: met.** After shot 11 (P-9's measurements).
+- **F6, fuller fields from decor data, no hash moved: met.** After shot 10 (and 09, 14).
+- **Before and after shots side by side, and the checks pass: met** (the tables above, the
+  finalize pass below).
+
+### Finalize pass (checks)
+
+On the committed tree: `pnpm lint`, `pnpm typecheck`, `pnpm docs:check` and `pnpm build` pass;
+`pnpm test`: 291 files, 3557 passed, 1 skipped (a first run at load 15, beside another track's
+tests, had one failure among 3558 that its truncated output did not name; the full rerun, and the
+browser and architecture folders on their own, all passed). All 75 run files (`git ls-files
+'*.run.json'`: 62 game run files and the 13 `engine/sim` fixtures) exit 0 through `pnpm -s cli
+run`; `pnpm -s cli mutants games/samples/dungeon` and `games/samples/mini-siege` exit 0;
+`pnpm -s cli validate` passes for every game folder (`games/fx-lab`, `games/platformer-classic`,
+`games/platformer-lab` and the five samples). `git diff 5b0ebaf..HEAD` is empty under
+`games/rts`, `games/rts-classic`, `kits/rts`, `kits/towerdefense` and
+`games/samples/tower-defense`.
 
 ### Build decisions to review (polish P)
 
@@ -322,8 +437,52 @@ word, plural?)`), used by `lossText` and so by the mission card's foes. No unit 
   against (17, 30, 1) after; the afternoon (15:10) goes from (93, 128, 30) against (100, 133, 32)
   to (92, 127, 30) against (95, 129, 30), within the grass's own `vary.tint`. Both looked at full
   size: no step at the edge. P11 retakes `after-11-dawn-skirt.png` with the rest.
-- Seen in the shots and not in P's scope: the results' losses wrap "Vosk" onto its own line in the
-  left column (15); at the dawn an empty black bar floats over a soldier by the hall (11).
+- **P-10.** P4: the top-down kit's decoration is its own optional grid file per room
+  (`rooms/<id>.decor.txt`, the room's size, `.` for nothing and `DECOR_CHARS` for props), not
+  more characters in the map grid, so a room's rules and its dressing never share a cell's
+  meaning; it is presentation only (the map layer `decor`, not in the room's `version`), so
+  dressing a room never moves a hash.
+- **P-11.** P5: one theme per room (the courtyard's moss and rubble, the guard room's weapon
+  racks and blood, the ossuary's skull piles, and so on), drawn with new original `dec-*` frames
+  at the end of `crypt-art.txt` or the pack's banners; the moss greens reuse three near-unused
+  palette slots so the palette keeps its 32 colours. The skulls and banners that were placed
+  lights without light (item 439) moved into the grids; one faint cold glow lights the chasm's
+  pits. Only flat decals on walkable floor, none on a cell any run walks.
+- **P-12.** P6 (M45): a label that would run past the picture's edge is moved inside it (2 px
+  margin), not hidden or shortened; an entity's name and bar move together as one box, and the
+  3D scene's labels and place names are still checked against the HUD panels after the move.
+- **P-13.** P10: the fields are dressed with the models the skin already loads (no new pack, no
+  new model): 166 to 199 more decor instances per scenario (489, 486 and 519 to 667,
+  685 and 685), two new legend entries (`v` flowers,
+  `z` hay) and a stump size range. At the page's camera (pitch 60, zoom 0.42) most of the new
+  props are small, so the fields read as fuller grass rather than as new landmarks; larger
+  landmarks would need new models (owner call).
+- **P-14.** P11: the after shots were retaken with P2's commands; nothing looked wrong enough in
+  them to fix in P11. What they still show that is outside polish P's scope is listed under
+  outstanding issues below rather than changed.
+
+Questions for the owner (answer by number once numbered into FEEDBACK-LOG.md):
+
+- On **P-5** (item 436 revisited): keep the smooth, dithered falloff, or bring back item 436's
+  stepped look with soft edges (`bands` with `dither`)?
+- On **P-6** (the flash): keep the warm, low-alpha `mission-open` flash, dim it further, or drop
+  it (and should the 2D skin's white flash follow)?
+
+### Outstanding issues
+
+- **The owner's review of polish P**: the thirty shots above, with part F's playtest and
+  screenshot review (F-21) and part C's (items 455, 456).
+- The results' losses still wrap "Vosk" onto its own line in the left column (15, before and
+  after).
+- At the dawn an empty black bar floats over a soldier by the hall (11, before and after).
+- Over the centred screens (the results, 15) the page's controls stay where F9 put them, a row in
+  the bottom-right corner over the dimmed key-hint panel ("RMB ORDER"); P7 moved them only over
+  the rounds.
+- The bat hall stays a mostly dark room (08): its new dressing shows only in the torch's and the
+  key's reach, as the room's darkness is meant.
+- The mini siege's 2D skin (`canvas2d.json`, `?backend=canvas2d`) keeps its white two-tick
+  `mission-open` flash (P-6).
+- 3D frames on hardware WebGL are still not measured (item 75); the 3D shots use SwiftShader.
 
 ## Engine 0.16 part F: the mini siege in 3D low-poly
 
@@ -386,7 +545,7 @@ T2-42.
   the title through the siege on both captain paths, each results screen, the dawn and its
   results, the stored save and a save code in the link (`?code=`); `--backend three` shots of
   the campaign match the headless hashes and repeat byte for byte; the invariance tests present
-  the game as the 3D page does. Gaps M39-M44 found and fixed at 1080p; M45 open.
+  the game as the 3D page does. Gaps M39-M44 found and fixed at 1080p; M45 left open (closed in polish P, P6).
 - **F10, this write-up**: nine full-HD screenshots, this section, the roadmap's Done when and the
   agent docs. `tests/architecture/no-content.test.ts` and DESIGN.md now allow a part's review
   screenshots, `docs/reports/screenshots/<part>/*.png`, as review pictures beside the mockups and
@@ -465,7 +624,8 @@ Seen in the shots and not fixed here (listed under outstanding issues): the page
 sound controls sit over the bottom of a round's picture (05, 06); a white `mission-open` flash
 fills one frame of the 3D picture after a Delegate (the skin's flash effect, two ticks); the
 results write "4 raider", "2 soldier" (no plural); at dawn the skirt past the map's bottom-right
-edge is a lighter green than the map (09).
+edge is a lighter green than the map (09). All five were fixed in polish P (P6-P9; the before
+and after shots are in its section).
 
 ### Done when
 
@@ -497,16 +657,19 @@ Checked against "0.16 part F: the mini siege in 3D low-poly" in the roadmap.
 
 ### Outstanding issues
 
-- **M45**: a world label whose anchor is in the picture but whose box runs past its edge is cut
-  at the edge (left for the owner's review).
-- The page's controls (pause, 2D, sound) sit at the bottom centre over a round's picture (the
-  room's bar, the walls' panel); F9 moved them to the corner only over the centred screens.
-- The `mission-open` flash (`three.json`'s events, `#fcfcfc` for 2 ticks) whites out the whole
-  3D picture for a frame after Delegate; harsh at 1080p, an owner call to keep, dim or drop it.
-- The results' losses have no plurals ("4 raider", "2 soldier"; the results screen's wording,
-  asserted as is by the page test).
-- At dawn the skirt (`scene3d.skirt`) is lighter than the darkened map past its bottom-right
-  edge.
+- **M45**: a world label whose anchor is in the picture but whose box runs past its edge was cut
+  at the edge. **Fixed in polish P** (P6: labels are moved inside the picture; P-12).
+- The page's controls (pause, 2D, sound) sat at the bottom centre over a round's picture (the
+  room's bar, the walls' panel). **Fixed in polish P** (P7: one column in the picture's
+  bottom-right margin while a round shows; P-7).
+- The `mission-open` flash (`three.json`'s events, `#fcfcfc` for 2 ticks) whited out the whole
+  3D picture after Delegate. **Fixed in polish P** (P7: a warm, low-alpha flash; P-6).
+- The results' losses had no plurals ("4 raider", "2 soldier"). **Fixed in polish P** (P8:
+  "4 raiders", "2 soldiers"; P-8).
+- At dawn the skirt (`scene3d.skirt`) was lighter than the darkened map past its bottom-right
+  edge. **Fixed in polish P** (P9: the skirt takes the map's tile material; P-9).
+- The plain grass between the village, the river and the camp: **fuller in polish P** (P10,
+  from the decor grids).
 - The look against the mockup (the HUD's pixel fonts, the flatter camera, the plainer grass)
   waits for the owner's review; nothing was changed for it in F10.
 - 3D frames on hardware WebGL are not measured (no GPU here; item 75); every shot uses
@@ -560,10 +723,13 @@ numbers at merge (this track does not edit it, as for T2-17).
 - **F-15.** The title hides the HUD and the world labels; labels that would cover a HUD panel
   are left out (gap M40; F9).
 - **F-16.** The page's controls move to the bottom-right corner over a centred screen and the
-  title (gap M41; F9), but not over the rounds (outstanding above).
+  title (gap M41; F9), but not over the rounds (outstanding above; over the rounds too since
+  polish P, P7).
 - **F-17.** A skirt of grass is laid past the map's edges (`scene3d.skirt`), and the night keys
   of the time of day were lightened so the dawn's start reads (gaps M43, M44; F9).
-- **F-18.** M45 (labels cut at the picture's edge) is left open for the owner's review (F9).
+- **F-18.** M45 (labels cut at the picture's edge) was left open for the owner's review (F9).
+  Since fixed in polish P, with the controls over the rounds, the flash, the plurals and the
+  skirt (P6-P9; decisions P-6 to P-9 and P-12).
 - **F-19.** The F10 screenshots were taken with a scratch script on `tests/browser/serve.ts` and
   the page's hooks, not a committed tool; the page test's `WW_SHOTS_DIR` shoots the same screens
   at 640x520.
@@ -717,7 +883,9 @@ playtest (item 455) and the screenshot review (item 456), then the build choices
 - **T8 the new wing:** eight rooms in all: the five old ones unchanged, the chasm (the dash), a
   new ossuary (a pit band, monsters and a key on a ledge only the dash reaches) and the warden
   hall behind the chasm's now locked east door; the `to-the-boss-door` run; the chasm, ossuary
-  and hall lit and dressed with the pack's banners, fountains and skulls. Items 437-440.
+  and hall lit and dressed with the pack's banners, fountains and skulls. Items 437-440. (The
+  rooms read mostly bare in review; polish P dressed all eight from per-room decor grids, P4 and
+  P5.)
 - **T9 the boss room, the win and the loss:** the Bone Warden (the pack's big demon, 6 hp, three
   phases, every attack after a telegraph, telegraph and rage poses cut from the pack), Sir
   Edrin's three-page intro, a victory dialog and tune on `flag.bossDefeated`, three ends,
@@ -752,7 +920,8 @@ Each is built and kept unless the owner says otherwise; the full text is in
    small engine additions (430); the scene through the page's presenter and the old status
    lines gone (431, 432); no step sound (433).
 4. Lighting: PixiJS left for later (434), the torches placed by the skin rather than the rooms
-   (435), the darkness levels and banded falloff (436).
+   (435), the darkness levels and banded falloff (436; the banded look showed as hard rings and
+   was replaced in polish P by a smooth, dithered falloff, P-5).
 5. The wing: two ways through and counted keys (437), `beat-the-warden` re-recorded then replaced
    (438, 442), props as placed lights (439), the item icon per value (440, 446).
 6. The Warden's fight and look (441), three ends (443), Sir Edrin (444), per-ending music (445),
@@ -907,6 +1076,8 @@ only the build log and the feedback log changed.
 - The PixiJS backend's lighting pass (434), with part A's PixiJS backend (T13b, item 323).
 - From part B: the owner's playtest and screenshot review (393, 394), which parts C-F wait for,
   and the looks recorded there (398, 399).
+- From the orchestrator's review: the lights' hard rings (436's banding) and the bare rooms.
+  **Fixed in polish P** (P3, P5; decisions P-5, P-10 and P-11).
 
 ## Engine 0.16 part B
 
