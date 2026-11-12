@@ -42,6 +42,7 @@ import { PageDebugHook, type MenusView, type PageDebug } from './debug';
 import { ShellTransitions, type TransitionRequest } from './transitions';
 import { UiScene } from './ui-scene';
 import { mountVolumeControl, type VolumeControl } from './volume-control';
+import { GameSpeed, SPEED_BUTTON_ID, SPEED_CODES, SPEED_PAD_BUTTON, SPEED_STATUS } from './game-speed';
 import type { BrowserDisplay, DisplayResult } from './display';
 import { roundLayerDisplay } from './round-layer';
 
@@ -301,6 +302,15 @@ export interface BrowserBootOptions {
    * at once as before.
    */
   menus?: BootMenus;
+  /**
+   * The speed-up control (Engine 0.16 E5): the game speeds offered, e.g. `[1, 2, 3]` (default
+   * `menus.spec.speeds`, `game.json`'s `menus.speeds`). With them F, gamepad RT and the on-screen
+   * `#ww-speed` button cycle the speed, the scenes step that many times a loop step (each with its
+   * own input frame, `SceneStack.advance`, so ticks and state hashes are those of normal speed),
+   * every presented frame's status gets `speed` for the HUD, and at a speed above 1 a sound plays
+   * at most once a drawn frame. Manual-loop mode and a replay step at 1x. Left out: no control.
+   */
+  speeds?: readonly number[];
 }
 
 /** The page's inputs beyond the `InputFrame`, for a game's scenes. */
@@ -356,6 +366,13 @@ export interface BootedGame extends BootPage {
   transition(what?: TransitionRequest, covered?: () => void): boolean;
   /** The title, pause and settings menus (Engine 0.16 T9), or null without `menus`. */
   menus: GameMenus | null;
+  /**
+   * The speed-up control (Engine 0.16 E5), or null without `speeds`: `speed.speed` is the speed
+   * chosen; `cycleSpeed()` moves to the next (what F, gamepad RT and `#ww-speed` do).
+   */
+  speed: GameSpeed | null;
+  /** Cycles the game speed as the speed key does; returns it (1 without a speed control). */
+  cycleSpeed(): number;
 }
 
 /**
@@ -378,8 +395,18 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const audio = opts.audio ? new AudioManager() : null;
   const mixer = audio && opts.audio ? shellMixer(audio, opts.audio) : null;
   const hitPause = new HitPause();
+  const speedList = opts.speeds ?? opts.menus?.spec?.speeds;
+  const speed = speedList === undefined ? null : new GameSpeed(speedList);
+  // Sped up, the ticks between two draws present at once: each sound plays once a draw.
+  const soundsThisDraw = new Set<string>();
   const shell: DisplayShell = {
-    onSound: (id, cue) => mixer?.sound(id, cue),
+    onSound: (id, cue) => {
+      if (speed !== null && speed.speed > 1) {
+        if (soundsThisDraw.has(id)) return;
+        soundsThisDraw.add(id);
+      }
+      mixer?.sound(id, cue);
+    },
     hitPause: (ticks) => {
       if (!manual) hitPause.request(ticks);
     },
@@ -405,12 +432,15 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   let menus: GameMenus | null = null;
   const shown: BrowserDisplay = {
     ...display,
-    presenter: statusPresenter(
-      mixedPresenter(
-        transitions.presenter(display.presenter, (view) => display.transition?.(view)),
-        mixer,
+    presenter: speedPresenter(
+      statusPresenter(
+        mixedPresenter(
+          transitions.presenter(display.presenter, (view) => display.transition?.(view)),
+          mixer,
+        ),
+        (status) => menus?.frameStatus(status),
       ),
-      (status) => menus?.frameStatus(status),
+      speed,
     ),
   };
   let volume: VolumeControl | null = null;
@@ -599,15 +629,35 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     pauseButton = mountPauseButton(() => (pauseAsked = true));
     if (titleFromQuery(search)) menus.showTitle();
   }
-  let padStart = false;
-  /** Whether gamepad Start went down since the last step (any pad). */
-  const padStartPressed = (): boolean => {
-    const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
-    const down = [...pads].some((p) => p?.buttons[PAD_START]?.pressed === true);
-    const edge = down && !padStart;
-    padStart = down;
-    return edge;
+  const padStartPressed = padButtonEdge(PAD_START);
+
+  // The speed-up control (Engine 0.16 E5): F, gamepad RT and the button cycle it.
+  let speedButton: HTMLButtonElement | null = null;
+  const showSpeed = () => {
+    if (speed === null) return;
+    document.body.dataset.speed = String(speed.speed);
+    if (speedButton) {
+      speedButton.textContent = speed.label;
+      speedButton.setAttribute('aria-label', `Game speed ${speed.label}`);
+    }
   };
+  const cycleSpeed = (): number => {
+    if (speed === null) return 1;
+    speed.cycle();
+    showSpeed();
+    return speed.speed;
+  };
+  const padSpeedPressed = padButtonEdge(SPEED_PAD_BUTTON);
+  if (speed !== null) {
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat || !SPEED_CODES.includes(e.code)) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      cycleSpeed();
+    });
+    speedButton = mountSpeedButton(cycleSpeed);
+    showSpeed();
+  }
   let shownMenu = '';
   const showMenuState = () => {
     const state = menus?.state ?? 'play';
@@ -615,11 +665,35 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     shownMenu = state;
     document.body.dataset.menu = state;
     if (pauseButton) pauseButton.hidden = state !== 'play';
+    if (speedButton) speedButton.hidden = state !== 'play';
   };
   showMenuState();
 
   // In manual-loop mode the clock is the steps taken (a pointer's long press counts game steps).
   let hook: PageDebugHook | null = null;
+  /** One input frame: the keyboard, gamepad and touch, then the pointer's taps. */
+  const sample = () => {
+    input.beginFrame();
+    const now = manual ? loop.steps * loop.stepMs : performance.now();
+    pointer?.beginFrame(now);
+    menuPointer?.beginFrame(now);
+    const frame = input.player(0);
+    if (pointer) frame.addTaps(tapsOf(pointer.gestures()));
+    if (menuPointer) {
+      const taps = tapsOf(menuPointer.gestures());
+      if (menus !== null && menus.state !== 'play') frame.addTaps(taps);
+    }
+    return frame;
+  };
+  /**
+   * The scene steps this loop step takes: the chosen speed in play, 1 under a menu, in manual-loop
+   * mode (`__ww.step(n)` stays n ticks) and while a run file replays (its ticks are loop steps).
+   */
+  const stepSpeed = (): number => {
+    if (speed === null || manual || hook?.api.replaying === true) return 1;
+    if (menus !== null && menus.state !== 'play') return 1;
+    return speed.speed;
+  };
   const loop: FixedLoop = new FixedLoop(
     {
       step() {
@@ -631,16 +705,8 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
         if (transitions.closing && !manual) return;
         if (hitPause.hold()) return;
         const before = { top: scenes.top, depth: scenes.depth };
-        input.beginFrame();
-        const now = manual ? loop.steps * loop.stepMs : performance.now();
-        pointer?.beginFrame(now);
-        menuPointer?.beginFrame(now);
-        const frame = input.player(0);
-        if (pointer) frame.addTaps(tapsOf(pointer.gestures()));
-        if (menuPointer) {
-          const taps = tapsOf(menuPointer.gestures());
-          if (menus !== null && menus.state !== 'play') frame.addTaps(taps);
-        }
+        const frame = sample();
+        if (speed !== null && padSpeedPressed()) cycleSpeed();
         // The pause key (Escape, P, gamepad Start, the button) takes this step: the scenes do not
         // see its press (Escape is also `start`, which would confirm a menu item).
         if (menus !== null && (padStartPressed() || pauseAsked)) {
@@ -654,12 +720,18 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
           showMenuState();
           return;
         }
-        scenes.update([hook ? hook.frame(frame) : frame]);
+        // Sped up (Engine 0.16 E5), the scenes step `speed` times, each with a fresh input frame.
+        scenes.speed = stepSpeed();
+        scenes.advance([hook ? hook.frame(frame) : frame], () => {
+          const more = sample();
+          return [hook ? hook.frame(more) : more];
+        });
         showMenuState();
         mixer?.dialog(scenes.find((s) => s instanceof UiScene && s.dialogShown()) !== undefined);
         transitions.scenes(before, { top: scenes.top, depth: scenes.depth });
       },
       render() {
+        soundsThisDraw.clear();
         display.transition?.(transitions.view());
         // No HUD on the picture under the title or a screen opened from it (Engine 0.16 part C T1).
         display.showHud?.(menus?.hudShown ?? true);
@@ -711,6 +783,8 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     transitions,
     transition: (what, covered) => transitions.start(what, covered),
     menus,
+    speed,
+    cycleSpeed,
   };
 }
 
@@ -787,6 +861,46 @@ function mountPauseButton(onPress: () => void): HTMLButtonElement {
   return button;
 }
 
+const SPEED_STYLE = `
+#ww-speed { position: fixed; top: 76px; right: 4px; z-index: 20; min-width: 44px; min-height: 32px;
+  padding: 0 8px; border: 1px solid #666; border-radius: 4px; background: rgba(0, 0, 0, 0.55);
+  color: #fff; font: bold 14px/1 system-ui, sans-serif; touch-action: manipulation; }
+#ww-speed[hidden] { display: none; }
+`;
+
+/**
+ * The on-screen speed button (Engine 0.16 E5; fixed at the top right, under the pause button),
+ * shown in play only; a click or tap cycles the speed, and it never keeps the focus.
+ */
+function mountSpeedButton(onPress: () => void): HTMLButtonElement {
+  const style = document.createElement('style');
+  style.textContent = SPEED_STYLE;
+  document.head.append(style);
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.id = SPEED_BUTTON_ID;
+  button.title = 'Game speed (F)';
+  button.addEventListener('pointerdown', (e) => e.preventDefault());
+  button.addEventListener('click', () => {
+    onPress();
+    button.blur();
+  });
+  document.body.append(button);
+  return button;
+}
+
+/** A reader of one gamepad button's down edge since its last call (any pad). */
+function padButtonEdge(button: number): () => boolean {
+  let was = false;
+  return () => {
+    const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
+    const down = [...pads].some((p) => p?.buttons[button]?.pressed === true);
+    const edge = down && !was;
+    was = down;
+    return edge;
+  };
+}
+
 /** The browser's reduced-motion preference (false where it cannot be read). */
 function prefersReducedMotion(): boolean {
   try {
@@ -818,6 +932,20 @@ function mixedPresenter(presenter: Presenter, mixer: Mixer | null): Presenter {
     present(frame) {
       mixer.frameStatus(frame.status);
       presenter.present(frame);
+    },
+    ...(presenter.resize !== undefined && { resize: (size) => presenter.resize!(size) }),
+  };
+}
+
+/**
+ * The presenter with the game speed (Engine 0.16 E5) added to every frame's status as `speed`, for
+ * a skin's HUD; the frame itself is not changed (none without a speed control).
+ */
+function speedPresenter(presenter: Presenter, speed: GameSpeed | null): Presenter {
+  if (speed === null) return presenter;
+  return {
+    present(frame) {
+      presenter.present({ ...frame, status: { ...frame.status, [SPEED_STATUS]: speed.speed } });
     },
     ...(presenter.resize !== undefined && { resize: (size) => presenter.resize!(size) }),
   };

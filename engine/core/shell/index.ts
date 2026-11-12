@@ -97,6 +97,7 @@ export {
 } from './mission-screens';
 export { MISSION_BAR_HEIGHT, mountMissionBar, type MissionBar, type MissionBarOptions } from './mission-bar';
 export { ShellTransitions, type ShellTransitionOptions, type TransitionRequest } from './transitions';
+export { GameSpeed, SPEED_BUTTON_ID, SPEED_CODES, SPEED_PAD_BUTTON, SPEED_STATUS } from './game-speed';
 export { UiScene, type UiSceneOptions } from './ui-scene';
 export { GameMenus, type GameMenusOptions, type MenuSettingsHost, type MenusState } from './game-menus';
 export {

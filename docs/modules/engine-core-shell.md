@@ -248,6 +248,29 @@ Example (`games/platformer-lab/main.ts`):
         }),
     });
 
+- **The speed-up control (Engine 0.16 E5; `game-speed.ts`, pure, on `PURE_CORE`)**:
+  `bootBrowserGame({ speeds: [1, 2, 3] })`, or `game.json`'s `menus.speeds` (checked by
+  `speedsProblem`: at least two whole speeds, going up, from 1, at most `SPEED_MAX` 8;
+  `bad_speeds`), makes a `GameSpeed` (`booted.speed`; `cycle()`, `set(n)`, `speed`, `label`).
+  F (`SPEED_CODES`), gamepad RT (`SPEED_PAD_BUTTON`, button 7, an edge read each loop step) and
+  the `#ww-speed` button (`SPEED_BUTTON_ID`, "1x", fixed under `#ww-pause`, shown in play only;
+  mouse click and touch tap; it never keeps the focus) cycle it, as does `booted.cycleSpeed()`;
+  `body[data-speed]` says the speed. At speed n each loop step calls `SceneStack.advance(first,
+next)` with `scenes.speed = n`: n scene updates, the first with the step's input frame and each
+  further one with a fresh sample of the keyboard, gamepad, touch and pointer (a key still down
+  is held, its press and the taps are not repeated), so a scene stepped every loop step runs n
+  ticks a step and one with a `tickRate` n ticks a tickRate interval, each with its own merged
+  input. Every tick and its state hash is the one normal speed gives the same input. Under a menu,
+  in manual-loop mode (`?debug=step`: `__ww.step(n)` stays n ticks) and while `__ww.replay` plays
+  a run file the scenes step at 1x; `?record` and run exports record ticks, never the speed. Every
+  presented frame's status gains `speed` (`SPEED_STATUS`) for a skin's HUD (the frame is copied,
+  the game's snapshot never has it), and above 1x a sound id plays at most once a drawn frame.
+  The speed is never stored (no save, no settings key). Example:
+
+  ```json
+  "menus": { "font": "...", "pause": { "items": ["resume"] }, "speeds": [1, 2, 3] }
+  ```
+
 - Engine 0.16 F6: on a picture at least 300 px wide (the 16:9 pictures) `resultsScreen` widens
   its panel and flows the world's changes down two columns before counting the rest.
 - Engine 0.16 F9 (gap M39): there the first section (the missions' records) spans the panel and
@@ -257,7 +280,7 @@ Example (`games/platformer-lab/main.ts`):
 ## Imports allowed
 
 - `engine/core` only; never backends, the sim, tools, kits or games. Kits may not import it
-  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE`.
+  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts`, `game-menus.ts`, `round-layer.ts` and `game-speed.ts` are on `PURE_CORE`.
 
 ## How to test
 
@@ -282,6 +305,14 @@ touch, and reads them back after a reload, and plays the fx lab's level select, 
 end screen by keyboard, gamepad and touch, and The Old Crypt's intro, a fall to its `fallen` dialog
 and end screen (part C T7); `tests/runs/stepped-shell-invariance.test.ts` plays
 every run file through the shell with the respawn transition, the banner and the end screen on;
+`game-speed.test.ts` (Engine 0.16 E5: `GameSpeed`, the speed list check, `menus.speeds`, and a
+`SceneStack` over a scripted input with taps at 1x, 2x and 3x, a scene stepped every loop step and
+one with a `tickRate`, drawn through the null backend: identical per-tick hashes, every tap on one
+tick only), `shell.test.ts` (a boot with `speeds`: 2x and 3x give the 1x hashes at every tick,
+F, the button's click and gamepad RT cycle it, the HUD status, nothing stored, 1x in manual mode)
+and `tests/runs/sped-up-shell.test.ts` (every run file through the shell's loop with the speed
+changed every 40 frames between 1x, 2x and 3x, transitions and the pause menu on: the golden
+hashes);
 `tests/browser/volume-control.test.ts` finds the volume control on every sample page and checks
 two pages keep their volumes across a reload;
 `tests/browser/lab-3d.test.ts` boots the lab through it in headless Chromium where one exists, and

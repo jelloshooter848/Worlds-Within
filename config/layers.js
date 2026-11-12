@@ -210,6 +210,7 @@ export const PURE_CORE = [
   'engine/core/shell/ui-scene.ts',
   'engine/core/shell/game-menus.ts',
   'engine/core/shell/round-layer.ts',
+  'engine/core/shell/game-speed.ts',
   'engine/core/state-hash.ts',
   'engine/core/math/**',
   'engine/core/scene.ts',

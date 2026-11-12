@@ -290,6 +290,26 @@ export const menusStyleSchema = uiStyleSchema
     'the menus look: UI style fields (colours, panel, cursor, sounds, tweens) and `heading`, `outline`, `dim`',
   );
 
+/** The fastest game speed a page may offer (`menus.speeds`, Engine 0.16 E5). */
+export const SPEED_MAX = 8;
+
+/**
+ * Checks a game speed list (`menus.speeds`, the shell's speed control, Engine 0.16 E5): at least
+ * two whole speeds, going up, starting at 1 (normal speed), at most `SPEED_MAX`. Returns the
+ * problem as one sentence, or null.
+ */
+export function speedsProblem(speeds: readonly number[]): string | null {
+  if (speeds.length < 2) return 'a speed list needs at least two speeds';
+  if (speeds[0] !== 1) return 'a speed list starts at 1 (normal speed)';
+  for (let i = 0; i < speeds.length; i++) {
+    const s = speeds[i]!;
+    if (!Number.isInteger(s) || s < 1 || s > SPEED_MAX)
+      return `a speed is a whole number from 1 to ${SPEED_MAX} (got ${s})`;
+    if (i > 0 && s <= speeds[i - 1]!) return 'a speed list goes up';
+  }
+  return null;
+}
+
 export const menusSchema = z
   .strictObject({
     font: z.string().min(1).describe('the font file menu text is drawn in'),
@@ -414,6 +434,17 @@ export const menusSchema = z
       .exactOptional()
       .describe(
         "the end screen (Engine 0.16 part B), shown once the last level is cleared or (part C) an `end` trigger's test holds",
+      ),
+    speeds: z
+      .array(z.number())
+      .exactOptional()
+      .superRefine((speeds, ctx) => {
+        const problem = speeds === undefined ? null : speedsProblem(speeds);
+        if (problem !== null)
+          ctx.addIssue({ code: 'custom', message: problem, params: { code: 'bad_speeds' } });
+      })
+      .describe(
+        'the speed-up control (Engine 0.16 E5): the game speeds the shell offers, e.g. `[1, 2, 3]`; F, gamepad RT or the on-screen button cycles them; ticks and hashes never change',
       ),
     dialogs: z
       .record(

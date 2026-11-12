@@ -123,6 +123,9 @@ and recorded by `MissionHost`. `input/merged-input.ts` (pure, on `PURE_CORE`): `
 input of the loop steps since a slower scene's last tick as one frame (pressed on any counts as
 pressed and held, every step's taps); `Scene.tickRate` (`scene.ts`) makes `SceneStack` step that
 scene only on its ticks (`LOOP_HZ` 60, an accumulator, so any rate up to the loop's) with it (D2).
+From Engine 0.16 E5 `SceneStack.speed` (whole, >= 1) and `advance(first, next)` step the stack that
+many times a loop step, each with its own frame (`next()`), so the shell's speed-up control runs
+more ticks a second with the very ticks and hashes of normal speed (`shell/CLAUDE.md`).
 `InputManager.press(action)` is a page button: held on player 1's next frame only.
 `save/settings.ts` holds (from Engine 0.16 part B also `StoredProgress`, the levels cleared, under `progressKey(game)` = `ww:<game>:progress`: `readProgress`, `loadProgress`, `storeProgress`, for the shell's level select; from Engine 0.16 T9 also `StoredSettings`: screen shake, reduced flashing, the colour mode and the touch pad, `settingsKey(game)` = `ww:<game>:settings`, `readSettings`, `loadSettings`, `storeSettings`, for the shell's settings screen; `save/settings.test.ts`) the player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`,
 `volumesKey(game)` = `ww:<game>:volumes`, `readVolumes` checking every field, `loadVolumes(game,
@@ -589,7 +592,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `clock.ts`, `world-changes.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/mission-screens.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `clock.ts`, `world-changes.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/mission-screens.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `shell/game-speed.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
 scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, `audio/mix.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**`, `draw/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

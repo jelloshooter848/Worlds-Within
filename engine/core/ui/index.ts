@@ -168,6 +168,8 @@ export {
   SETTINGS_ITEMS,
   settingsItems,
   settingsScreen,
+  SPEED_MAX,
+  speedsProblem,
   TITLE_ITEMS,
   titleScreen,
   TOUCH_WORDS,
