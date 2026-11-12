@@ -74,11 +74,13 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
   nothing is drawn (the vignette's circle reaches the picture's corners). Culled like a box.
   A fill with `dither` (Engine 0.16 polish P, C1: a skin's `lighting.dither`) is instead one
   sprite at scale 1 and whole pixels of `ditheredRadial`'s alpha bytes (`@engine/core/fx`, the
-  same bytes the Canvas2D backend puts), written as premultiplied white into a pooled
+  same bytes the Canvas2D backend puts), written as premultiplied white into a
   `DitherStamp` (a `BufferImageSource`, nearest filtering, rounded up to 32 texels a side, its
-  frame cut to the fill; one per dithered fill in the frame, reset by `beginFrame`, so a
-  flickering light makes no new texture, and rewritten and uploaded only when its stamp changes:
-  a steady light, which gets the same stamp each frame, uploads nothing), tinted and blended as above.
+  frame cut to the fill), kept by the stamp's shared `alpha` array, least recently drawn first,
+  up to `DITHER_TEXTURE_BYTES` (32 MB) past the frame's own; over that the oldest are let go and
+  one big enough holds the next new fill. So a steady light, or one the camera scrolls (the same
+  bytes at each Bayer phase), is written and uploaded once (polish P review round 2), tinted and
+  blended as above.
 
 - Tinted sheets (T13b-3): a sheet whose `image` is a `TintedImage` (a texture and a colour) draws
   every sprite with that colour as `tint` (and its alpha as alpha); a sheet whose `image` is a

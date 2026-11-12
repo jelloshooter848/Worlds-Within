@@ -213,6 +213,11 @@ describe('CanvasRenderer dithered radial fills (Engine 0.16 polish P, C1)', () =
       r.gradient({ ...fill, color: '#00ff00' });
       expect(made.images).toBe(2);
       expect(draws[3]!.data.slice(0, 3)).toEqual([0, 255, 0]);
+      // Moved by a whole Bayer tile (the camera scrolling), in the picture: the same bytes, drawn
+      // at the new place from the image data already made.
+      r.gradient({ ...fill, color: '#00ff00', x: fill.x + 4 });
+      expect(made.images).toBe(2);
+      expect(draws[4]!.at).toEqual([0, 0, 10, 10, 9, 3, 10, 10]);
     } finally {
       restore();
     }

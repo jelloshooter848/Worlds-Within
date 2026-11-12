@@ -176,8 +176,8 @@ map's surface, below). `particleCount` is the particles alive after the last `pr
   renderer then draws `ditheredRadial`'s alpha bytes (`@engine/core/fx`, an ordered Bayer dither
   by picture pixel, no RNG) in the fill's colour as image data on a scratch canvas (an
   `OffscreenCanvas`, made once and grown; none in Node), copied with the same blend, since
-  `putImageData` takes none; the coloured image data is kept per stamp (a `WeakMap`), so a
-  steady light, which gets the same stamp each frame, is coloured once. The vignette is never dithered. `reduceFlashing`
+  `putImageData` takes none; the coloured image data is kept by the stamp's shared `alpha` array
+  (a `WeakMap`), so a steady light, or one the camera scrolls, is coloured once. The vignette is never dithered. `reduceFlashing`
   halves event flashes and flicker. Room-wide `lighting.particles` run in `SkinParticles` (the
   presenter passes it the map shown) and are drawn with the other particles. The walk is the
   core's (merged in Engine 0.16 part D, D1), so the PixiJS backend runs it too, with its own

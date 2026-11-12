@@ -478,21 +478,27 @@ describe('PixiRenderer dithered radial fills (Engine 0.16 polish P, C1)', () => 
     // Premultiplied white: the alpha byte of texel (i, j) in row stride of the texture's width.
     const stride = texture.source.width;
     expect(bytes[(10 * stride + 10) * 4 + 3]).toBe(want.alpha[10 * want.w + 10]);
-    r.beginFrame();
-    r.gradient({ ...fill, radius: 9 });
-    const [again] = only(r.stage.children, Sprite);
-    expect(again!.texture).toBe(texture);
-    expect([again!.width, again!.height]).toEqual([18, 18]);
-    r.beginFrame();
-    r.gradient(fill);
-    expect((texture.source.resource as Uint8Array).slice()).toEqual(bytes);
-    // A steady fill (the same stamp from `ditheredRadial`) is not rewritten or uploaded again.
+    // A steady fill (the same bytes from `ditheredRadial`) is not rewritten or uploaded again,
+    // nor is one moved by a whole Bayer tile (the camera scrolling): drawn at its new place.
     const update = vi.spyOn(texture.source, 'update');
     r.beginFrame();
     r.gradient(fill);
+    r.beginFrame();
+    r.gradient({ ...fill, x: fill.x + 8, y: fill.y - 8 });
+    const [scrolled] = only(r.stage.children, Sprite);
+    expect(scrolled!.texture).toBe(texture);
+    expect([scrolled!.x, scrolled!.y]).toEqual([48, 22]);
     expect(update).not.toHaveBeenCalled();
+    expect((texture.source.resource as Uint8Array).slice()).toEqual(bytes);
+    // Another fill gets its own texture, cut to its size; the first is kept for when it is back.
     r.beginFrame();
     r.gradient({ ...fill, radius: 9 });
-    expect(update).toHaveBeenCalledTimes(1);
+    const [other] = only(r.stage.children, Sprite);
+    expect(other!.texture).not.toBe(texture);
+    expect([other!.width, other!.height]).toEqual([18, 18]);
+    r.beginFrame();
+    r.gradient(fill);
+    expect(only(r.stage.children, Sprite)[0]!.texture).toBe(texture);
+    expect(update).not.toHaveBeenCalled();
   });
 });

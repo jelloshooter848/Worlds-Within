@@ -96,8 +96,9 @@ export interface DitheredStamp {
   w: number;
   h: number;
   /**
-   * `w * h` alpha bytes, 0-255, each a multiple of `255 / levels` rounded. Shared: the same fill
-   * gives the same stamp object (see {@link ditheredRadial}), so never write to it.
+   * `w * h` alpha bytes, 0-255, each a multiple of `255 / levels` rounded. Shared: every fill with
+   * the same bytes gets the same array (see {@link ditheredRadial}), wherever it is drawn, so never
+   * write to it; a backend may key what it makes from the bytes on this array.
    */
   alpha: Uint8Array;
 }
@@ -148,7 +149,7 @@ interface FillGeometry {
   w: number;
 }
 
-/** A box bigger than this many pixels (a light far bigger than the picture) is not cached whole. */
+/** A box bigger than this many pixels (a light far bigger than the picture) is cut to the picture, not kept whole. */
 const GEOMETRY_MAX_PIXELS = 1 << 18;
 
 /** A small cache of recently used values by key, oldest first, holding at most `limit` bytes in all. */
@@ -175,9 +176,13 @@ class Recent<T> {
   }
 }
 
-/** How many bytes of dithered stamps `ditheredRadial` keeps (more than a frame's worth). */
-export const DITHER_CACHE_BYTES = 8 * 1024 * 1024;
-const stampCache = new Recent<DitheredStamp>(DITHER_CACHE_BYTES);
+/**
+ * How many bytes of dithered fills' alpha `ditheredRadial` keeps: a frame's worth many times over,
+ * so the few Bayer phases a scrolling camera steps a light through (and a stepped flicker's
+ * steps) are all kept.
+ */
+export const DITHER_CACHE_BYTES = 24 * 1024 * 1024;
+const alphaCache = new Recent<Uint8Array>(DITHER_CACHE_BYTES);
 const geometryCache = new Recent<FillGeometry>(DITHER_CACHE_BYTES);
 
 /** The table steps of the pixels of a `w` x `h` box whose fill's centre is (cx, cy) from its corner. */
@@ -200,15 +205,23 @@ function fillGeometry(cx: number, cy: number, radius: number, w: number, h: numb
 
 /**
  * The pixels of a radial fill round (`g.x`, `g.y`) dithered by `dither`: for each picture pixel
- * of `g.box` (default the circle's bounding square), cut to `bounds` (the target's size) when
- * given, the stops' alpha at the pixel's centre's distance (from a table of `FALLOFF_STEPS`
- * steps), quantized as {@link ditherValue} at the pixel's own picture position. Null when nothing
- * is left to draw (no radius, an empty box). Pure in effect: the same fill gives the same bytes.
- * It runs for every light twice a frame, so it keeps recent stamps (up to `DITHER_CACHE_BYTES`)
- * by their inputs and gives a steady light's fill the same stamp object frame after frame (a
- * backend may reuse what it made from it); any other fill reuses its box's table steps
- * ({@link FillGeometry}) when one of the same radius and centre in its box was made lately, and
- * only reads its falloff table and the Bayer matrix again.
+ * of `g.box` (default the circle's bounding square), the stops' alpha at the pixel's centre's
+ * distance (from a table of `FALLOFF_STEPS` steps), quantized as {@link ditherValue} at the
+ * pixel's own picture position. With `bounds` (the target's size) it is null when the box is
+ * wholly outside them, and a huge box (over `GEOMETRY_MAX_PIXELS`, a light far bigger than the
+ * picture) is cut to them; any other box is kept whole, past the picture's edge, so a light the
+ * camera scrolls across the edge keeps its bytes (the backend's drawing cuts it). Null too when
+ * nothing is left to draw (no radius, an empty box). Pure in effect: the same fill gives the
+ * same bytes.
+ *
+ * It runs for every light twice a frame, so it keeps recent fills' bytes (up to
+ * `DITHER_CACHE_BYTES`) by what they depend on, none of it the fill's place in the picture: the
+ * dither, radius and stops, where the centre sits in the box, where a cut box sits in the whole
+ * one, and the stamp's corner modulo the Bayer size. So a steady light, and one the camera
+ * scrolls (moved by whole pixels), gets the very same `alpha` array in a new stamp at its new
+ * place (a backend may key what it made on it) once each Bayer phase has been seen. Any other
+ * fill reuses its box's table steps ({@link FillGeometry}) when one of the same radius and
+ * centre in its box was made lately, and only reads its falloff table and the Bayer matrix again.
  */
 export function ditheredRadial(
   g: {
@@ -223,50 +236,86 @@ export function ditheredRadial(
 ): DitheredStamp | null {
   if (!(g.radius > 0)) return null;
   const box = g.box ?? { x: g.x - g.radius, y: g.y - g.radius, w: g.radius * 2, h: g.radius * 2 };
-  let x0 = Math.floor(box.x);
-  let y0 = Math.floor(box.y);
-  let x1 = Math.ceil(box.x + box.w);
-  let y1 = Math.ceil(box.y + box.h);
+  // `gx`, `gy`, `gw`, `gh`: the whole box in picture pixels (and the geometry's).
+  let gx = Math.floor(box.x);
+  let gy = Math.floor(box.y);
+  let gw = Math.ceil(box.x + box.w) - gx;
+  let gh = Math.ceil(box.y + box.h) - gy;
+  let x0 = gx;
+  let y0 = gy;
+  let x1 = gx + gw;
+  let y1 = gy + gh;
   if (bounds !== undefined) {
     x0 = Math.max(0, x0);
     y0 = Math.max(0, y0);
     x1 = Math.min(bounds.width, x1);
     y1 = Math.min(bounds.height, y1);
   }
-  const w = x1 - x0;
-  const h = y1 - y0;
+  let w = x1 - x0;
+  let h = y1 - y0;
   if (w <= 0 || h <= 0) return null;
+  // Kept whole unless huge; then the cut box is the stamp and the geometry too.
+  if (gw * gh > GEOMETRY_MAX_PIXELS) [gx, gy, gw, gh] = [x0, y0, w, h];
+  else [x0, y0, w, h] = [gx, gy, gw, gh];
   const size = dither.size;
   const levels = Math.max(1, Math.floor(dither.levels));
-  let key = `${size} ${levels} ${g.x} ${g.y} ${g.radius} ${x0} ${y0} ${w} ${h}`;
-  for (const s of g.stops) key += ` ${s.at}:${s.alpha}`;
-  const hit = stampCache.get(key);
-  if (hit !== undefined) return hit;
-  // The geometry of the whole uncut box (so a light half off the picture shares it), unless that
-  // is huge; then the cut box's alone. `gx`, `gy`: the geometry's corner in picture pixels.
-  let gx = Math.floor(box.x);
-  let gy = Math.floor(box.y);
-  let gw = Math.ceil(box.x + box.w) - gx;
-  let gh = Math.ceil(box.y + box.h) - gy;
-  if (gw * gh > GEOMETRY_MAX_PIXELS) [gx, gy, gw, gh] = [x0, y0, w, h];
   const where = `${g.x - gx} ${g.y - gy} ${g.radius} ${gw} ${gh}`;
-  let geometry = geometryCache.get(where);
-  if (geometry === undefined) {
-    geometry = fillGeometry(g.x - gx, g.y - gy, g.radius, gw, gh);
-    geometryCache.set(where, geometry, gw * gh * 2);
+  const mx0 = ((x0 % size) + size) % size;
+  const my0 = ((y0 % size) + size) % size;
+  // Everything the bytes depend on, in the box's own terms: the same key, the same bytes.
+  let key = `${size} ${levels} ${where} ${x0 - gx} ${y0 - gy} ${w} ${h} ${mx0} ${my0}`;
+  for (const s of g.stops) key += ` ${s.at}:${s.alpha}`;
+  let alpha = alphaCache.get(key);
+  if (alpha === undefined) {
+    let geometry = geometryCache.get(where);
+    if (geometry === undefined) {
+      geometry = fillGeometry(g.x - gx, g.y - gy, g.radius, gw, gh);
+      geometryCache.set(where, geometry, gw * gh * 2);
+    }
+    alpha = ditherFill(
+      geometry,
+      falloffTable(g.stops, levels),
+      levels,
+      size,
+      x0 - gx,
+      y0 - gy,
+      w,
+      h,
+      mx0,
+      my0,
+    );
+    alphaCache.set(key, alpha, w * h);
   }
+  return { x: x0, y: y0, w, h, alpha };
+}
+
+/**
+ * The alpha bytes of the `w` x `h` part at (`ox`, `oy`) of a fill's box: each pixel's table step
+ * read from `geometry`, quantized against the Bayer matrix of side `size` starting at column
+ * `mx0`, row `my0` (the part's corner's phase in the picture).
+ */
+function ditherFill(
+  geometry: FillGeometry,
+  table: Float64Array,
+  levels: number,
+  size: DitherSize,
+  ox: number,
+  oy: number,
+  w: number,
+  h: number,
+  mx0: number,
+  my0: number,
+): Uint8Array {
   const { index } = geometry;
-  const table = falloffTable(g.stops, levels);
   const byte = Uint8Array.from({ length: levels + 1 }, (_, k) => Math.round((k / levels) * 255));
   const matrix = MATRICES[size];
   // `v - low > (rank + 0.5) / n²` (`ditherValue`) as `(v - low) * n² - 0.5 > rank`.
   const n2 = size * size;
-  const mx0 = ((x0 % size) + size) % size;
   const alpha = new Uint8Array(w * h);
+  let my = my0;
   for (let j = 0; j < h; j++) {
-    const py = y0 + j;
-    const row = (((py % size) + size) % size) * size;
-    let src = (py - gy) * geometry.w + (x0 - gx);
+    const row = my * size;
+    let src = (oy + j) * geometry.w + ox;
     let o = j * w;
     let mx = mx0;
     for (let i = 0; i < w; i++, o++, src++) {
@@ -277,8 +326,7 @@ export function ditheredRadial(
       alpha[o] = byte[step > levels ? levels : step]!;
       if (++mx === size) mx = 0;
     }
+    if (++my === size) my = 0;
   }
-  const stamp: DitheredStamp = { x: x0, y: y0, w, h, alpha };
-  stampCache.set(key, stamp, w * h);
-  return stamp;
+  return alpha;
 }

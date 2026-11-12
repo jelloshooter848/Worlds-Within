@@ -178,7 +178,10 @@ dither)` with a dither is always the smooth ease, in `LIGHT_DITHER_STOPS` (32) s
   the step below beats the pixel's threshold; 0 and 1 exact, a tile averages to the value),
   `stopsAlpha(stops, d)` (a canvas radial gradient's linear stops, the PixiJS gradient texture
   uses it too) and `ditheredRadial(fill, dither, bounds?)`, a radial fill's `DitheredStamp`
-  `{ x, y, w, h, alpha }`: the whole picture pixels of its box (cut to `bounds`), each alpha byte
+  `{ x, y, w, h, alpha }`: the whole picture pixels of its box (null when wholly outside `bounds`, and cut to them only
+  when over `GEOMETRY_MAX_PIXELS`, a light far bigger than the picture; otherwise kept whole past
+  the picture's edge, which the backend's drawing cuts, so a light scrolled across the edge keeps
+  its bytes), each alpha byte
   the stops' value at the pixel centre's distance, dithered at the pixel's own picture position
   (so two stamps agree where they overlap and the same frame gives the same bytes). Both 2D
   backends draw these bytes, so they draw the same pixels. It runs for every light twice a frame,
@@ -186,9 +189,12 @@ dither)` with a dither is always the smooth ease, in `LIGHT_DITHER_STOPS` (32) s
   even distances (each pixel one square root and one read, not a scan of the stops; a rare pixel
   may land one step off the exact `ditherValue(stopsAlpha(..))`), each box's table steps are kept
   by radius and the centre's place in the box (`FillGeometry`, so a light moved by whole pixels
-  or dimmed in place reuses them), and recent stamps are kept by all their inputs (up to
-  `DITHER_CACHE_BYTES`, most recently used kept), so a steady light gets the same stamp object
-  every frame and a backend can keep what it made from it. Never write to a stamp's `alpha`.
+  or dimmed in place reuses them), and recent fills' alpha bytes are kept (up to
+  `DITHER_CACHE_BYTES`, 24 MB, most recently used kept) by what they depend on but not the fill's
+  place: the dither, radius and stops, the centre's (and a cut box's) place in the box, and the
+  stamp's corner modulo the Bayer size. So a steady light, and one the camera scrolls, gets the very same `alpha` array in a new stamp at its new place
+  once each Bayer phase has been seen, and a backend keys what it made on that array (polish P
+  review round 2). Never write to a stamp's `alpha`.
   With a dither, `SkinLighting.layout` keeps each light's radius whole and steps its flicker's
   noise to `1 / LIGHT_DITHER_FLICKER_STEPS` (4), so a flickering torch repeats a few falloffs.
 - `skin-particles.ts` (Engine 0.16 part C T4): `update(frame, entities, map?)` with the full map
@@ -263,7 +269,7 @@ rates between two camera positions, repeats, a missing frame, the layer schema),
 `dither.test.ts` (polish P: the Bayer ranks and tiling, quantized values keeping 0, 1 and exact
 steps and averaging to the value over a tile, `stopsAlpha`, a stamp's box, steps and picture-pixel
 phase, the same fill twice byte-identical, the table lookup against the exact per-pixel value,
-a steady fill's same stamp and a moved, cut or dimmed one's bytes, the dithered `lightStops` and
+a steady or scrolled fill's shared alpha bytes and a moved, cut or dimmed one's bytes, the dithered `lightStops` and
 `lightDither`; the rough time budget for frames of the Old Crypt's lights is
 `tests/bench/dither-falloff.test.ts`, as this folder may not read the clock),
 `lighting.test.ts` (Engine 0.16 part C T4: smooth and banded falloffs, flicker determinism by

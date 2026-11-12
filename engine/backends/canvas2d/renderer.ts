@@ -7,8 +7,11 @@ type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 export class CanvasRenderer implements Renderer {
   /** The scratch canvas a dithered fill's pixels are put on before they are drawn (made once, grown). */
   private scratch: { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: Ctx } | null = null;
-  /** Each dithered stamp's last image data and its colour (`stampImage`), dropped with the stamp. */
-  private readonly stampImages = new WeakMap<DitheredStamp, { color: string; img: ImageData }>();
+  /**
+   * The last image data and its colour (`stampImage`) of each dithered fill's bytes, by the
+   * stamp's shared `alpha` array, dropped with it.
+   */
+  private readonly stampImages = new WeakMap<Uint8Array, { color: string; img: ImageData }>();
 
   constructor(private readonly ctx: Ctx) {
     ctx.imageSmoothingEnabled = false;
@@ -162,11 +165,12 @@ export class CanvasRenderer implements Renderer {
   }
 
   /**
-   * The stamp's bytes in `color` as image data, kept per stamp (`ditheredRadial` gives a steady
-   * light the same stamp each frame), so a steady light is coloured once; null where none is made.
+   * The stamp's bytes in `color` as image data, kept by its `alpha` array (`ditheredRadial` gives
+   * every fill with the same bytes the same array, a steady light's or one the camera scrolls),
+   * so such a light is coloured once; null where none is made.
    */
   private stampImage(stamp: DitheredStamp, color: string, c: Ctx): ImageData | null {
-    const kept = this.stampImages.get(stamp);
+    const kept = this.stampImages.get(stamp.alpha);
     if (kept !== undefined && kept.color === color) return kept.img;
     const img = c.createImageData(stamp.w, stamp.h) as ImageData | undefined;
     if (img?.data === undefined) return null;
@@ -178,7 +182,7 @@ export class CanvasRenderer implements Renderer {
       px[i * 4 + 2] = b;
       px[i * 4 + 3] = stamp.alpha[i]!;
     }
-    this.stampImages.set(stamp, { color, img });
+    this.stampImages.set(stamp.alpha, { color, img });
     return img;
   }
 
