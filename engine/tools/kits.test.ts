@@ -33,6 +33,7 @@ describe('kits by name', () => {
       'rts-enemy',
       'rts-end',
       'rts-names',
+      'rts-decor',
     ]);
     expect(kitRules('rts').map((r) => r.id)).toContain('enemy-follows-plan');
     expect(allKits()).toContain(kit);

@@ -76,7 +76,7 @@ const brief = (errors: readonly ContentError[]) =>
   errors.map((e) => ({ file: e.file, path: e.path, code: e.code }));
 
 describe('the rts kit hook', () => {
-  it('names the kit, its five kinds and its rules', () => {
+  it('names the kit, its six kinds and its rules', () => {
     expect(kit.name).toBe('rts');
     expect(kit.kinds().map((k) => k.name)).toEqual([
       'rts-map',
@@ -84,6 +84,7 @@ describe('the rts kit hook', () => {
       'rts-enemy',
       'rts-end',
       'rts-names',
+      'rts-decor',
     ]);
     expect(kit.rules).toBe(RTS_RULES);
     expect(kit.strictMutants).toBeUndefined();

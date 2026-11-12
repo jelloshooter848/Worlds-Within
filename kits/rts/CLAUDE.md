@@ -108,8 +108,16 @@ faction, x, y, w, h, seen }] }`.
   kind): `{ units: { <type>: <name> }, buildings: { <kind>: <name> } }`, presentation only (never
   in the world, so no hash depends on it). `unitName(names, type)` and `buildingName(names, kind)`
   give the table's name, else the id itself.
+- `decor.ts` (Engine 0.16 polish Q, Q5): a map's decoration grid as data, `rtsDecorSchema` (the
+  `rts-decor` kind, `{ rows }`, read from `.txt`: one line per terrain row). `RTS_DECOR` is the
+  character set with what each stands for (`.` nothing, `T` tree, `P` pine, `S` stump, `b` bush,
+  `r` rock, `R` boulder, `p` pebbles, `f` flowers, `m` mushrooms, `g` grass tuft, `d` dirt patch,
+  `D` darker grass, `l` lighter grass, `|` reeds on a river bank); no digit, since a skin's
+  `tiles` key the terrain by its type index digits. `decorLayerRows(rows, cols, height)` is the
+  `decor` layer (empty cells as spaces, cut or padded to the map), `decorSizeIssues` the
+  cross-file size check. Presentation only: never in the world, so no hash depends on it.
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
-camera?, missions?, events?, state?, fog?, names? })`, below. `RtsPresentState` (map tracker, animation starts,
+camera?, missions?, events?, state?, fog?, names?, decor? })`, below. `RtsPresentState` (map tracker, animation starts,
   fog memory, markers),
   `RTS_DEPTH`, `RTS_TILE_SIZE` (16), `presentMap`, `presentStatus`, `missionStatus`, `keyStatus`,
   `threatStatus` (Engine 0.16 F7), `offerTarget`, `unitAnim`, `rtsMissionInfo(def)`. `missions` is the game's `RtsMissionInfo` list
@@ -193,7 +201,7 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
 
 ## Kit hook (`kit.ts`)
 
-`kit` (`defineKit`): name `rts`, kinds `rts-map`, `rts-types`, `rts-enemy`, `rts-end`, `rts-names`, rules `RTS_RULES`, no
+`kit` (`defineKit`): name `rts`, kinds `rts-map`, `rts-types`, `rts-enemy`, `rts-end`, `rts-names`, `rts-decor`, rules `RTS_RULES`, no
 strict mutants. `engine/tools` finds it through the generated `engine/tools/kit-list.ts` (`pnpm
 docs:gen` after changing it). `index.ts` does not re-export it.
 
@@ -218,8 +226,16 @@ docs:gen` after changing it). `index.ts` does not re-export it.
   display names, both tables optional. `checkAll` reports a unit type or building kind it names
   that the game's types lack (`unknown_type` at `units.<id>` / `buildings.<id>`; an error, as for
   plans, since the loader has no warnings).
+- `rts-decor` (Engine 0.16 polish Q, Q5): `rtsDecorSchema` (`decor.ts`), a map's decoration grid,
+  usually `maps/<id>.decor.txt` beside `maps/<id>.world.json` (claimed as
+  `"rts-decor": ["content/maps/*.decor.txt"]`; the entry name, `<id>`, ties it to its map). It is
+  its own kind, not a field of the map, so the map stays a plain `engine/sim` scenario (the sim's
+  scenario schema is strict). The schema reports a character not in `RTS_DECOR` as
+  `unknown_char` and a short row as `ragged_row` (at the row and the `.txt` line); `checkAll`
+  reports a grid not its map's terrain size as `size_mismatch` (at `rows`) and one with no
+  `rts-map` of its name as `missing_ref`. Tested in `decor.test.ts`.
 - Examples in `docs/reference/examples/` (`rts-map.json`, `rts-types.json`, `rts-enemy.json`, `rts-end.json`,
-  `rts-names.json`);
+  `rts-names.json`, `rts-decor.txt`);
   every field has a `.describe(...)`. After a schema change: `pnpm docs:gen`.
 
 ## Presentation frames (`present.ts`)
@@ -242,6 +258,18 @@ next frame (`takeEvents()`; `presentWorld` appends them to the frame's events on
 - **Map**: `id` `rts` (or the options' `mapId`, Engine 0.16 F6: a game with several scenarios
   names each, so a 3D skin's `decor` and `places` dress each one; `RTS_MAP_ID`), the terrain as a grid of type indexes, `tags` `type:<i>:<name>` (plus
   `:blocked` when impassable), `version` a 32-bit hash of the cells and type names.
+  **Decoration** (Engine 0.16 polish Q, Q5; presentation only, no hash moved): with the options'
+  `decor` (an `rts-decor` file's `rows`; the game looks it up by its map's name and passes it)
+  the map has one layer, `decor`, from `decorLayerRows` (each character as it is, `.` a space,
+  which no skin lists, so nothing is drawn there), and the grid is mixed into `version` (so a
+  backend's cached map redraws if it changes; without `decor` the version is as before). The 2D
+  backends' shared map walk (`engine/core/draw`) draws layers into the map after the terrain, so
+  it lies over the ground and under every entity and the fog, which hides it as it hides the
+  ground; a 2D skin's `tiles` map each character to a frame (a frame's `anchor` stands a prop
+  larger than a cell on it, as for a top-down room's decoration). No backend code is needed.
+  Without `decor` the map has no layers, exactly as before. Tested in `decor.test.ts`,
+  `tests/runs/rts-decor.test.ts` (every rts-classic and skirmish run presented with a decoration
+  gives its golden hashes) and `tests/browser/rts-decor-parity.test.ts` (Canvas2D and PixiJS).
 - **Entities** (`layer` from `RTS_DEPTH`): `resource-<id>` (`resource:<item>`, `idle` or
   `empty`, tag `amount:<n>`, 5); `building-<id>` (`building:<kind>`, `site` while under
   construction, `train` while it has a queue, else `idle`; tags `own`/`enemy`/`neutral`,

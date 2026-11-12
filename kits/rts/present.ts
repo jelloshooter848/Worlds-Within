@@ -8,6 +8,7 @@ import {
   type PresentMap,
   type PresentStatusValue,
 } from '@engine/core/present';
+import { decorLayerRows } from './decor';
 import { RTS_MARKER_MAX, RTS_MARKER_TICKS, type RtsOrderFeedback, type RtsOrderMarker } from './feedback';
 import { fogView, RtsFogMemory } from './fog';
 import { buildingName, unitName, type RtsNames } from './names';
@@ -51,6 +52,10 @@ import {
  * and a `bark` event (`RtsPresentState.accept`, from `RtsControls.feedback`); a selected own unit
  * with a way to walk shows `path-dot`s; an own building training shows a `train` progress bar under
  * it, tagged with the queue's length (`queue:<n>`).
+ *
+ * Decoration (Engine 0.16 polish Q, Q5; presentation only, no hash moves): with `decor` (an
+ * `rts-decor` grid) the map carries the layer `decor`, which the 2D backends draw over the
+ * terrain, under the entities and the fog, through the skin's `tiles`.
  */
 
 /** The depth (`layer`) of each thing the kit presents, drawn low to high. */
@@ -207,13 +212,23 @@ export interface RtsPresentOptions {
    * still shows by name) and `trainingName` the training unit's. Left out, the status is as before.
    */
   names?: RtsNames;
+  /**
+   * The map's decoration grid (Engine 0.16 polish Q, Q5; an `rts-decor` file's `rows`,
+   * presentation only): the map gets the layer `decor`, drawn over the terrain and under the
+   * entities and the fog. Left out, the map has no layers, as before.
+   */
+  decor?: readonly string[];
 }
 
 /** The id of the map `presentWorld` sends when its options name none. */
 export const RTS_MAP_ID = 'rts';
 
-/** A 32-bit FNV-1a hash of the terrain cells and size: the map's version. */
-function terrainVersion(view: RtsView): number {
+/**
+ * A 32-bit FNV-1a hash of the terrain cells and size: the map's version. A decoration (Engine
+ * 0.16 polish Q, Q5) is mixed in too, so a backend's cached map redraws when it changes; without
+ * one the version is as before.
+ */
+function terrainVersion(view: RtsView, decor?: readonly string[]): number {
   const t = view.terrain;
   if (t === null) return 0;
   let h = 0x811c9dc5;
@@ -227,23 +242,37 @@ function terrainVersion(view: RtsView): number {
   mix(t.height);
   for (const c of t.cells) mix(c);
   for (const ty of t.types) for (const ch of ty.name) mix(ch.charCodeAt(0));
+  for (const row of decor ?? []) for (const ch of row) mix(ch.charCodeAt(0));
   return h;
 }
 
-/** The terrain as a present map (id `id`): tile ids are the terrain type indexes; tags `type:<i>:<name>`. */
-export function presentMap(view: RtsView, tileSize = RTS_TILE_SIZE, id = RTS_MAP_ID): PresentMap | null {
+/**
+ * The terrain as a present map (id `id`): tile ids are the terrain type indexes; tags
+ * `type:<i>:<name>`. With `decor` (Engine 0.16 polish Q, Q5) it adds the layer `decor`: the
+ * grid's characters, empty cells as spaces (`decorLayerRows`), at the terrain's size, and the
+ * grid is mixed into `version` (so a changed decoration redraws a backend's cached map).
+ */
+export function presentMap(
+  view: RtsView,
+  tileSize = RTS_TILE_SIZE,
+  id = RTS_MAP_ID,
+  decor?: readonly string[],
+): PresentMap | null {
   const t = view.terrain;
   if (t === null) return null;
   const tiles: number[][] = [];
   for (let y = 0; y < t.height; y++) tiles.push(t.cells.slice(y * t.width, (y + 1) * t.width));
   return {
     id,
-    version: terrainVersion(view),
+    version: terrainVersion(view, decor),
     tileSize,
     cols: t.width,
     rows: t.height,
     tiles,
     tags: t.types.map((ty, i) => `type:${i}:${ty.name}${ty.passable ? '' : ':blocked'}`),
+    ...(decor !== undefined && {
+      layers: [{ name: 'decor', tiles: decorLayerRows(decor, t.width, t.height) }],
+    }),
   };
 }
 
@@ -517,7 +546,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     });
   }
 
-  const map = presentMap(view, ts, opts.mapId);
+  const map = presentMap(view, ts, opts.mapId, opts.decor);
   const frame: PresentFrame = {
     frame: tick,
     size: { width: opts.size.width, height: opts.size.height },

@@ -2620,6 +2620,26 @@ Example (`docs/reference/examples/rts-names.json`):
 }
 ```
 
+### `rts-decor`
+
+An RTS map's decoration grid: one character per terrain cell, scenery a skin draws over the ground (presentation only).
+
+- Defined by: kit rts
+- Where: `content/`, claimed in `game.json` under `content.rts-decor`
+- Read from: `.json` or `.txt`
+
+| Field  | Type       | Required | Default | Limits          | Description                                                                                                                                                                                                                                                                                  |
+| ------ | ---------- | -------- | ------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rows` | `string[]` | yes      |         | at least 1 item | one string per map row, one character per terrain cell: `.` nothing, `T` a tree, `P` a pine, `S` a stump, `b` a bush, `r` a rock, `R` a boulder, `p` pebbles, `f` flowers, `m` mushrooms, `g` a grass tuft, `d` a dirt patch, `D` darker grass, `l` lighter grass, `\|` reeds (a river bank) |
+
+Example (`docs/reference/examples/rts-decor.txt`):
+
+```text
+T.g..PrS
+.d.||..b
+f..ggDlp
+```
+
 ### `room`
 
 A top-down room: id, map cell, music, chests and an 11x16 map grid of the kit legend.
