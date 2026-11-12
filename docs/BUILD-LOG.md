@@ -142,7 +142,7 @@ the API review listed (`1.0-1` to `1.0-11`).
   centred screens, the 2D skin's gentle mission-open flash, and the 2D walls drawn instead of
   magenta boxes. Eight before and after shot pairs in its section; no existing hash or run file
   moved. Not met: the owner's review of the shots and of decisions Q-1 to Q-11 and T2-66 to
-  T2-77.
+  T2-88.
 
 ### How to try each sample
 
@@ -232,7 +232,7 @@ enough; silence so far has meant the build kept its default):
   (with a question on P-6, the flash, and one on 584, the light's look), not yet numbered into
   FEEDBACK-LOG.md.
 - Engine 0.16 polish Q (on track 2; `Q-n` and `T2-n` there): **Q-1 to Q-11** and **T2-66 to
-  T2-77** in [its section](#engine-016-polish-q), not yet numbered into FEEDBACK-LOG.md.
+  T2-88** in [its section](#engine-016-polish-q), not yet numbered into FEEDBACK-LOG.md.
 - Engine 0.16 part E: **585** (E2, `games/td-classic`), **586** (the owner's playtest), **587**
   (the owner's screenshot review), **588** (the walls round's looks), **589-613** (build choices
   of E3-E9), **614-617** (E10: the HUD fixes, the page shot, the looks left, how 589-613 were
@@ -609,11 +609,47 @@ item are not repeated.
 - **T2-77.** Q10: the new 2D check (`play.test.ts`) asks every unit type and building kind of
   the siege's types for a 2D `idle` look whose frames are all in `siege.txt`; it fails without
   the two new kinds.
+- **T2-78.** Q1: the build log keeps build-0.15's section order (part E, polish P, part F, part
+  D, part C ...) rather than ordering by date, as part E is the newest work and polish P overlaps
+  it in time.
+- **T2-79.** Q1: in the polish P, part F and part C sections, labels build-0.15 had already
+  numbered were rewritten to their numbers (P-1 to P-5 as 580-584, F-16 to F-19 as 548-551); P-6
+  to P-15 and T2-43 to T2-65 keep their track labels. The summary's polish P entry takes track
+  2's "done, awaiting review", with P1-P3 merged in part E (E1) and P4-P11 here.
+- **T2-80.** Q2: the bar is written "owner item 316 (b)" (FEEDBACK-LOG has item 316 with answer
+  b, no "316b"), and the rules name the folders that exist (`games/td-classic`,
+  `kits/towerdefense`, `games/samples/tower-defense`), as there is no `games/td`.
+- **T2-81.** Q2: D1 has one before shot (tick 164), so there are eight before shots; the 2D
+  shot opens the page with `?ui=picture` so the shared hooks can click Begin and Delegate (in 2D
+  the mission screens are otherwise in the DOM bar); the flash is the skin's either way.
+- **T2-82.** Q3: the names file has two optional tables, `units` and `buildings`, so a unit's and
+  a building's name never collide; `selectedName` was changed in place (the function is
+  `presentStatus`, which the task called `hudStatus`), and `trainingName` is only added with the
+  `names` option, so games without names see no change.
+- **T2-83.** Q4: one panel under all three counters, not one each (separate panels would leave
+  about 2 px between them), opaque rather than the selected-unit panel's 0.8 so nothing shows
+  through, and flat (the sheet has no framed 9-slice panel).
+- **T2-84.** Q5: the engine's 3D `decor` kind was not reused (it is only checked when a 3D skin
+  names it and has no fixed character set); a grid with no `rts-map` of its name is a fourth
+  error, `missing_ref`.
+- **T2-85.** Q6: tufts, flowers, mushrooms and reeds are drawn pixel by pixel in
+  `tools/ford-tiles.ts` in the pack's colours, no new source files (CREDITS.md's Use, Changed and
+  sizes updated: 4 files, 320 KB). The grid was laid by an uncommitted noise script that also
+  played all six runs and kept standing props off every cell a unit stands on; that path check
+  (about 70 s) is not a test, only the fixed rules are.
+- **T2-86.** Q7: the CLI's screenshot has no zoom option, so the shot's zoom is the director's
+  0.84, not the 0.6 asked for; none was added. The run's line cells avoid every tree, bush and
+  rock of the decor grid.
+- **T2-87.** Q8: the controls' place over the key hints is CSS with the key-hint panel's top
+  hardcoded as picture y 166 from `three.json`; if that HUD panel moves, the `index.html` comment
+  and the page test's `KEY_HINTS` box must move with it.
+- **T2-88.** Q9: no skin-validation error for bordered bars under 3 px, as the UI kit's fallback
+  covers them; the 3 px bar labels are a small look change for every hurt unit's bar in 3D.
 
 ### Outstanding issues
 
 - **The owner's review of polish Q**: the sixteen shots above and decisions Q-1 to Q-11 and
-  T2-66 to T2-77, with part D's playtest and screenshot review (items 504, 505).
+  T2-66 to T2-88, with part D's playtest and screenshot review (items 504, 505).
 - The River Ford's selected-unit panel is 80% opaque (`alpha: 0.8`), so the new scenery shows
   faintly through it (01, 03, 04, bottom left); making it opaque like the bar's panel is a
   one-line skin change, left as it would change every 0.16-D shot with a selection.
