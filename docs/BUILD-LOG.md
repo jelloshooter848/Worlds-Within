@@ -177,7 +177,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 617** (next unused 618). Awaiting the owner's answer, by release (an answer by number is
+used is 632** (next unused 633). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -219,7 +219,8 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.16 part E: **585** (E2, `games/td-classic`), **586** (the owner's playtest), **587**
   (the owner's screenshot review), **588** (the walls round's looks), **589-613** (build choices
   of E3-E9), **614-617** (E10: the HUD fixes, the page shot, the looks left, how 589-613 were
-  written).
+  written), **618-632** (more build choices of E1-E9, from their own decision lists, added by
+  the finalize pass).
 
 ### Items not met, and where they went
 
@@ -255,7 +256,7 @@ each, a wave preview, range rings, projectiles and impacts, health bars, a speed
 that never moves a hash, layered music and an end screen with a one- to three-star rating. Its
 0.15 round is the test game `games/td-classic`. **Open for the owner:** the playtest (item 586)
 and the screenshot review (item 587), the walls round's looks (588), then the build choices 585
-and 589-617.
+and 589-632.
 
 ### What was built
 
@@ -321,6 +322,15 @@ Each is built and kept unless the owner says otherwise; the full text is in
    status additions (611), the end screen and the bar (612), the page's recording (613).
 9. The close-out: the HUD fixes (614), the page shot (615), the looks left (616), how 589-613
    were written (617).
+10. Added by the finalize pass from E1-E9's own decision lists (589-613 checked against them and
+    found to match): the merged draw order, fog over labels (618), and the hit flash without team
+    recolour (619); level stats that stack and their default sell value (620), the upgrade rule
+    switched off and upgrade costs as spending (621), td-classic's key hint (622); the slow's and
+    the splash's exact rules (623, 624), the walls round taking splash and slow with no switch
+    (625), no impact event and no armour (626); the projectile impact's fields (627); a parity
+    tolerance for turned sprites (628) and the end-music check relaxed (629); `sped-up` recorded
+    headless (630); the place refusal and the tapped run no longer in the sample (631); how
+    `wavesHeld` counts (632).
 
 ### Golden hashes
 
@@ -478,12 +488,31 @@ run weak); every CLI screenshot above reported `matchesHeadless: true` at 1920x1
 agent-docs test passes: the touched module (the tower-defense sample) keeps its `CLAUDE.md`,
 `AGENTS.md` and `llms.txt` page, both updated.
 
+### Finalize pass (orchestrator, after E10)
+
+Rerun on the E10 tree (`d1f6fa5`), with nothing red to fix: `pnpm typecheck`, `pnpm build` and
+`pnpm docs:check` pass; ESLint and Prettier pass on every tracked file (the two foreign worktree
+folders `wt/` and `e9rev-wt-57252a3/` are ignored for lint, as in E10's pass, and are not
+committed); `pnpm test` results are below. All 91 run files exit 0 through `pnpm -s cli run`
+(`win` and `sped-up` 3150 ticks, `lost` 1500); `sped-up.hashes.json` equals `win.hashes.json`
+apart from its `run` path; `pnpm -s cli validate` passes for every game folder; `pnpm -s cli
+mutants games/samples/tower-defense` exits 0 (strict, 18 rules) and `games/td-classic` exits 4
+naming only its `UNGUARDED` rules (`upgrade-costs-gold`, `upgrade-improves`, `splash-damage`,
+`slow-enemies`), as its test expects. The Done when above was rechecked: the first two items
+are met, the owner's playtest and screenshot review (586, 587) stay open. Item 617 was answered
+by checking 589-613 against E1-E9's own decision lists; the choices those lists held that no
+item covered became 618-632.
+
+`pnpm lint && pnpm typecheck && pnpm test && pnpm build` was then rerun by the orchestrator and exits 0:
+`pnpm test` runs 311 files, 3947 tests passed and 1 skipped.
+
 ### Outstanding issues
 
 - **The owner's playtest and screenshot review:** items 586 and 587; the walls round's looks,
   item 588.
-- The build choices of part E (items 585, 589-617) wait for the owner's answers; 589-613 were
-  written from E3-E9's commit messages and module docs (617).
+- The build choices of part E (items 585, 589-632) wait for the owner's answers; 589-613 were
+  written from E3-E9's commit messages and module docs (617) and have since been checked against
+  those tasks' decision lists (they match; 618-632 add what they left out).
 - The looks left in the screenshots (616), among them the page controls over the picture's
   right edge, which polish P's F2 is to fix for the mini siege (P4-P11 not built yet).
 - From parts B, C, D and F: the owner's playtests and screenshot reviews (393, 394, 455, 456,

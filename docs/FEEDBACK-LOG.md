@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 618.** (Last used: 617.)
+**Next unused number: 633.** (Last used: 632.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2427,4 +2427,49 @@ Engine 0.16 part E).
   siege (06), and the page draws at a non-whole scale at 1920x1080, so pixel fonts vary.
 - **617.** 589 to 613 were written by the close-out from E3-E9's commit messages and module docs,
   not from those tasks' own decision lists; the orchestrator should check them against what E3-E9
-  reported.
+  reported. (Checked in the finalize pass against E1-E9's own decision lists: 585-613 match them;
+  the details they add are items 618-632.)
+
+**Engine 0.16 part E: finalize pass (details from E1-E9's decision lists)**
+
+- **618.** E1 merge: in the shared 2D draw the order is lighting, then world labels (F8), then
+  fog of war (part D), so fog hides labels as it hides entities and nothing unseen is named. OK?
+- **619.** E1 merge: a `hitFlash` silhouette skips the kind's team recolour, so the flash shows
+  its colour as written (no skin uses both today). OK?
+- **620.** E3: level stats stack: each level copies the level below and replaces only the fields
+  it gives. A level without `sell` sells for the level below's value plus half its upgrade cost,
+  rounded down. OK?
+- **621.** E3: with the rule `upgrade-improves` switched off, a tower fires with level 1's stats
+  but sells at its real level; upgrade costs count in `stats.spent`, so the mini siege's
+  net-spent rule sees them. OK?
+- **622.** E3: the upgrade key hint is a row of `TD_CONTROLS` that `TD_DEFENCE_CONTROLS` leaves
+  out; `games/td-classic/main.ts` got a one-line change so its hint leaves it out too (its towers
+  have no levels; no hash moved). OK?
+- **623.** E4: `slow.factor` is a whole percent of speed kept (1-99); a slowed enemy still moves
+  at least 1 sub-cell a tick, and the slow counts down only on ticks it walks. A second slow:
+  a lower factor replaces it, the same factor extends it, a higher one is ignored; a killing shot
+  does not slow. OK?
+- **624.** E4: a splash is centred on the target's cell before the shot; within a shot the order
+  is fire, then the target's kill or slow, then splash hits in id order. OK?
+- **625.** E4: the mission round `td-defence` uses splash and slow whenever the game's tower types
+  have them (no params switch), unlike levels, which need `upgrades: true` (591). OK, or should
+  both work the same way?
+- **626.** E4, scope: no `td-impact` event (shots hit instantly and `td-shot` already carries the
+  start and target points), and the optional enemy `armor` was left out, as the task allowed. OK?
+- **627.** E6: a projectile's impact takes only `emit`, `sound` and `shake`, and its sound plays
+  as a plain cue (no pitch or volume variation). OK?
+- **628.** E6, a test tolerance: in the PixiJS parity test a sprite turned to an arbitrary angle
+  samples pixels differently on the two backends, so that sprite's box may differ by up to 16
+  pixels; the rest of the picture keeps the strict bound (0.1%). OK?
+- **629.** E9, a test relaxation: the end jingles are per-trigger music, so
+  `stepped-shell-invariance` now accepts any end music (the end screen's or a trigger's) as the
+  last song once the end screen opened. OK?
+- **630.** E9: `sped-up` was recorded headless (TdPlay stepped by a SceneStack at 2x and 3x with
+  the kit's bot), not from a real browser session: a real-time 3x recording cannot repeat the win
+  tick for tick, because a key held across a sped-up loop step changes the held counters. The
+  live page test checks the speed control itself. OK?
+- **631.** E8/E9, tests dropped: the sample no longer has a place refusal for `occupied` (Z on a
+  tower upgrades, so the controls cannot reach it) nor the `tapped` run and its browser test
+  (td-classic keeps it; `play.test` now taps to place, upgrade and sell). OK?
+- **632.** E9: `wavesHeld` counts the waves that went by, leaks or not, so the loss screen reads
+  5/10 though lives were lost in them. OK, or count only waves with no leak?
