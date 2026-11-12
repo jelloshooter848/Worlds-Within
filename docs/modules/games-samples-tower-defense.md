@@ -29,7 +29,11 @@ the full game: the waves tuned so a good defence wins (three stars only just) an
 loses, the run files `win`, `lost` and `sped-up`, layered music (calm, with a danger layer near
 the gate and in the late waves), the HUD's wave preview, the selected tower's upgrade and sell
 prices and the speed, the bar's Build/Upgrade button, and an end screen with the stars, the waves
-held, lives, gold and kills and a jingle. Its `CLAUDE.md` is the worked example of a tower-defense
+held, lives, gold and kills and a jingle. Engine 0.16 E10 closed part E: ten review
+screenshots in `docs/reports/screenshots/0.16-E/` (nine by `pnpm cli screenshot`, the speed-up by
+the committed page script `tests/browser/td-review-shots.ts`; `docs/BUILD-LOG.md`, Engine 0.16
+part E) and two HUD fixes from them (the `next` and `sell` labels shown only with a value, the
+speed moved clear of the page's sound control). Its `CLAUDE.md` is the worked example of a tower-defense
 game.
 
 ## Public API entry points
@@ -91,7 +95,8 @@ wave, F or the speed button speeds the game up. The page and the art:
 games index's link, the volume control, played by taps; from E9 the title, the speed control
 on the live loop, and the `win` input typed from the title to the end screen with its stars and
 jingle, no page errors) and `tests/browser/tower-defense-shots.test.ts`
-(headless Chromium; skipped where none is installed), `tests/browser/pixi-parity.test.ts` (the
+(headless Chromium; skipped where none is installed), `pnpm exec tsx tests/browser/td-review-shots.ts <dir>`
+(the review's speed-up page shot, not a test), `tests/browser/pixi-parity.test.ts` (the
 `win` and `lost` runs on Canvas2D and PixiJS within the strict bound), `tests/build/pages.test.ts` (the
 launcher).
 

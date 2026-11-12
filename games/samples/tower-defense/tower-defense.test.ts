@@ -493,6 +493,9 @@ describe('the full game: the end screen, the music, the HUD (Engine 0.16 E9)', (
     });
     expect(item('upgradeCost', 'number')).toBeDefined();
     expect(item('sellValue', 'text')?.format).toBe('sell {value}');
+    // The labels show only with their value (E10: no bare "next" after the last wave, no bare "sell").
+    expect(item('sellValue', 'text')?.when).toBe('sellValue');
+    expect(item('nextWaveGroups', 'text')?.when).toBe('nextWaveGroups');
     expect(item('speed', 'text')?.when).toEqual({ status: 'speed', gt: 1 });
     // On the win's frames: the preview's groups before each wave, a tower selected with its prices.
     const statuses: DeepReadonly<PresentFrame>['status'][] = [];

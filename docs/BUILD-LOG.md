@@ -1,7 +1,8 @@
 # Build log
 
 This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A (with part A2, the
-PixiJS backend), B, C, D and F (the mini siege in 3D), with the polish pass P in progress, on
+PixiJS backend), B, C, D, E (the tower defense) and F (the mini siege in 3D), with the polish
+pass P in progress, on
 branch `engine/build-0.15`, for the owner's review. Nothing in it is merged to `master`, tagged or
 published.
 
@@ -105,6 +106,17 @@ the API review listed (`1.0-1` to `1.0-11`).
   `docs/reports/screenshots/0.16-D/`. Hashes moved only for the sample's new map and balance
   (listed in its section). Not met: the owner's playtest (item 504) and screenshot review (item
   505).
+- **0.16 part E The tower defense, The Winding Road: built, awaiting review.** Track 2's part
+  F and P1-P3 merged (E1); the 0.15 round kept as `games/td-classic`; the tower-defense kit's
+  upgrades, splash and slow towers, wave preview, health-bar and range data and star rating; the
+  engine's speed-up control (the same hashes at 2x and 3x), projectiles with impacts, the HUD's
+  wave preview and stars on the end screen; the sample rebuilt on Kenney's CC0 Tower Defense art
+  at 16:9 as ten waves on one winding road with three towers and two upgrades each, tuned in data
+  so three stars take a strong defence, with `win`, `lost` and `sped-up` runs and seven guard
+  runs, layered music and an end screen; ten review screenshots in
+  `docs/reports/screenshots/0.16-E/`. Hashes moved only for the sample's new map and balance
+  (listed in its section). Not met: the owner's playtest (item 586) and screenshot review (item
+  587).
 - **0.16 part F The mini siege in 3D low-poly: built, awaiting review.** Built on the track
   branch `engine/0.16-track2` (F1-F7 merged in part D, D1; F8-F10 and the review fixes merged in
   part E, E1): the siege, the dawn and the ridge in 3D after the mockup (CC0 Kenney and
@@ -130,11 +142,12 @@ the same paths are served from `dist/`; each page takes `?debug=step` for the st
 | The Old Crypt (dungeon)       | `/games/samples/dungeon/`                              | arrows move, X or Z the sword, C the item; Z or X after the end starts a new run        |
 | Hopper's Way (platformer)     | `/games/samples/platformer/` (3D: `?backend=three`)    | arrows move, Z jumps (hold for higher), X runs; Esc or P pauses                         |
 | The River Ford (RTS)          | `/games/samples/rts-skirmish/`                         | mouse or touch: click selects, drag boxes, right click commands, wheel zooms            |
-| The Winding Road (TD)         | `/games/samples/tower-defense/`                        | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends            |
+| The Winding Road (TD)         | `/games/samples/tower-defense/`                        | arrows or taps pick a pad, Z builds or upgrades, X tower, C sells, Enter sends, F speed |
 | The mini siege (3D)           | `/games/samples/mini-siege/` (2D: `?backend=canvas2d`) | Begin, then Play or Delegate on the card; mouse pans and orders; rounds by keys or taps |
 | Platformer lab (not a sample) | `/games/platformer-lab/` (3D: `?backend=three`)        | arrows move, Z jumps, X runs                                                            |
 | Platformer classic (test)     | `/games/platformer-classic/` (3D: `?backend=three`)    | arrows move, Z jumps, X runs; in the rooms arrows walk and X stabs                      |
 | RTS classic (test)            | `/games/rts-classic/`                                  | mouse or touch: click selects, drag boxes, right click commands, wheel zooms            |
+| TD classic (test)             | `/games/td-classic/`                                   | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends            |
 | FX lab (not a sample)         | `/games/fx-lab/` (3D: `?backend=three`)                | arrows move, Z jumps, X runs                                                            |
 
 Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSON result):
@@ -143,12 +156,13 @@ Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSO
 pnpm -s cli run games/samples/dungeon/runs/escape.run.json --json          # also walk-east, lost-in-the-guard-room
 pnpm -s cli run games/samples/platformer/runs/full-game.run.json --json    # also level-1..3, boss, each *-lost, level-1-hurt
 pnpm -s cli run games/samples/rts-skirmish/runs/match-won.run.json --json  # also match-lost, opening, ai-barracks, fog, razed
-pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json       # also build, leaked, tapped, target
+pnpm -s cli run games/samples/tower-defense/runs/win.run.json --json       # also lost, sped-up, build, upgrade, splash, slow, target, timer, leak
 pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json       # also delegated, quit, fortify-*, dawn-*, ridge-raid
 pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json    # also mini-game, mini-game-start, moves, objects, shells, walkers
 pnpm -s cli run games/fx-lab/runs/level-1.run.json --json                  # also level-2, level-3
 pnpm -s cli run games/platformer-classic/runs/level-4.run.json --json      # also level-1..3, level-2..5-start
 pnpm -s cli run games/rts-classic/runs/battle.run.json --json              # also commands, hold, economy, lost
+pnpm -s cli run games/td-classic/runs/won.run.json --json                  # also build, leaked, tapped, target
 for f in $(git ls-files '*.run.json'); do pnpm -s cli run "$f" > /dev/null && echo "ok $f"; done
 pnpm -s cli validate games/samples/mini-siege --json                         # any game folder
 pnpm -s cli mutants games/samples/dungeon --json                             # which kit rules the runs guard
@@ -163,7 +177,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 584** (next unused 585). Awaiting the owner's answer, by release (an answer by number is
+used is 617** (next unused 618). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -202,6 +216,10 @@ enough; silence so far has meant the build kept its default):
   smaller build choices of F1-F10).
 - Engine 0.16 polish P (P1-P3 merged in part E, E1; `P-n` on the track): **580-584** (the before
   shots and the crypt's dithered light).
+- Engine 0.16 part E: **585** (E2, `games/td-classic`), **586** (the owner's playtest), **587**
+  (the owner's screenshot review), **588** (the walls round's looks), **589-613** (build choices
+  of E3-E9), **614-617** (E10: the HUD fixes, the page shot, the looks left, how 589-613 were
+  written).
 
 ### Items not met, and where they went
 
@@ -225,6 +243,244 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
   `1.0-11`).
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
+
+## Engine 0.16 part E
+
+The tower defense, **The Winding Road** (docs/ROADMAP.md, 0.16 part E), built on branch
+`engine/build-0.15` in ten tasks (E1-E10; not tagged, nothing published). E1 first merged track
+2's part F (F8-F10) and polish P1-P3 into the build branch. The tower-defense sample became a
+ten-wave map on Kenney's CC0 Tower Defense art at 16:9 (480x270; 4x is 1920x1080): one winding
+road, eighteen stone pads, arrow, cannon (splash) and frost (slow) towers with two upgrades
+each, a wave preview, range rings, projectiles and impacts, health bars, a speed-up control
+that never moves a hash, layered music and an end screen with a one- to three-star rating. Its
+0.15 round is the test game `games/td-classic`. **Open for the owner:** the playtest (item 586)
+and the screenshot review (item 587), the walls round's looks (588), then the build choices 585
+and 589-617.
+
+### What was built
+
+- **E1 the track merged** (`engine/0.16-track2` into `engine/build-0.15`): part F's F8-F10 (the
+  hosted rounds in 2D over the 3D siege, the mission flow in the picture, the close-out) and the
+  polish pass's P1-P3 (the before shots, The Old Crypt's dithered light) and P4's first step; the
+  track's items renumbered 533-584. No hash moved.
+- **E2 the 0.15 round kept as `games/td-classic`**: its map, towers, waves, text art, skin, songs,
+  page and five run files copied with every golden hash unchanged, with its own mutants test
+  (an `UNGUARDED` list for the rules E3 and E4 add), agent docs and index link. Item 585.
+- **E3 tower-defense kit: tower upgrades**: a type's optional `levels` (cost, range, damage,
+  cooldown, sell), the `upgrade` command and its refusals (`no_tower`, `max_level`, `too_poor`,
+  `round_over`), the rules `upgrade-costs-gold` and `upgrade-improves`, the `td-upgrade` event,
+  a bot step; Z or a second tap on a selected tower upgrades it. Items 589-591.
+- **E4 kit: splash and slow, preview, bar and range data, stars**: `splash` and `slow` on types
+  and levels (rules `splash-damage`, `slow-enemies`), the map's `stars`, frame tags `maxhp:`,
+  `slow`, `splash:`, `slows`, `range:`, and the status's `nextWaveKinds`/`nextWaveGroups` and
+  `stars`. Items 592-594.
+- **E5 engine: a speed-up control that never changes hashes**: `menus.speeds`, F, gamepad RT and
+  the `#ww-speed` button; `SceneStack.advance` steps n ticks a loop step with fresh input each;
+  every run file sped up through the shell's loop gives its golden hashes
+  (`tests/runs/sped-up-shell.test.ts`). Items 595-596.
+- **E6 engine: projectiles, a wave-preview widget and stars on the end screen**: an event's
+  `projectile` (frame or square, arc, turn, impact emitters, sound, shake) on Canvas2D and
+  PixiJS, rings from a `range:` tag, bars against `maxhp:`, the HUD's `preview` widget and
+  `menus.end.stars`; `validate` checks them; a browser parity test. Items 597-599.
+- **E7 the CC0 art pack and the skin**: Kenney's Tower Defense (top-down) in the sample's
+  `assets/` (credited), a cut sheet made by `tools/road-art.ts` (checked byte for byte), towers at
+  three levels turned to their targets, walking enemies with hit flashes, slowed looks and health
+  bars, range rings on the ghost and the selected tower, projectiles and impacts per tower, a
+  sound for every event. No hash moved. Items 600-603.
+- **E8 the map**: 480x270 over a 30 x 16 road with ten bends and eighteen pads, three towers with
+  two upgrades each, ten waves on a 500-tick timer, stars at 18 and 10 lives; the old runs
+  replaced by nine TdBot-made guard runs, every kit rule guarded (strict). Items 604-607.
+- **E9 the full game**: waves 9 and 10 tuned in data; the `win`, `lost` and `sped-up` runs; the
+  danger music layer; the HUD's preview, upgrade cost, sell value and speed; the Build/Upgrade
+  button; the end trigger and end screen with the stars and a jingle; the kit's status `killed`,
+  `wavesHeld`, `nearGate`. Items 608-613.
+- **E10 close-out**: the ten review screenshots (below) and the HUD fixes they showed (item 614,
+  skin only), the page shot script `tests/browser/td-review-shots.ts` (615), this section, the
+  roadmap's Done when, the feedback items 586-588 and 589-617, the README's sample list and the
+  module page.
+
+### Choices made
+
+Each is built and kept unless the owner says otherwise; the full text is in
+[FEEDBACK-LOG.md](FEEDBACK-LOG.md) ("Engine 0.16 part E").
+
+1. The 0.15 round copied to its own test game rather than kept as a second map (585).
+2. Upgrades through selection with no extra state (589), levels and slows in the snapshot only
+   when present so older rounds hash as before (590, 592), mission rounds without levels unless
+   asked (591).
+3. Stars by lives left on the map (593); the wave preview as status strings (594).
+4. The speed-up as more ticks a loop step, never stored, 1x under menus and in manual mode (595);
+   one sound per drawn frame sped up (596).
+5. Projectiles, rings and bars as presentation read from events and tags (597, 598); stars on
+   the end screen, none on a loss (599).
+6. The art: the pack copied and cut by a checked script (600), 16 px cells with 24 px sprites
+   (601), the selected tower ringed through a ghost tag (602), the text art cut down (603).
+7. The map, towers, waves and stars (604, 605); every sample run replaced for the new map (606);
+   the menus (607).
+8. The balance (three stars only just, 608), the full-game runs (609), music (610), the kit's
+   status additions (611), the end screen and the bar (612), the page's recording (613).
+9. The close-out: the HUD fixes (614), the page shot (615), the looks left (616), how 589-613
+   were written (617).
+
+### Golden hashes
+
+Re-recorded with the repo's tools (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`), never by hand:
+
+- **Copied to `games/td-classic` unchanged (E2):** the 0.15 runs `build`, `won`, `target`,
+  `leaked` and `tapped`, with the same hashes (only each `.hashes.json`'s `run` path differs).
+- **New on the old map (E3, E4), removed with it (E8):** `upgrade` (E3, last hash
+  `da8f8fdbead2cdae` at 160) and `shells` (E4, `376468edf365a2e4` at 300); E3 and E4 moved no
+  existing hash (the new fields are in the snapshot only when used).
+- **Removed from the sample with its 0.15 map (E8; final hashes):** `build` `c0f414299bc01881`
+  (40), `leaked` `48e726691354fd14` (1340), `tapped` `9bbdc8413bc8a0e2` (700), `target`
+  `c007de2189d310be` (260), `won` `9bbdc8413bc8a0e2` (700) (the same files and hashes live on in
+  `games/td-classic`, except `upgrade` and `shells`, which only the 0.16 kit plays).
+- **New on the new map (E8; a rule change for every run: the map they played is gone):**
+  `build`, `upgrade`, `splash`, `slow`, `target`, `timer`, `leak`, `lost` and `won`, all starting
+  from `d02aa6bb19e82982` at tick 0.
+- **Moved or replaced (E9, the balance of waves 9 and 10 and the new plans):** `won` (E8, last
+  `e2afb4d53558d4e8` at 3100) replaced by `win` (`da6e7f7dbfc333a1` at 3150); `lost` (E8, no
+  towers and three waves at once, last `c8b5c8eeefa80859` at 480) re-made as the thin defence
+  (`d72fe702a1473afd` at 1500); new `sped-up`, whose golden file equals `win.hashes.json` at every
+  hashed tick.
+- **Unchanged since E8:** `build` (`afa55e4dbf52d2e8` at 120), `upgrade` (`cea0ca5b42f7d9e9` at
+  120), `splash` (`8067adb2ff4c5297` at 180), `slow` (`fd706ce773dc9df5` at 60), `target`
+  (`9b36f98409167fb5` at 160), `timer` (`def7cd7ce4233091` at 520) and `leak`
+  (`997d10fe38255c01` at 360): they end before wave 9.
+- **Unchanged through the whole part:** every other game's run files (the mini siege's walls
+  rounds `fortify-played` and `fortify-delegated` included) and the world fixtures; E1, E5, E6,
+  E7 and E10 are presentation only (`presentation-invariance.test.ts`,
+  `stepped-shell-invariance.test.ts` and `sped-up-shell.test.ts` pass), and E9's kit status
+  fields are never in a snapshot.
+
+### How to try it
+
+```sh
+pnpm dev   # then http://localhost:5173/games/samples/tower-defense/
+           # arrows or a tap pick a pad, Z builds (on a tower: upgrades), X picks the tower,
+           # C sells, Enter sends the wave, F or the speed button cycles 1x/2x/3x
+pnpm -s cli run games/samples/tower-defense/runs/win.run.json --json      # all ten waves, three stars
+pnpm -s cli run games/samples/tower-defense/runs/lost.run.json --json     # also sped-up, build, upgrade, splash, slow, target, timer, leak
+pnpm -s cli mutants games/samples/tower-defense --json                    # strict, all 18 kit rules guarded
+pnpm -s cli validate games/samples/tower-defense --json
+pnpm -s cli screenshot games/samples/tower-defense/runs/win.run.json --tick 3150 --overlay end --scale 4 --json
+pnpm test games/samples/tower-defense tests/runs/sped-up-shell.test.ts tests/browser/tower-defense-page.test.ts
+```
+
+### Done when
+
+- **All 10 waves play from the title to the star rating, with run files for a win, a loss and a
+  sped-up run that pass in CI (speed-up gives the same hashes as normal speed): met.** `win`
+  holds all ten waves and wins at tick 3141 with 18 lives (three stars, 138 killed); `lost` loses
+  in wave 6 at tick 1489; `sped-up` (the win's defence played on the page's scene at 2x and 3x)
+  has the same input and the same golden hashes as `win` (tested in `tower-defense.test.ts` and
+  `play.test.ts`); all three exit 0 through `pnpm -s cli run` and match their golden files in
+  `tests/runs/run-files.test.ts`; `tests/runs/sped-up-shell.test.ts` plays every run file in the
+  repo through the shell's loop at 2x and 3x with its golden hashes;
+  `tests/browser/tower-defense-page.test.ts` starts from the games index and the title, cycles
+  the speed on the live loop and types the `win` input to the end screen's three stars.
+- **Every existing tower-defense run file passes, or its hashes were re-recorded for a listed rule
+  change: met.** The five 0.15 runs pass unchanged in `games/td-classic`; the mini siege's walls
+  rounds pass unchanged; the sample's runs were replaced for its new map (E8) and balance (E9),
+  listed above. `pnpm -s cli mutants` exits 0 for the sample (strict, 18 rules) and for
+  `games/td-classic` exits 4 naming only the rules on its `UNGUARDED` list, as
+  `td-classic-mutants.test.ts` expects.
+- **Owner playtest and screenshot review of the map: open (items 586 and 587).** The
+  screenshots are below.
+
+### Review screenshots (item 587)
+
+Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-E/`](reports/screenshots/0.16-E/). 01-05
+and 07-10 are 480x270 drawn by the **Canvas2D** backend (the CLI's default; the page plays on
+PixiJS, which `pixi-parity.test.ts` holds to the same picture) at `--scale 4`, each reporting
+`matchesHeadless: true`. 06 is the built page itself (PixiJS, a 1920x1080 window, manual-loop
+mode), made by the committed script `tests/browser/td-review-shots.ts` (item 615): the speed-up
+control is page UI the CLI does not draw.
+
+| File                                                                            | What it shows                                                                                                                       |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [01-title.png](reports/screenshots/0.16-E/01-title.png)                         | The title over the dimmed road: name, subtitle, the level-3 arrow and cannon art, Start, Controls, Settings                         |
+| [02-placing-range.png](reports/screenshots/0.16-E/02-placing-range.png)         | `win`, tick 33: the cannon's ghost on a pad with its range ring, two arrows built, the timer, the first wave's preview              |
+| [03-mid-wave.png](reports/screenshots/0.16-E/03-mid-wave.png)                   | `win`, tick 2450: wave 9 on the road, shots and impact sparks, health bars, slowed (ice-blue) runners, wave 10 previewed (8 and 16) |
+| [04-upgraded-selected.png](reports/screenshots/0.16-E/04-upgraded-selected.png) | `win`, tick 1402: the cannon just upgraded to level 3, selected and ringed, `sell 37` (no upgrade cost: top level)                  |
+| [05-wave-preview.png](reports/screenshots/0.16-E/05-wave-preview.png)           | `win`, tick 2702: between waves, the timer and `next` 8 brutes and 16 runners, the arrow just upgraded selected with its prices     |
+| [06-speed-up.png](reports/screenshots/0.16-E/06-speed-up.png)                   | The page at the `win` run's tick 2450 with the speed button at `3x` and the HUD's `3x`, the bar's `Upgrade 12` and `Sell 9`         |
+| [07-wave-ten.png](reports/screenshots/0.16-E/07-wave-ten.png)                   | `win`, tick 2900: wave 10's brutes and fast runners, hit flashes, a splash, the frost turret slowing, health bars                   |
+| [08-leak-danger.png](reports/screenshots/0.16-E/08-leak-danger.png)             | `lost`, tick 1308: a runner leaks at 3 lives left, the red leak flash and breach over the road                                      |
+| [09-loss-end.png](reports/screenshots/0.16-E/09-loss-end.png)                   | `lost`, tick 1500: The gate has fallen, waves held 5/10, lives 0, gold 109, 36 stopped, no stars                                    |
+| [10-win-end-stars.png](reports/screenshots/0.16-E/10-win-end-stars.png)         | `win`, tick 3150: The road is held!, three stars, waves held 10/10, 18 lives, 120 gold, 138 stopped                                 |
+
+Made with (from the repo root). The CLI shots repeat byte for byte when rerun (01 was taken twice
+with the same sha256):
+
+```sh
+R=games/samples/tower-defense/runs; O=docs/reports/screenshots/0.16-E
+pnpm -s cli screenshot $R/win.run.json --tick 0 --overlay title --scale 4 --out $O/01-title.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 33 --scale 4 --out $O/02-placing-range.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 2450 --scale 4 --out $O/03-mid-wave.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1402 --scale 4 --out $O/04-upgraded-selected.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 2702 --scale 4 --out $O/05-wave-preview.png --json
+pnpm exec tsx tests/browser/td-review-shots.ts /tmp/td-shots && cp /tmp/td-shots/shot-06-speed-up.png $O/06-speed-up.png
+pnpm -s cli screenshot $R/win.run.json --tick 2900 --scale 4 --out $O/07-wave-ten.png --json
+pnpm -s cli screenshot $R/lost.run.json --tick 1308 --scale 4 --out $O/08-leak-danger.png --json
+pnpm -s cli screenshot $R/lost.run.json --tick 1500 --overlay end --scale 4 --out $O/09-loss-end.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 3150 --overlay end --scale 4 --out $O/10-win-end-stars.png --json
+```
+
+Each was looked at in full. **Fixed** (item 614, skin only, no hash moved): a bare `next` label
+after the last wave (07, 09, 10) and a bare `sell` with the cursor off a tower (02) now show only
+with their values; the HUD's `3x` sat under the page's sound control (06) and moved left.
+**Recorded, not fixed** (item 616): the lives heart is gone at 0 lives (09); level-1 towers are
+grey and alike (02, 03); a hit brute flashes as a full white 24 px silhouette (07); on the page
+the pause and speed buttons sit over the picture's right edge by the gate (06; polish P's F2
+for the mini siege) and the page scales by a non-whole factor at 1920x1080. `pnpm cli
+screenshot` draws only the effects alive at the shot tick, so a projectile shows at one place
+on its way.
+
+### The mini siege's walls round
+
+The hosted walls round (`td-defence`, part F, drawn by `canvas2d-td-defence.json` on the same
+Kenney pack) still passes: `fortify-played` (376 ticks, 102 assertions) and `fortify-delegated`
+(260 ticks) exit 0 with their hashes unchanged, and `tests/browser/mini-siege-page.test.ts` plays
+the round on the page. It keeps part F's looks: `shot:<type>` sprites over the target, no flying
+projectiles, impact emitters or health bars. Whether it should adopt part E's projectiles and
+bars (skin only) is item 588.
+
+### Deviations from the roadmap
+
+- **Assets:** Kenney Tower Defense, the named pack, copied from the mini siege's copy (fetched
+  from its OpenGameArt mirror in part F; item 600); text art only for the cursor, HUD icons and
+  the stars.
+- **Binary files:** the CC0 pack in the sample's `assets/` (allowed by item 322) and the ten
+  review screenshots (allowed since part B, item 395).
+- **The speed-up shot** is a page shot in manual-loop mode (item 615), where the scene steps at
+  1x; its pace is checked on the live loop by the page test.
+
+### Finalize pass (checks)
+
+Run on the E10 tree before committing: `pnpm typecheck`, `pnpm docs:check` and `pnpm build`
+pass; `pnpm test` ran 311 files, 3946 tests passed and 1 skipped (the opt-in every-tick save
+check of 0.8), and its one failure, `no-content.test.ts`'s binary-file check, listed only the
+PNGs of two other agents' git worktrees left inside the repo folder (`wt/`,
+`e9rev-wt-57252a3/`, not tracked, not part of this commit); the same test passes on a clean
+checkout of the commit (below). `pnpm lint` was run with those two folders ignored (ESLint
+refuses a second `tsconfig` root) and passes. All 91 run files in the repo (`git ls-files
+'*.run.json'`) exit 0 through `pnpm -s cli run`; `pnpm -s cli validate` passes for all ten game
+folders; `pnpm -s cli mutants games/samples/tower-defense` exits 0 (strict, 18 rules guarded, no
+run weak); every CLI screenshot above reported `matchesHeadless: true` at 1920x1080. The
+agent-docs test passes: the touched module (the tower-defense sample) keeps its `CLAUDE.md`,
+`AGENTS.md` and `llms.txt` page, both updated.
+
+### Outstanding issues
+
+- **The owner's playtest and screenshot review:** items 586 and 587; the walls round's looks,
+  item 588.
+- The build choices of part E (items 585, 589-617) wait for the owner's answers; 589-613 were
+  written from E3-E9's commit messages and module docs (617).
+- The looks left in the screenshots (616), among them the page controls over the picture's
+  right edge, which polish P's F2 is to fix for the mini siege (P4-P11 not built yet).
+- From parts B, C, D and F: the owner's playtests and screenshot reviews (393, 394, 455, 456,
+  504, 505, 553).
 
 ## Engine 0.16 polish P
 

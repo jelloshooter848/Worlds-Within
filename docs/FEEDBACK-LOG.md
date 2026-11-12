@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 586.** (Last used: 585.)
+**Next unused number: 618.** (Last used: 617.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2317,3 +2317,108 @@ track; the merge numbered them 580-584 (`P-n` is item 579+n).
   presentation invariance, backend parity, `tests/build/pages.test.ts`, the PixiJS pages and lazy
   tests, and the PixiJS parity test's tower-defense case now plays `games/td-classic/runs/won`
   (the sample's `won` will change in E8). The sample's own mutants test stays on the sample. OK?
+
+**Engine 0.16 part E: The Winding Road, owner review (E10)** (details in `docs/BUILD-LOG.md`,
+Engine 0.16 part E).
+
+- **586 (owner playtest).** Play The Winding Road from the title through all ten waves to the
+  star rating (`pnpm dev`, `/games/samples/tower-defense/`): the balance (three stars take a
+  thirteen-tower defence and only just; a thin one falls in wave 6), the feel of placing,
+  upgrading and the speed-up, the music. Accept, or list what to change.
+- **587 (owner screenshot review).** Review the ten 1920x1080 screenshots in
+  `docs/reports/screenshots/0.16-E/` (the build log's table): accept, or list what to change.
+- **588.** The mini siege's hosted walls round (`td-defence`, part F) still passes
+  (`fortify-played`, `fortify-delegated`) and keeps part F's looks: its towers fire `shot:<type>`
+  sprites over the target, with no flying projectiles, no impact emitters and no health bars
+  against `maxhp:`. Should the walls' skin (`canvas2d-td-defence.json`) adopt part E's
+  projectiles, impacts and health bars (skin only, no hash moves), as the roadmap's "the hosted
+  rounds use parts C and E's presentation" suggests, or stay as part F left it?
+
+**Engine 0.16 part E: build choices of E3-E9** (recorded by the close-out, E10).
+
+- **589.** E3, upgrades: the cursor on a tower is that tower selected (no extra state, so no hash
+  moves); Z or a second tap on a selected tower upgrades it, a tower of a type without levels
+  still refuses `occupied`. No separate upgrade button in the kit; the page's bar gained one (E9).
+- **590.** E3: a tower's `level` is in the snapshot only above 1 and sell values count what the
+  upgrades cost (half of all paid, the kit's default), so rounds without upgrades hash as before.
+- **591.** E3/E4: the mission round `td-defence` plays without the towers' levels unless its
+  params say `upgrades: true`, so the mini siege never moves; `games/td-classic` lists the new
+  rules as `UNGUARDED` in its mutants test instead of gaining re-recorded runs.
+- **592.** E4: `splash` and `slow` sit on a type or a level (a level's replaces the type's); an
+  enemy's slow is in the snapshot only while slowed; a splash hurts every other enemy within its
+  radius of the target (the target takes only the shot), kills credited to the tower.
+- **593.** E4: stars are the map's `{ three, two }` lives-left thresholds (any win is at least one
+  star); `stars` is in the status and `kit` only on a rated map, 0 until won.
+- **594.** E4: the wave preview is plain status strings (`nextWaveKinds` `runner,brute`,
+  `nextWaveGroups` `runner:8,brute:2`), not a structured value, so any HUD can read it.
+- **595.** E5, speed-up: the shell steps the scenes n times a loop step, each with a fresh input
+  frame, so ticks and hashes equal normal speed; menus, manual-loop mode and replays step at 1x;
+  speeds come from `menus.speeds` (whole, from 1, at most 8), F, gamepad RT and a `#ww-speed`
+  button cycle them, and the speed is never stored (each page load starts at 1x).
+- **596.** E5: sped up, a sound id plays at most once a drawn frame (the ticks between two draws
+  present together), so 3x is not three times as loud.
+- **597.** E6, projectiles: presentation only, started by events carrying `fromX`/`fromY` and timed
+  by frame numbers; a flight that a sped-up frame skips past still lands exactly once; at most
+  256 in the air (more land at once); 2D only (`wrong_backend_field` in a 3D skin).
+- **598.** E6: a kind's `ring` may take its radius from a tag (`range:` times `per`, default the
+  tile size) and a label bar its max from a tag (`maxhp:`); a ring draws only its rows inside
+  the picture, so a zoomed ring stays cheap.
+- **599.** E6: the end screen's stars are a row of 1-3 from the `stars` status (sheet frames or
+  font text), between the credits and the stat lines; an end trigger's `stars: false` (the loss)
+  leaves it out.
+- **600.** E7: the Kenney pack's sheets were copied from the mini siege's copy (games may not
+  import each other; kenney.nl blocks scripted downloads), box-filtered to 16 and 24 px; the cut
+  sheet `road-art.png` is made by `tools/road-art.ts` and checked byte for byte.
+- **601.** E7: cells stay 16 px (no run moved); towers and enemies are 24 px frames on the cell's
+  centre; runners are the pack's green soldier, brutes its green tank, the frost tower the pack's
+  turrets tinted ice blue; levels show as base plates and bigger turrets.
+- **602.** E7, a kit change (presentation only): with the cursor on a tower the ghost is tagged
+  `selected` and carries that tower's range, so the selected tower is ringed.
+- **603.** E7: the text art keeps only the cursor and the HUD icons; the hit flash and the blocked
+  ghost are silhouettes, so the palette recolours `td-ok`, `td-blocked`, `td-hit` were removed.
+- **604.** E8: a 480x270 picture over a 30 x 16 map (480x256), centred, so 7 px of grass lie above
+  and below; the HUD sits there and on the map's rows 0 and 15, which hold no path or pad.
+- **605.** E8: eighteen pads at the road's ten bends and beside its legs; three towers (arrow 10,
+  cannon 25, frost 15 gold) with two upgrades each; ten waves of two enemy kinds (runners and
+  brutes, 140 enemies), a 500-tick timer; stars at 18 and 10 lives left of 20.
+- **606.** E8: every earlier sample run was replaced (a rule change for all: their map is gone;
+  `games/td-classic` keeps them); the new runs were played by the kit's `TdBot`, their sync
+  hashes leave out the ticks a guarded mutant changes before a check fails, and all 18 kit rules
+  stay guarded (strict).
+- **607.** E8: the menus' controls screen gained Upgrade and Speed rows, the title art moved 96 px
+  in from the 480 px picture's sides, and `menus.speeds` is `[1, 2, 3]`.
+- **608.** E9, balance in data only: waves 9 and 10 toughened so E8's twelve-tower defence wins
+  with two stars, `WIN_PLAN` (a thirteenth arrow, upgraded) with exactly 18 lives (three stars, the
+  threshold) and `LOST_PLAN` (two arrows) loses in wave 6.
+- **609.** E9: `win` replaces E8's `won` (renamed with the new balance), `lost` is re-made as the
+  thin defence, and `sped-up` is the win's defence played on the page's scene at 2x and 3x and
+  exported by `TdPlay.recording()`: the same input and the same golden hashes as `win`, with no
+  `guards` of its own.
+- **610.** E9, music: a danger layer at full while an enemy is within 8 path cells of the gate
+  (`nearGate`), at 0.6 from wave 8 while enemies are on the road, silent once the round is over;
+  jingles `road-won` and `road-lost` on the end screen.
+- **611.** E9, a kit change (status only, no hash moved): `killed`, `wavesHeld` and `nearGate`.
+- **612.** E9: the end screen shows the stars (a win only), waves held, lives left, gold and
+  enemies stopped and the art credit; the page's bar's Build button reads `Upgrade <cost>` or
+  `Top level` on a tower and Sell `Sell <value>`.
+- **613.** E9: the page records every tick's merged input (`window.wwTd.recording()`), so a round
+  played at any speed exports as a run file's input (exact when presses have a released tick
+  between them).
+
+**Engine 0.16 part E: the close-out (E10)**
+
+- **614.** HUD fixes found in the screenshots (skin only, no hash moved): the `next` label shows
+  only with a next wave and `sell {value}` only with a selected tower (`when`); the `3x` speed
+  text moved from x 440 to 400, out from under the page's sound control.
+- **615.** The speed-up shot (06) is a page shot by a committed script,
+  `tests/browser/td-review-shots.ts` (run with `pnpm exec tsx`, not a test), in manual-loop mode:
+  there the scene steps at 1x, so the shot shows the control and the HUD at 3x, not its pace (the
+  page test checks the pace on the live loop).
+- **616.** Looks recorded, not fixed: the lives heart disappears at 0 lives (the engine's HUD
+  `icon` draws only on a truthy value; 09); the level-1 towers are grey and look alike (02, 03);
+  a hit brute's white flash is a full 24 px silhouette (07); on the page the pause and speed
+  buttons sit over the picture's right edge by the gate, as polish P's F2 found for the mini
+  siege (06), and the page draws at a non-whole scale at 1920x1080, so pixel fonts vary.
+- **617.** 589 to 613 were written by the close-out from E3-E9's commit messages and module docs,
+  not from those tasks' own decision lists; the orchestrator should check them against what E3-E9
+  reported.

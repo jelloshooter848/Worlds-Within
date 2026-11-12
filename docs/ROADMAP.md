@@ -1005,11 +1005,17 @@ A tower-defense map with 10 waves.
 
 **Done when:**
 
-- [ ] All 10 waves play from the title to the star rating, with run files for a win, a loss and a
-      sped-up run that pass in CI (speed-up gives the same hashes as normal speed).
-- [ ] Every existing tower-defense run file passes, or its hashes were re-recorded for a listed rule
-      change.
-- [ ] Owner playtest and screenshot review of the map are accepted.
+- [x] All 10 waves play from the title to the star rating, with run files for a win, a loss and a
+      sped-up run that pass in CI (speed-up gives the same hashes as normal speed). (`win`,
+      `lost` and `sped-up` in `games/samples/tower-defense/runs/`, in `run-files.test.ts`;
+      `sped-up.hashes.json` equals `win.hashes.json`, `play.test.ts` and `sped-up-shell.test.ts`;
+      `tower-defense-page.test.ts` types the win from the title to the end screen's three stars.)
+- [x] Every existing tower-defense run file passes, or its hashes were re-recorded for a listed rule
+      change. (`games/td-classic` keeps the five 0.15 runs with their hashes; the mini siege's
+      walls runs unchanged; the sample's runs were replaced for its new map, E8, and balance,
+      E9: [BUILD-LOG.md, Engine 0.16 part E](BUILD-LOG.md#engine-016-part-e), "Golden hashes".)
+- [ ] Owner playtest and screenshot review of the map are accepted. (Open: items 586 and 587 in
+      FEEDBACK-LOG.md; ten screenshots in the build log.)
 
 ### 0.16 part F: the mini siege in 3D low-poly
 

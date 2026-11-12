@@ -1081,7 +1081,8 @@
       "y": 4,
       "font": "road-small",
       "color": "#fcfcfc",
-      "shadow": "#000000"
+      "shadow": "#000000",
+      "when": "nextWaveGroups"
     },
     {
       "status": "nextWaveGroups",
@@ -1104,7 +1105,7 @@
       "status": "speed",
       "as": "text",
       "format": "{value}x",
-      "x": 440,
+      "x": 400,
       "y": 4,
       "font": "road-small",
       "color": "#fcd800",
@@ -1137,7 +1138,8 @@
       "y": 257,
       "font": "road-small",
       "color": "#fcfcfc",
-      "shadow": "#000000"
+      "shadow": "#000000",
+      "when": "sellValue"
     }
   ],
   "music": {

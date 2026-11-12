@@ -40,14 +40,19 @@ packs, kept as binary files in the game's `assets/` folder with a `CREDITS.md`:
   before the AI's three waves and final push take yours. Fog of war, a clickable minimap, order
   markers, path dots, unit barks and build and train progress in the world. Mouse or touch: click
   selects, drag boxes, right click commands, the wheel zooms.
-- `games/samples/tower-defense`: **The Winding Road**, one map, two tower types and three waves.
+- `games/samples/tower-defense`: **The Winding Road** (Engine 0.16 part E), a ten-wave tower
+  defense on Kenney's CC0 Tower Defense art at 16:9: build arrow, cannon (splash) and frost (slow)
+  towers on the stones at the road's bends, upgrade each twice, watch the next wave's preview,
+  speed the game up to 2x or 3x, and hold the gate for a one- to three-star rating. Range rings,
+  projectiles and impacts, health bars and layered music. Keys, taps or the mouse.
 - `games/samples/mini-siege`: the mini siege, an RTS battle whose missions are played as a
   top-down room or a tower-defense round, or delegated.
 
 `games/platformer-lab` is the platformer kit's test lab, `games/platformer-classic` the old
 five-level Hopper's Way with its two top-down doors (a test game since Engine 0.16 part B),
 `games/rts-classic` the 0.15 River Ford battle against a raiding party (a test game since Engine
-0.16 part D) and
+0.16 part D), `games/td-classic` the 0.15 Winding Road (one map, two tower types, three waves; a
+test game since Engine 0.16 part E) and
 `games/fx-lab` the presentation lab of Engine 0.16 (animation sets, frame events and the effects to
 come), all also on the index.
 

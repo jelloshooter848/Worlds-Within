@@ -416,3 +416,15 @@ only).
   work by keys (Z, C), pointer (a click on a selected tower, a right click), touch (a tap, a
   long-press, the bar's buttons) and gamepad (its jump and special buttons, the shell's
   bindings); the range shows while placing (the ghost's ring) and on the selected tower.
+
+## Part E close-out (Engine 0.16 part E, E10)
+
+- **Review screenshots**: ten 1920x1080 PNGs in `docs/reports/screenshots/0.16-E/`, nine by
+  `pnpm -s cli screenshot <run> --tick <n> --scale 4` (`--overlay title` / `end` for the menus)
+  and the speed-up shot by `pnpm exec tsx tests/browser/td-review-shots.ts <out dir>` (the built
+  page at 1920x1080 in manual-loop mode, the `win` input typed to tick 2450, the speed button
+  clicked to 3x; not a test). The commands are in `docs/BUILD-LOG.md`, Engine 0.16 part E.
+- **HUD fixes from the shots** (skin only, no hash moved): the `next` label shows only with
+  `nextWaveGroups` and `sell {value}` only with `sellValue` (`when`), so no bare `next` after the
+  last wave and no bare `sell` with the cursor off a tower; the speed text moved from x 440 to
+  400, out from under the shell's sound control on the page.
