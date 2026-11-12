@@ -15,16 +15,25 @@ launcher. Since Engine 0.15 T14 it is finished as **The Winding Road**: its asse
 look with its own fallback colour, every tick of every run drawn from the art, an sfx for every
 sound), its page on the shell's tick rate and frame taps, its tests tapping through the kit's
 `screenAtCell`, and its browser test following the games index's link; no run file or hash
-changed. Its `CLAUDE.md` is the worked example of a tower-defense game.
+changed. Since Engine 0.16 E7 it is drawn from Kenney's CC0 Tower Defense pack
+(`assets/kenney-tower-defense/`, credited in `assets/CREDITS.md`): the pack's sheets scaled to 16
+and 24 px and a sheet cut from them by `tools/road-art.ts` (checked byte for byte), with a new
+skin: three tower types (arrow, cannon, frost) at levels 1-3 turned to their targets,
+walking enemies with hit flashes, slowed looks and health bars, range rings on the ghost and the
+selected tower, projectiles with impacts, and a sound for every event. Its `CLAUDE.md` is the
+worked example of a tower-defense game.
 
 ## Public API entry points
 
 - `game.json`: kit `towerdefense`, 256x240, seed 12, `headless.ts`, `view.ts`.
 - `content/`: `maps/road.json` + `maps/road.map.txt` (`td-map`), `towers/towers.json`
-  (`td-towers`), `waves/road.json` (`td-waves`), `sprites/td.txt` and `sprites/td-font.txt`,
-  `palettes/` (`td` and the recolours `td-ok`, `td-blocked`, `td-hit`), `skins/canvas2d.json`
-  (keyed on the kit's kinds; `byTag` for the ghost's `ok`/`blocked` and a struck enemy's `hit`),
-  `sfx/` (one per kit event) and `songs/road.json`.
+  (`td-towers`), `waves/road.json` (`td-waves`), `sprites/td.txt` (the cursor and HUD icons, the
+  only text art left) and `sprites/td-font.txt`, `palettes/td.json`, `skins/canvas2d.json` (the
+  pack's art keyed on the kit's kinds and tags: `level:`, `blocked`, `selected`, `range:`, `hit`,
+  `slow`, `hp:`/`maxhp:`; Engine 0.16 E7), `sfx/` (one per kit event) and `songs/road.json`.
+- `assets/kenney-tower-defense/` (`tilesheet-16.png`, `tilesheet-24.png`, `road-art.png`,
+  `license.txt`) and `assets/CREDITS.md`; `tools/road-art.ts` (`roadArt`, `ROAD_FRAMES`: the cut
+  sheet from the pack's); `assets.test.ts`.
 - `picture.ts`: `tdLook`, `tdFrameStream`, `tdPicture`, `tdCanvasPicture`; `view.ts`:
   `createView` (the engine's `frameView`).
 - `play.ts`: `TdPlay` (the page's scene: one game tick per update at its `tickRate` of 30, paced
@@ -49,7 +58,8 @@ changed. Its `CLAUDE.md` is the worked example of a tower-defense game.
 
 ## How to test
 
-`pnpm test games/samples/tower-defense`, `pnpm -s cli validate games/samples/tower-defense --json`,
+`pnpm test games/samples/tower-defense` (with `assets.test.ts`: the credits, the files kept, the cut
+sheet byte for byte), `pnpm -s cli validate games/samples/tower-defense --json`,
 `pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json` (and `tapped`),
 `pnpm -s cli mutants games/samples/tower-defense --json` (exit 0, `strict: true`, every rule
 guarded; `tests/runs/tower-defense-mutants.test.ts`), `pnpm test tests/runs` (golden hashes,
@@ -58,7 +68,9 @@ right click sells, Enter or the Wave button sends a wave. The page and the art:
 `pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick 300 --json`
 (deterministic PNG), `tests/browser/tower-defense-page.test.ts` (the built page opened from the
 games index's link, the volume control, played by taps and by keys, no page errors) and `tests/browser/tower-defense-shots.test.ts`
-(headless Chromium; skipped where none is installed), `tests/build/pages.test.ts` (the launcher).
+(headless Chromium; skipped where none is installed), `tests/browser/pixi-parity.test.ts` (the
+`shells` run on Canvas2D and PixiJS within the strict bound), `tests/build/pages.test.ts` (the
+launcher).
 
 ## 2D backend choice
 

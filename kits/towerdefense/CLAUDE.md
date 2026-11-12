@@ -194,7 +194,9 @@ their kind), sent once per stream (`MapTracker`). Entities, by depth (`TD_DEPTH`
 - `shot-<tower id>`, kind `shot:<type>`, over the target on the step a tower fired; tags
   `from:tower-<id>`, `target:enemy-<id>`;
 - with a cursor: `ghost` (kind `ghost:<type>`, anim and tag `ok` or `blocked` with `why:<refusal>`,
-  from `placeRefusal`, then `range:<cells>`, the type's own, E4; not once the round is over) and
+  from `placeRefusal`, then `range:<cells>`, the type's own, E4; on a tower, Engine 0.16 E7,
+  `selected` and that tower's range now instead, so a skin rings the selected tower; not once the
+  round is over) and
   `cursor` (tag `cell:<kind>`).
 
 Status (`presentStatus`): `gold`, `lives`, `wave` (`n/m`), `waveNumber`, `waveCount`, `enemies`,

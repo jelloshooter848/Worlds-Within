@@ -15,7 +15,9 @@ names and the song's channels one length), its page uses the shell's tick rate a
 follows the games index's link. Its run files and their hashes did not change. At Engine 0.16
 part E (E2), before this sample becomes the ten-wave map of 0.16 (E8), its 0.15 round (content,
 art, skin, songs, sfx, fonts, menus, page and the five run files with their golden hashes) is
-kept unchanged as the test game `games/td-classic`. This file is the
+kept unchanged as the test game `games/td-classic`. **E7** put it on a CC0 art pack, Kenney's
+Tower Defense (top-down), with a new 2D skin ("The CC0 art pack and the skin (E7)" below); no run
+file or hash moved. This file is the
 worked example of a tower-defense game on the kit ("How it was built", below).
 
 ## How to play
@@ -89,27 +91,21 @@ which the shell paces since Engine 0.15, gap D2); the tools play the same ticks,
 - `content/waves/road.json`: a timer of 400 ticks and three waves: six runners; a slow brute with
   four fast runners behind it (they overtake it near the entry, with jitter); eight runners and two
   brutes.
-- `content/sprites/td.txt`: the art, original NES-style pixel art as text (palette `td`): the
-  five cells (`ground`, `road`, `pad`, `cave` at the entry, `gate` at the exit), `arrow-idle`,
-  `arrow-fire`, `cannon-idle`, `cannon-fire`, `runner-0/1`, `brute-0/1` (drawn facing right),
-  `shot-arrow`, `shot-cannon`, `cursor-0/1` (16x16) and the HUD icons `icon-gold`, `icon-lives`,
-  `icon-wave`, `icon-timer` (8x8). `content/sprites/td-font.txt`: the HUD font (the mini siege's,
-  with a `/` added for the wave), palette `td`.
-- `content/palettes/`: `td` (the NES colours the art uses) and three recolours with the same
-  letters: `td-ok` (green) and `td-blocked` (red) for the ghost tower, `td-hit` (white) for an enemy
-  shot this step.
-- `content/skins/canvas2d.json` (no look with a `fallbackColor` of its own since Engine 0.15
-  T14; the sheet's `#ff00ff` is the only one): keyed on the kit's kinds: `tower:arrow`, `tower:cannon` (`idle`,
-  `fire`), `enemy:runner`, `enemy:brute` (`walk`, mirrored when facing left; `byTag` `hit` draws
-  them with `td-hit`), `shot:arrow`, `shot:cannon`, `ghost:arrow`, `ghost:cannon` (the tower's
-  frame; `byTag` `ok` with `td-ok`, `blocked` with `td-blocked`) and `cursor` (blinking). Tiles
-  `.`, `#`, `B`, `S`, `X` (`TD_TILES`). Events: `td-place`, `td-sell`, `td-refused`,
-  `td-wave-start`, `td-shot:tower=cannon` (boom and a shake), `td-shot` (arrow), `td-kill`
-  (particles), `td-leak` (a red tint), `td-wave-clear`, `td-end:won`, `td-end:lost`. HUD: `gold`,
-  `lives`, `wave`, `nextWave`, `tower`, `towerCost`.
+- `content/sprites/td.txt`: the text art still used (Engine 0.16 E7 moved the cells, towers,
+  enemies and shots to the CC0 pack and removed them here): `cursor-0/1` (16x16, palette `td`)
+  and the HUD icons `icon-gold`, `icon-lives`, `icon-wave`, `icon-timer` (8x8).
+  `content/sprites/td-font.txt`: the HUD font (the mini siege's, with a `/` added for the wave),
+  palette `td`.
+- `content/palettes/td.json`: the NES colours the text art uses (E7 removed the recolours
+  `td-ok`, `td-blocked`, `td-hit`: the skin's hit flash and blocked ghost are silhouettes now).
+- `content/skins/canvas2d.json`: the pack's art (below, "The CC0 art pack and the skin (E7)");
+  no look with a `fallbackColor` of its own (the sheet's `#ff00ff` is the only one).
 - `content/sfx/`: `place`, `sell`, `refused`, `wave`, `arrow`, `boom`, `kill`, `leak`, `clear`,
-  `won`, `lost` (MML, one short phrase each). `content/songs/road.json`: the looping song (four
-  channels, MML).
+  `won`, `lost` and, from E7, `upgrade`, `spawn`, `launch` (the cannon firing), `frost`,
+  `splash`, `chill` (a slow), plus the menus' `ui-move`, `ui-select`, `ui-back` (MML, one short
+  phrase each). `content/songs/road.json`: the looping song (four channels, MML).
+- `assets/kenney-tower-defense/`, `assets/CREDITS.md`, `tools/road-art.ts` and
+  `assets.test.ts`: the CC0 pack (below).
 - `picture.ts`: `tdLook(content)` (the skin, sheets, size; the grass colour is the skin's
   `background`, Engine 0.15 gap G36),
   `tdFrameStream(screen, cursor)` (a `FrameStream` over the kit's `tdFrames`), `tdPicture(presenter,
@@ -146,7 +142,11 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
   won and lost, each run failing without each rule in its `guards`, and the `won` input equal to
   the bot's plan. Engine 0.15 T14 (the asset audit): no look, tag look or tile with its own
   fallback colour; every tick of every run drawn through `view.ts`'s Canvas2D picture without a
-  fallback box; the one song's channels the same length; the skin's sounds exactly the sfx files.
+  fallback box (the bundle's PNG sheets decoded size-only for Node); the one song's channels the
+  same length; the skin's sounds (events' and projectiles' impacts) exactly the sfx files. E7: the
+  three tower types at levels 1-3 idle and firing, shots, ghosts (ring, blocked, selected),
+  enemies' steps, slow look, hit flash and health bars, every road frame in the cut sheet and a
+  sound for every kit event.
 - `runs/`: seven run files, each with sync `hashes` and a golden `<name>.hashes.json`:
   - `build.run.json` (40 ticks): an arrow on the path is refused (`not_build_cell`), a cannon
     bought, a second refused (`too_poor`), the first sold for 15, an arrow bought. Guards
@@ -183,7 +183,9 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 - Imports: relative paths, `@engine/core/*`, `@engine/backends/canvas2d` (the picture and the
   page) and `@kits/towerdefense` (and its `kit.ts`). Never `engine/sim` (the sample needs none),
   other games or other kits. Tests may also use `@engine/backends/null`.
-- Art, sound and the skin are text (`content/`): no binary files. A new kind or tag the kit
+- Sound, the skin and the text art are text (`content/`). The only binary files are the CC0 pack
+  in `assets/kenney-tower-defense/` (credited in `assets/CREDITS.md`); anything cut from it is
+  made by `tools/road-art.ts` and checked byte for byte (`assets.test.ts`). A new kind or tag the kit
   presents gets a skin entry (or a `byTag` look); `pnpm cli validate` fails a skin naming a frame,
   palette or sound the game lacks.
 - The page is glue only: `play.ts` has no DOM and no rules; the DOM is `main.ts`.
@@ -221,7 +223,7 @@ errors; `pnpm test tests/browser/tower-defense-shots.test.ts` takes `build` at t
 
 `game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
 `engine/core/ui/menus.ts`): the title "The Winding Road" in `road-title` over the game's own
-picture at its start (dimmed 0.6), the subtitle "Build on the stones, keep the gate shut", art (`arrow-idle` x3, `cannon-idle` x3),
+picture at its start (dimmed 0.6), the subtitle "Build on the stones, keep the gate shut", art (from E7 the pack's `arrow-3` and `cannon-3` x2, sheet `road`),
 the song `road`, a footer and the items start, controls, settings; the pause menu
 (resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing, touch); and the controls screen's
 rows (Move; Build; Next tower; Sell; Send the wave), shown with the player's keys. Colours: focus bar `#00502c`,
@@ -245,3 +247,53 @@ Canvas2D (exact Canvas2D output, a machine whose WebGL misbehaves); `?backend=pi
 default. `pnpm cli screenshot` and the run files' backend parity still draw through Canvas2D
 (`view.ts`). Tested in `tests/browser/pixi-pages.test.ts` (the default, the fallback with WebGL
 taken away, `?backend=canvas2d`); the page and menus browser tests play on PixiJS.
+
+## The CC0 art pack and the skin (Engine 0.16 part E, E7)
+
+- **The pack**: Kenney's "Tower Defense (top-down)" (CC0), the roadmap's pack for part E. Its two
+  scaled sheets were copied from the mini siege's copy of the same pack (part F's F8, fetched from
+  the OpenGameArt mirror; kenney.nl blocks automated downloads; games may not import each other,
+  so the files are copied): `tilesheet-16.png` and `tilesheet-24.png`, the pack's 64 px tiles
+  box-filtered to 16 and 24 px, with `license.txt`. `assets/CREDITS.md` names the source URL, the
+  author and the licence; `validate` checks it and every frame against its image.
+- **The cut sheet** `road-art.png` is made by `tools/road-art.ts` from those two (`pnpm exec tsx
+games/samples/tower-defense/tools/road-art.ts`; `ROAD_FRAMES` lays it out and is the skin's
+  `images.road.frames`; `assets.test.ts` checks the bytes): towers, 24 px, a base per level (the
+  diamond plate, the octagon, the octagon with its plate) under a turret per type and level
+  (arrow: gun, rocket, twin rockets; cannon: square cannon, round cannon, heavy twin; frost: the
+  shields and the green turret in ice blue), each with a `-fire` copy whose turret recoils 1 px;
+  `ghost-<type>` (level 1 at 55% alpha); enemies drawn facing right: `runner-0/1` (the green
+  soldier and its mirror across its way, the step), `brute-0/1` (the green tank's hull and turret,
+  the second 1 px on), each with an ice-blue `-slow` copy; 16 px ground: `grass-0` to `grass-3`
+  (decor: a bush, a rock, a plant), `road` and `road-<open sides>` (a dark kerb on each side open
+  to grass), `cave` (entry, the crater), `gate` (exit, the target plate) and `blank`.
+- **Scale**: the map's cells stay 16 px (the kit's tile size; `game.json`'s screen and every run
+  file unchanged), so the ground is 16 px and towers and enemies are 24 px frames anchored on
+  their cell's centre.
+- **The skin** (`content/skins/canvas2d.json`, background `#2ecc71`, the pack's grass): `images`
+  `road` (the cut sheet, the default sheet) and `td16` (the pack's 16 px sheet, grid 23x13, frames
+  by tile number). Kinds: `tower:arrow`, `tower:cannon`, `tower:frost` (the third type E8's map
+  adds; slow) with `idle` and a one-shot `fire`, `byTag` `level:` 3 and `level:` 2 for the upgraded
+  looks, `turnToFacing: "up"` (the turret turns to its target) and a pop-in; `enemy:runner` and
+  `enemy:brute` walking in two steps, `turnToFacing: true`, `hitFlash` white on `hit`, `byTag`
+  `slow` in ice blue, a fade-in; `shot:<type>` `blank` (the events fly projectiles instead);
+  `ghost:<type>` with a `ring` from its `range:` tag, `byTag` `selected` (the pack's wrench plate:
+  the cursor is on a tower, whose range the ring shows) and `blocked` (a red silhouette); `cursor`
+  (the text cursor). Tiles: `.` grass with `vary` decor, `#` road with `join` (with `S`, `X`), `B`
+  the pack's stone plot (`td16` `84`), `S` `cave`, `X` `gate`. `labels`: a health bar on each
+  enemy from `hp:` against its `maxhp:`. Emitters `spark`, `blast`, `shrapnel`, `frost`, `smoke`,
+  `debris`, `dust`, `coins`, `stars`, `breach`. Events (each with a sound): `td-place`, `td-sell`,
+  `td-upgrade` (stars and a pop), `td-refused`, `td-wave-start` (a flash), `td-spawn`,
+  `td-shot:tower=cannon` (a shell lobbed on an arc, landing with a blast, smoke, `boom` and a
+  shake), `td-shot:tower=frost` (a pellet, frost), `td-shot` (the arrow tower's bullet, sparks),
+  `td-splash` (shrapnel flying from the target to each enemy hurt), `td-slow` (frost), `td-kill`
+  (debris and smoke), `td-leak` (a breach, a red flash, a shake), `td-wave-clear`, `td-end:won`,
+  `td-end:lost`. HUD as before (text icons and font).
+- **Kit change** (presentation only): with the cursor on a tower the ghost is tagged `selected`
+  and carries that tower's range, so the selected tower is ringed (`kits/towerdefense/CLAUDE.md`).
+- **Checks**: `validate` (PNG references, frames inside their images, CREDITS.md), the asset and
+  look tests above, every tick of every run without a fallback box, the golden hashes unchanged,
+  `pnpm -s cli screenshot games/samples/tower-defense/runs/shells.run.json --tick 272 --scale 3`
+  (the pack on Canvas2D) and `tests/browser/pixi-parity.test.ts`'s `shells` case (Canvas2D
+  against PixiJS within the strict bound). The page decodes the sheets before booting
+  (`withContentImages` in `main.ts`).

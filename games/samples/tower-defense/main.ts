@@ -1,3 +1,4 @@
+import { withContentImages } from '@engine/core/assets/content-images';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import type { Action } from '@engine/core/input/actions';
 import { DEFAULT_KEYBOARD_P1 } from '@engine/core/input/bindings';
@@ -38,7 +39,8 @@ export interface TdHook {
   cursor(): { col: number; row: number; tower: string };
 }
 
-const content = mustLoad(loadTowerDefense(gameFiles), 'the tower-defense sample');
+// The skin's PNG sheets (Kenney's CC0 Tower Defense, Engine 0.16 E7) decoded before the first frame.
+const content = await withContentImages(mustLoad(loadTowerDefense(gameFiles), 'the tower-defense sample'));
 const look = tdLook(content);
 const fonts = contentFonts(content);
 const status = document.getElementById('status') as HTMLElement;

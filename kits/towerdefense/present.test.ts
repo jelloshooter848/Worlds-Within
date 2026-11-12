@@ -95,7 +95,9 @@ describe('presentWorld', () => {
     expect(ghost(cursor(2, 0))).toEqual(['blocked', 'why:not_build_cell', 'range:1']);
     w.place('arrow', 1, 1);
     w.step();
-    expect(ghost(cursor(1, 1))).toEqual(['blocked', 'why:occupied', 'range:1']);
+    // On a tower (selected, Engine 0.16 E7): that tower's range, whatever tower is chosen.
+    expect(ghost(cursor(1, 1))).toEqual(['blocked', 'why:occupied', 'selected', 'range:1']);
+    expect(ghost(cursor(1, 1, 'cannon'))).toEqual(['blocked', 'why:occupied', 'selected', 'range:1']);
     expect(ghost(cursor(3, 1, 'cannon'))).toEqual(['blocked', 'why:too_poor', 'range:2']);
     expect(ghost(cursor(3, 1))).toEqual(['ok', 'range:1']);
   });

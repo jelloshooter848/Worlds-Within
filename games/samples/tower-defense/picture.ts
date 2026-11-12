@@ -20,9 +20,12 @@ import {
  * (`content/skins/canvas2d.json`). Shared by the page (`main.ts`), the view (`view.ts`, for `pnpm
  * cli screenshot`) and the tests, so a screenshot is what a player sees.
  *
- * The skin is keyed on the kit's kinds (`tower:arrow`, `enemy:runner`, `ghost:cannon`, `cursor`,
- * ...) and tags: the ghost is drawn with the `td-ok` or `td-blocked` palette by its `ok` or
- * `blocked` tag, and an enemy shot this step with `td-hit` by its `hit` tag.
+ * The skin (Engine 0.16 E7: Kenney's CC0 Tower Defense pack, `assets/`) is keyed on the kit's
+ * kinds (`tower:arrow`, `enemy:runner`, `ghost:cannon`, `cursor`, ...) and tags: a tower's look by
+ * its `level:`, the ghost red by its `blocked` tag and ringed by its `range:` (on a tower, the
+ * `selected` tower's), an enemy flashed white by `hit`, ice blue by `slow` and given a health bar
+ * by `hp:` against `maxhp:`. The bundle's PNG sheets must be decoded first (`withContentImages`)
+ * for the backend to draw them.
  */
 
 /**

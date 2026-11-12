@@ -58,6 +58,9 @@ name `towerdefense` (from Engine 0.14 T9 with `roundBots()`: `TdBot` for a `td-d
   status `nextWaveKinds`/`nextWaveGroups`, enemy tags `maxhp:<n>` and `slow`, ghost tags
   `range:<cells>`. No existing hash moved; the sample's cannon gained a splash (level 2) and a
   slow (level 3), guarded by `runs/shells.run.json`.
+- Engine 0.16 E7 (presentation only, no hash moved): with the cursor on a tower the ghost is
+  tagged `selected` and carries that tower's `range:` now (not the chosen type's), so a skin
+  rings the selected tower.
 - Engine 0.16 E3 (tower upgrades): a `td-towers` type's optional `levels` (`{ cost, range?,
 damage?, cooldown?, sell? }`, level 2 on, each over the level below), the `upgrade` command
   (refusals `no_tower`, `max_level`, `too_poor`, `round_over`), a tower's `level` in the snapshot

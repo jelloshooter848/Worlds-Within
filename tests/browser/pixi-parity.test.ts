@@ -105,6 +105,14 @@ const CASES: Case[] = [
     tiles: ['26', '63', '180', '455', '482', '674', '455+fade*10', '300+wipe*8'],
     bound: STRICT,
   },
+  {
+    name: "The Winding Road on Kenney's CC0 Tower Defense pack (Engine 0.16 E7)",
+    run: 'games/samples/tower-defense/runs/shells.run.json',
+    // Turrets turned to their targets at levels 1-3, the selected tower's ring, enemies walking
+    // with health bars, slowed (ice blue) and struck (white), shells in flight and landing.
+    tiles: ['60', '126', '200', '272', '272+fade*10'],
+    bound: STRICT,
+  },
 ];
 
 /** One play of a case's run through `backend`, with every tile of the case. */

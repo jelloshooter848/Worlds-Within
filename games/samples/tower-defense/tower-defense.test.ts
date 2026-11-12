@@ -2,20 +2,41 @@ import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { NullRenderer } from '@engine/backends/null';
+import { withContentImages } from '@engine/core/assets/content-images';
+import type { ContentBundle } from '@engine/core/content/bundle';
+import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { compileSong, parseMml } from '@engine/core/audio/mml';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
-import { TD_TILE_SIZE, TdBot, TOWERDEFENSE_RULES, type TdBotStep } from '@kits/towerdefense';
+import {
+  resolveSkinEvent,
+  resolveSkinFrame,
+  resolveSkinKind,
+  type PresentEntity,
+} from '@engine/core/present';
+import { TD_EVENT_TYPES, TD_TILE_SIZE, TdBot, TOWERDEFENSE_RULES, type TdBotStep } from '@kits/towerdefense';
 import { loadTowerDefense, sampleRound } from './content';
 import { createGame } from './headless';
 import { tdLook } from './picture';
 import { createView } from './view';
+import { ROAD_FRAMES } from './tools/road-art';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
-const content = mustLoad(loadTowerDefense(readGameFiles(ROOT)));
+/**
+ * The bundle with its skin's PNG sheets (Kenney's CC0 Tower Defense, Engine 0.16 E7) "decoded"
+ * for Node: each image's size from its header and no pixels (the recording renderers here never
+ * look at them), as `withContentImages` gives the page and the screenshot tool the real ones.
+ */
+const content: ContentBundle = await withContentImages(
+  mustLoad(loadTowerDefense(readGameFiles(ROOT))),
+  async (url) => {
+    const size = readPngSize(dataUrlBytes(url)!)!;
+    return { image: null, width: size.width, height: size.height, data: null };
+  },
+);
 const SEED = content.manifest.start.seed;
 
 interface Check {
@@ -203,9 +224,90 @@ describe('the tower-defense assets (Engine 0.15 T14 audit)', () => {
     );
     expect(new Set(lengths).size).toBe(1);
     const sfx = new Set(contentSfx(content).map((s) => s.id));
-    const sounds = Object.values(skin.events ?? {}).flatMap((e) => (e.sound ? [e.sound] : []));
+    // An event's own sound and (Engine 0.16 E7) its projectile's impact sound.
+    const sounds = Object.values(skin.events ?? {}).flatMap((e) => [
+      ...(e.sound ? [e.sound] : []),
+      ...(e.projectile?.impact?.sound ? [e.projectile.impact.sound] : []),
+    ]);
     // The skin's sounds and (Engine 0.16 T9) the menus' (`game.json`'s `menus.style.sounds`).
     const menus = Object.values(content.manifest.menus?.style?.sounds ?? {});
     expect(new Set([...sounds, ...menus])).toEqual(sfx);
+  });
+
+  // Engine 0.16 E7: the three tower types (arrow, cannon and the frost tower E8's map adds) at
+  // every level, the enemies, ghosts, health bars and every event, from the CC0 pack.
+  const entity = (kind: string, state: string, tags: string[]): PresentEntity => ({
+    id: kind,
+    kind,
+    x: 0,
+    y: 0,
+    w: 16,
+    h: 16,
+    facing: 'right',
+    anim: { state, t: 0 },
+    tags,
+  });
+
+  it.each(['arrow', 'cannon', 'frost'])(
+    'draws the %s tower at levels 1-3, idle and firing, turned to its target',
+    (type) => {
+      for (const level of [1, 2, 3]) {
+        const tags = [`type:${type}`, `level:${level}`, `range:2`];
+        expect(resolveSkinFrame(skin, entity(`tower:${type}`, 'idle', tags))).toMatchObject({
+          sheet: 'road',
+          frame: `${type}-${level}`,
+        });
+        expect(resolveSkinFrame(skin, entity(`tower:${type}`, 'fire', tags)).frame).toBe(
+          `${type}-${level}-fire`,
+        );
+      }
+      expect(skin.kinds[`tower:${type}`]!.turnToFacing).toBe('up');
+      expect(resolveSkinFrame(skin, entity(`shot:${type}`, 'idle', [])).frame).toBe('blank');
+      // The ghost: its own frame, a ring from the range tag, red when blocked, the upgrade mark on a
+      // selected tower.
+      const ghost = (tags: string[]) => resolveSkinFrame(skin, entity(`ghost:${type}`, 'ok', tags));
+      expect(ghost(['ok', 'range:2'])).toMatchObject({ sheet: 'road', frame: `ghost-${type}` });
+      expect(ghost(['blocked', 'why:too_poor', 'range:2']).palette).toBe('#f83800');
+      expect(ghost(['blocked', 'why:occupied', 'selected', 'range:3'])).toMatchObject({
+        sheet: 'td16',
+        frame: '16',
+      });
+      expect(resolveSkinKind(skin, entity(`ghost:${type}`, 'ok', ['ok']))!.ring).toMatchObject({
+        tag: 'range:',
+      });
+      expect(resolveSkinEvent(skin.events, { type: 'td-shot', tower: type })?.projectile).toBeDefined();
+    },
+  );
+
+  it.each(['runner', 'brute'])(
+    'walks the %s in two steps, ice blue while slowed, with a hit flash and a health bar',
+    (kind) => {
+      const at = (t: number, tags: string[] = []) =>
+        resolveSkinFrame(skin, { ...entity(`enemy:${kind}`, 'walk', tags), anim: { state: 'walk', t } });
+      expect(new Set([0, 4, 8, 12].map((t) => at(t).frame))).toEqual(new Set([`${kind}-0`, `${kind}-1`]));
+      expect(at(0, ['slow']).frame).toBe(`${kind}-slow-0`);
+      const entry = skin.kinds[`enemy:${kind}`]!;
+      expect(entry.turnToFacing).toBe(true);
+      expect(entry.hitFlash).toMatchObject({ tag: 'hit' });
+      expect(skin.labels?.[`enemy:${kind}`]).toMatchObject({
+        from: { tag: 'hp:' },
+        as: 'bar',
+        max: { tag: 'maxhp:' },
+      });
+    },
+  );
+
+  it("names a frame of the pack's sheets for every road look, and a sound for every kit event", () => {
+    for (const entry of Object.values(skin.kinds))
+      for (const look of [entry, ...(entry.byTag ?? [])])
+        for (const spec of Object.values(look.frames ?? {})) {
+          const names = typeof spec === 'string' ? [spec] : 'frames' in spec ? (spec.frames as string[]) : [];
+          const sheet = look.sheet ?? entry.sheet ?? skin.sheets?.sheet;
+          if (sheet === 'road') for (const n of names) expect(ROAD_FRAMES[n], n).toBeDefined();
+        }
+    for (const type of TD_EVENT_TYPES) {
+      const ev = type === 'td-end' ? { type, result: 'won' } : { type };
+      expect(resolveSkinEvent(skin.events, ev)?.sound, type).toEqual(expect.any(String));
+    }
   });
 });

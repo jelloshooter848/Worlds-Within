@@ -39,8 +39,8 @@
       "name": "The Winding Road",
       "subtitle": "Build on the stones, keep the gate shut",
       "art": [
-        { "sheet": "td", "frame": "arrow-idle", "scale": 3, "anchor": "left", "x": 36, "y": -4 },
-        { "sheet": "td", "frame": "cannon-idle", "scale": 3, "anchor": "right", "x": 36, "y": -4 }
+        { "sheet": "road", "frame": "arrow-3", "scale": 2, "anchor": "left", "x": 36, "y": -4 },
+        { "sheet": "road", "frame": "cannon-3", "scale": 2, "anchor": "right", "x": 36, "y": -4 }
       ],
       "music": "road",
       "footer": "An original game made with the Worlds Within engine",

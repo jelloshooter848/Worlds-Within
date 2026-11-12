@@ -286,8 +286,16 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
   if (cursor !== null) {
     if (world.outcome === 'playing') {
       const why = world.placeRefusal(cursor.tower, cursor.col, cursor.row);
+      // On a tower (selected, Engine 0.16 E7) the ghost carries that tower's range now, so a skin
+      // rings the selected tower; elsewhere the chosen type's own.
+      const standing = world.towerAt(cursor.col, cursor.row);
       const type = world.towerTypes[cursor.tower];
-      const range = type === undefined ? [] : [`range:${type.range}`];
+      const range =
+        standing !== undefined
+          ? ['selected', `range:${world.statsOf(standing).range}`]
+          : type === undefined
+            ? []
+            : [`range:${type.range}`];
       entities.push({
         id: 'ghost',
         kind: `ghost:${cursor.tower}`,

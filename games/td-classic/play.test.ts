@@ -130,6 +130,7 @@ describe('td-classic: the page, headless', () => {
     expect(p.frames.at(-1)!.entities.find((e) => e.id === 'ghost')?.tags).toEqual([
       'blocked',
       'why:occupied',
+      'selected',
       'range:2',
     ]);
     p.step(tapFrame({ col: 5, row: 4, button: 'secondary' }));
