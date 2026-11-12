@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 702.** (Last used: 701.)
+**Next unused number: 703.** (Last used: 702.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2742,3 +2742,10 @@ on the track; the merge numbered them 677-699 (`T2-n` is item 611+n).
 - **701 (owner screenshot review, polish Q).** Review polish Q's eight before and after shot
   pairs in `docs/reports/screenshots/0.16-Q/` (the build log's table, Engine 0.16 polish Q):
   accept, or list what to change.
+
+**Engine 1.0: go-ahead** (asked by the orchestrator after the polish P and Q merge).
+
+- **702 (start Engine 1.0).** Engine 0.16 parts A-F and polish P and Q are all on
+  `engine/build-0.15`. Start Engine 1.0 (the API review, the add-level and add-mission skills, the
+  hand check) now, or wait until the open 0.16 reviews are answered? No tag or merge to `master`
+  without the owner's approval either way.

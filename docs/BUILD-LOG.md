@@ -191,7 +191,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 701** (next unused 702). Awaiting the owner's answer, by release (an answer by number is
+used is 702** (next unused 703). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
