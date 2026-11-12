@@ -35,7 +35,10 @@ function bayer(n: number): number[] {
   return out;
 }
 
-const MATRICES: Record<DitherSize, readonly number[]> = { 4: bayer(4), 8: bayer(8) };
+const MATRICES: Record<DitherSize, Uint8Array> = {
+  4: Uint8Array.from(bayer(4)),
+  8: Uint8Array.from(bayer(8)),
+};
 
 /** The Bayer rank (0 to size² - 1) at picture pixel (x, y), tiled over the picture. */
 export function bayerRank(x: number, y: number, size: DitherSize): number {
@@ -92,16 +95,120 @@ export interface DitheredStamp {
   y: number;
   w: number;
   h: number;
-  /** `w * h` alpha bytes, 0-255, each a multiple of `255 / levels` rounded. */
+  /**
+   * `w * h` alpha bytes, 0-255, each a multiple of `255 / levels` rounded. Shared: the same fill
+   * gives the same stamp object (see {@link ditheredRadial}), so never write to it.
+   */
   alpha: Uint8Array;
+}
+
+/**
+ * How finely the falloff is looked up per pixel: the stops' alpha is tabled at `FALLOFF_STEPS`
+ * even steps of the distance from the centre to the radius (a step is under 0.05 px for a radius
+ * of 160), so each pixel does one square root and one table read, not a scan through the stops.
+ */
+const FALLOFF_STEPS = 4096;
+
+/**
+ * The stops' alpha (clamped, times `levels`) at `FALLOFF_STEPS + 1` even distances from 0 to 1:
+ * {@link stopsAlpha} walked once in order, so building it costs the steps plus the stops.
+ */
+function falloffTable(stops: readonly FalloffStop[], levels: number): Float64Array {
+  const out = new Float64Array(FALLOFF_STEPS + 1);
+  if (stops.length === 0) return out;
+  const clamp = (a: number) => Math.min(1, Math.max(0, a));
+  let i = 1;
+  for (let k = 0; k <= FALLOFF_STEPS; k++) {
+    const d = k / FALLOFF_STEPS;
+    let a: number;
+    if (d <= stops[0]!.at) a = stops[0]!.alpha;
+    else {
+      while (i < stops.length && d > stops[i]!.at) i++;
+      if (i >= stops.length) a = stops[stops.length - 1]!.alpha;
+      else {
+        const p = stops[i - 1]!;
+        const q = stops[i]!;
+        a = q.at === p.at ? q.alpha : p.alpha + ((d - p.at) / (q.at - p.at)) * (q.alpha - p.alpha);
+      }
+    }
+    out[k] = clamp(a) * levels;
+  }
+  return out;
+}
+
+/**
+ * Which falloff table step each pixel of a fill's box reads: the step at the pixel centre's
+ * distance (`FALLOFF_STEPS`: beyond the radius), row by row over `w` x `h` pixels. It depends only
+ * on the radius and where the centre sits in the box, not on the stops or the box's place, so a
+ * light that moves by whole pixels (the camera scrolling) or whose falloff changes in place (a
+ * flash fading, a flicker) reuses it and only reads its table again.
+ */
+interface FillGeometry {
+  index: Uint16Array;
+  w: number;
+}
+
+/** A box bigger than this many pixels (a light far bigger than the picture) is not cached whole. */
+const GEOMETRY_MAX_PIXELS = 1 << 18;
+
+/** A small cache of recently used values by key, oldest first, holding at most `limit` bytes in all. */
+class Recent<T> {
+  private readonly map = new Map<string, { value: T; bytes: number }>();
+  private total = 0;
+  constructor(private readonly limit: number) {}
+  get(key: string): T | undefined {
+    const e = this.map.get(key);
+    if (e === undefined) return undefined;
+    // Most recently used goes last, so what is drawn every frame outlives what changes each frame.
+    this.map.delete(key);
+    this.map.set(key, e);
+    return e.value;
+  }
+  set(key: string, value: T, bytes: number): void {
+    this.map.set(key, { value, bytes });
+    this.total += bytes;
+    for (const [k, e] of this.map) {
+      if (this.total <= this.limit || this.map.size <= 1) break;
+      this.map.delete(k);
+      this.total -= e.bytes;
+    }
+  }
+}
+
+/** How many bytes of dithered stamps `ditheredRadial` keeps (more than a frame's worth). */
+export const DITHER_CACHE_BYTES = 8 * 1024 * 1024;
+const stampCache = new Recent<DitheredStamp>(DITHER_CACHE_BYTES);
+const geometryCache = new Recent<FillGeometry>(DITHER_CACHE_BYTES);
+
+/** The table steps of the pixels of a `w` x `h` box whose fill's centre is (cx, cy) from its corner. */
+function fillGeometry(cx: number, cy: number, radius: number, w: number, h: number): FillGeometry {
+  const index = new Uint16Array(w * h);
+  const scale = FALLOFF_STEPS / radius;
+  for (let j = 0; j < h; j++) {
+    const dy = j + 0.5 - cy;
+    const dy2 = dy * dy;
+    let o = j * w;
+    for (let i = 0; i < w; i++, o++) {
+      const dx = i + 0.5 - cx;
+      const t = Math.sqrt(dx * dx + dy2) * scale;
+      // `t` is 0 or more, so `| 0` is the floor.
+      index[o] = t >= FALLOFF_STEPS ? FALLOFF_STEPS : (t + 0.5) | 0;
+    }
+  }
+  return { index, w };
 }
 
 /**
  * The pixels of a radial fill round (`g.x`, `g.y`) dithered by `dither`: for each picture pixel
  * of `g.box` (default the circle's bounding square), cut to `bounds` (the target's size) when
- * given, the stops' alpha at the pixel's centre's distance, quantized by {@link ditherValue} at
- * the pixel's own picture position. Null when nothing is left to draw (no radius, an empty box).
- * Pure: the same fill gives the same bytes.
+ * given, the stops' alpha at the pixel's centre's distance (from a table of `FALLOFF_STEPS`
+ * steps), quantized as {@link ditherValue} at the pixel's own picture position. Null when nothing
+ * is left to draw (no radius, an empty box). Pure in effect: the same fill gives the same bytes.
+ * It runs for every light twice a frame, so it keeps recent stamps (up to `DITHER_CACHE_BYTES`)
+ * by their inputs and gives a steady light's fill the same stamp object frame after frame (a
+ * backend may reuse what it made from it); any other fill reuses its box's table steps
+ * ({@link FillGeometry}) when one of the same radius and centre in its box was made lately, and
+ * only reads its falloff table and the Bayer matrix again.
  */
 export function ditheredRadial(
   g: {
@@ -129,16 +236,49 @@ export function ditheredRadial(
   const w = x1 - x0;
   const h = y1 - y0;
   if (w <= 0 || h <= 0) return null;
+  const size = dither.size;
+  const levels = Math.max(1, Math.floor(dither.levels));
+  let key = `${size} ${levels} ${g.x} ${g.y} ${g.radius} ${x0} ${y0} ${w} ${h}`;
+  for (const s of g.stops) key += ` ${s.at}:${s.alpha}`;
+  const hit = stampCache.get(key);
+  if (hit !== undefined) return hit;
+  // The geometry of the whole uncut box (so a light half off the picture shares it), unless that
+  // is huge; then the cut box's alone. `gx`, `gy`: the geometry's corner in picture pixels.
+  let gx = Math.floor(box.x);
+  let gy = Math.floor(box.y);
+  let gw = Math.ceil(box.x + box.w) - gx;
+  let gh = Math.ceil(box.y + box.h) - gy;
+  if (gw * gh > GEOMETRY_MAX_PIXELS) [gx, gy, gw, gh] = [x0, y0, w, h];
+  const where = `${g.x - gx} ${g.y - gy} ${g.radius} ${gw} ${gh}`;
+  let geometry = geometryCache.get(where);
+  if (geometry === undefined) {
+    geometry = fillGeometry(g.x - gx, g.y - gy, g.radius, gw, gh);
+    geometryCache.set(where, geometry, gw * gh * 2);
+  }
+  const { index } = geometry;
+  const table = falloffTable(g.stops, levels);
+  const byte = Uint8Array.from({ length: levels + 1 }, (_, k) => Math.round((k / levels) * 255));
+  const matrix = MATRICES[size];
+  // `v - low > (rank + 0.5) / n²` (`ditherValue`) as `(v - low) * n² - 0.5 > rank`.
+  const n2 = size * size;
+  const mx0 = ((x0 % size) + size) % size;
   const alpha = new Uint8Array(w * h);
   for (let j = 0; j < h; j++) {
     const py = y0 + j;
-    const dy = py + 0.5 - g.y;
-    for (let i = 0; i < w; i++) {
-      const px = x0 + i;
-      const d = Math.hypot(px + 0.5 - g.x, dy) / g.radius;
-      const a = ditherValue(stopsAlpha(g.stops, d), px, py, dither);
-      alpha[j * w + i] = Math.round(a * 255);
+    const row = (((py % size) + size) % size) * size;
+    let src = (py - gy) * geometry.w + (x0 - gx);
+    let o = j * w;
+    let mx = mx0;
+    for (let i = 0; i < w; i++, o++, src++) {
+      const v = table[index[src]!]!;
+      // `v` is 0 or more, so `| 0` is the floor.
+      const low = v | 0;
+      const step = (v - low) * n2 - 0.5 > matrix[row + mx]! ? low + 1 : low;
+      alpha[o] = byte[step > levels ? levels : step]!;
+      if (++mx === size) mx = 0;
     }
   }
-  return { x: x0, y: y0, w, h, alpha };
+  const stamp: DitheredStamp = { x: x0, y: y0, w, h, alpha };
+  stampCache.set(key, stamp, w * h);
+  return stamp;
 }

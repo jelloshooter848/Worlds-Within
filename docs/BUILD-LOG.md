@@ -254,6 +254,15 @@ owner's playtest.
   instances become 667/685/685. Roads, starting cells and the battle rows stay clear.
 - **P11, this write-up:** the fifteen after shots, each looked at full size against its before
   shot, this section, part F's and part C's notes, the roadmap's Done when and the full checks.
+- **Release review fix, the dithered falloff's cost** (`engine/core/fx/dither.ts`, both 2D
+  backends): P3 worked every pixel of every light out afresh twice a frame (a `Math.hypot` and a
+  scan of 33 stops each), about 12 ms a radius-84 fill, so the dungeon's presentation-invariance
+  runs went from about 7 s to over 40 s. Now the stops are a table of 4096 distances, each box's
+  table steps are kept by radius and the centre's place in it (reused when a light moves by whole
+  pixels or dims in place), recent stamps are kept by their inputs (a steady light gets the same
+  stamp every frame; Canvas2D keeps its coloured image data and PixiJS skips the rewrite and the
+  upload), and with a dither a light's radius is whole and its flicker steps (P-15). A rough time
+  budget test runs 240 frames of the crypt's lights in well under a second (about 10 s before).
 
 ### Before and after shots
 
@@ -460,6 +469,14 @@ word, plural?)`), used by `lossText` and so by the mission card's foes. No unit 
 - **P-14.** P11: the after shots were retaken with P2's commands; nothing looked wrong enough in
   them to fix in P11. What they still show that is outside polish P's scope is listed under
   outstanding issues below rather than changed.
+
+- **P-15.** Release review fix: with a skin's `dither`, `SkinLighting.layout` rounds each light's
+  radius to whole pixels and steps a flicker's noise to quarters (`LIGHT_DITHER_FLICKER_STEPS`,
+  nine values from -1 to 1), so a flickering torch repeats a few falloffs that `ditheredRadial`
+  keeps instead of a new one every frame; the torches now flicker in small steps, which suits the
+  pixel look. The falloff is read from a 4096-step table, so a rare pixel (under 1% in the tests)
+  lands one alpha step off the exact per-pixel value; both backends still draw the same bytes.
+  Smooth and banded lighting (no `dither`) are unchanged.
 
 Questions for the owner (answer by number once numbered into FEEDBACK-LOG.md):
 

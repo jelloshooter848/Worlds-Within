@@ -11,7 +11,7 @@ import {
   Texture,
   TextureSource,
 } from 'pixi.js';
-import { ditheredRadial, stopsAlpha } from '@engine/core/fx';
+import { ditheredRadial, stopsAlpha, type DitheredStamp } from '@engine/core/fx';
 import type { BlendMode, RadialFill, Renderer, Rotation } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
@@ -196,11 +196,15 @@ const STAMP_STEP = 32;
 
 /**
  * A dithered fill's texture (Engine 0.16 polish P, C1): a white buffer whose alpha is the fill's
- * bytes, at least `cap` texels a side, its frame cut to the fill's size. Pooled per renderer and
- * rewritten each frame (`PixiRenderer.gradient` with `dither`), so a steady scene makes none.
+ * bytes, at least `cap` texels a side, its frame cut to the fill's size. Pooled per renderer, one
+ * per dithered fill of a frame (`PixiRenderer.gradient` with `dither`), so a steady scene makes
+ * none; it is rewritten and uploaded only when its fill's stamp changes (`ditheredRadial` gives a
+ * steady light the same stamp object every frame), so a steady light uploads nothing.
  */
 class DitherStamp {
   readonly bytes: Uint8Array;
+  /** The stamp last written, or null: the same one again is not rewritten. */
+  private shown: DitheredStamp | null = null;
   readonly source: BufferImageSource;
   readonly texture: Texture;
   constructor(
@@ -223,8 +227,11 @@ class DitherStamp {
     });
   }
 
-  /** Writes `alpha` (`w` x `h` bytes) as premultiplied white and cuts the frame to it. */
-  write(alpha: Uint8Array, w: number, h: number): void {
+  /** Writes the stamp's bytes as premultiplied white and cuts the frame to it (none if it has them). */
+  write(stamp: DitheredStamp): void {
+    if (this.shown === stamp) return;
+    this.shown = stamp;
+    const { alpha, w, h } = stamp;
     const px = this.bytes;
     px.fill(0);
     for (let y = 0; y < h; y++)
@@ -614,7 +621,7 @@ export class PixiRenderer implements Renderer {
       t = next;
     }
     this.stampsUsed++;
-    t.write(stamp.alpha, stamp.w, stamp.h);
+    t.write(stamp);
     const s = this.sprites.take();
     s.texture = t.texture;
     s.anchor.set(0, 0);

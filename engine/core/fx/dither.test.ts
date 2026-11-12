@@ -100,6 +100,50 @@ describe('ditheredRadial', () => {
     expect(ditheredRadial({ ...fill, radius: 0 }, dither)).toBeNull();
     expect(ditheredRadial(fill, dither, { width: 5, height: 5 })).toBeNull();
   });
+
+  it('matches the per-pixel ditherValue of stopsAlpha, but for a rare pixel one step off at a threshold', () => {
+    for (const f of [fill, { x: 40, y: 30, radius: 84, stops: lightStops(0.95, 0, 8) }]) {
+      const s = ditheredRadial(f, dither)!;
+      let off = 0;
+      for (let j = 0; j < s.h; j++)
+        for (let i = 0; i < s.w; i++) {
+          const px = s.x + i;
+          const py = s.y + j;
+          const d = Math.hypot(px + 0.5 - f.x, py + 0.5 - f.y) / f.radius;
+          const want = Math.round(ditherValue(stopsAlpha(f.stops, d), px, py, dither) * 255);
+          const got = s.alpha[j * s.w + i]!;
+          if (got !== want) {
+            off++;
+            expect(Math.abs(got - want)).toBeLessThanOrEqual(Math.ceil(255 / dither.levels));
+          }
+        }
+      expect(off / s.alpha.length).toBeLessThan(0.01);
+    }
+  });
+
+  it('gives a steady fill the same stamp, and a moved or changed one the same bytes as worked out afresh', () => {
+    const at = { x: 60, y: 50, radius: 30, stops: lightStops(0.9, 0, 8) };
+    const bounds = { width: 128, height: 96 };
+    const a = ditheredRadial(at, dither, bounds)!;
+    expect(ditheredRadial({ ...at, stops: lightStops(0.9, 0, 8) }, dither, bounds)).toBe(a);
+    // Moved by a whole Bayer tile: the same bytes one tile over (its geometry reused).
+    const moved = ditheredRadial({ ...at, x: 68, y: 42 }, dither, bounds)!;
+    expect([moved.x - a.x, moved.y - a.y]).toEqual([8, -8]);
+    expect(Buffer.from(moved.alpha).equals(Buffer.from(a.alpha))).toBe(true);
+    // Half off the picture: the uncut fill's pixels, cut (the geometry of the whole box reused).
+    const whole = ditheredRadial({ ...at, x: 32, y: 32 }, dither)!;
+    const cut = ditheredRadial({ ...at, x: 32, y: 32 }, dither, { width: 40, height: 40 })!;
+    expect([cut.x, cut.y, cut.w, cut.h]).toEqual([2, 2, 38, 38]);
+    for (let j = 0; j < cut.h; j++)
+      for (let i = 0; i < cut.w; i++)
+        expect(cut.alpha[j * cut.w + i]).toBe(
+          whole.alpha[(j + cut.y - whole.y) * whole.w + i + cut.x - whole.x],
+        );
+    // A changed falloff in place: new bytes, dimmer everywhere.
+    const dim = ditheredRadial({ ...at, stops: lightStops(0.5, 0, 8) }, dither, bounds)!;
+    expect(dim).not.toBe(a);
+    for (let i = 0; i < a.alpha.length; i++) expect(dim.alpha[i]).toBeLessThanOrEqual(a.alpha[i]!);
+  });
 });
 
 describe('dithered light falloff', () => {

@@ -1,4 +1,4 @@
-import { ditheredRadial, parseHexColor } from '@engine/core/fx';
+import { ditheredRadial, parseHexColor, type DitheredStamp } from '@engine/core/fx';
 import type { BlendMode, RadialFill, Renderer, Rotation } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 
@@ -7,6 +7,8 @@ type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 export class CanvasRenderer implements Renderer {
   /** The scratch canvas a dithered fill's pixels are put on before they are drawn (made once, grown). */
   private scratch: { canvas: OffscreenCanvas | HTMLCanvasElement; ctx: Ctx } | null = null;
+  /** Each dithered stamp's last image data and its colour (`stampImage`), dropped with the stamp. */
+  private readonly stampImages = new WeakMap<DitheredStamp, { color: string; img: ImageData }>();
 
   constructor(private readonly ctx: Ctx) {
     ctx.imageSmoothingEnabled = false;
@@ -148,10 +150,27 @@ export class CanvasRenderer implements Renderer {
     const scratch = this.scratchFor(stamp.w, stamp.h);
     // A context without image data (a test's fake page) draws none.
     if (scratch === null || typeof scratch.ctx.createImageData !== 'function') return;
-    const [r, gr, b] = parseHexColor(g.color) ?? [0, 0, 0];
-    const img = scratch.ctx.createImageData(stamp.w, stamp.h) as ImageData | undefined;
+    const img = this.stampImage(stamp, g.color, scratch.ctx);
     // A fake page's context may make no image data: it draws none.
-    if (img?.data === undefined) return;
+    if (img === null) return;
+    scratch.ctx.putImageData(img, 0, 0);
+    ctx.save();
+    ctx.globalCompositeOperation =
+      g.mode === 'erase' ? 'destination-out' : g.mode === 'add' ? 'lighter' : 'source-over';
+    ctx.drawImage(scratch.canvas, 0, 0, stamp.w, stamp.h, stamp.x, stamp.y, stamp.w, stamp.h);
+    ctx.restore();
+  }
+
+  /**
+   * The stamp's bytes in `color` as image data, kept per stamp (`ditheredRadial` gives a steady
+   * light the same stamp each frame), so a steady light is coloured once; null where none is made.
+   */
+  private stampImage(stamp: DitheredStamp, color: string, c: Ctx): ImageData | null {
+    const kept = this.stampImages.get(stamp);
+    if (kept !== undefined && kept.color === color) return kept.img;
+    const img = c.createImageData(stamp.w, stamp.h) as ImageData | undefined;
+    if (img?.data === undefined) return null;
+    const [r, gr, b] = parseHexColor(color) ?? [0, 0, 0];
     const px = img.data;
     for (let i = 0; i < stamp.alpha.length; i++) {
       px[i * 4] = r;
@@ -159,12 +178,8 @@ export class CanvasRenderer implements Renderer {
       px[i * 4 + 2] = b;
       px[i * 4 + 3] = stamp.alpha[i]!;
     }
-    scratch.ctx.putImageData(img, 0, 0);
-    ctx.save();
-    ctx.globalCompositeOperation =
-      g.mode === 'erase' ? 'destination-out' : g.mode === 'add' ? 'lighter' : 'source-over';
-    ctx.drawImage(scratch.canvas, 0, 0, stamp.w, stamp.h, stamp.x, stamp.y, stamp.w, stamp.h);
-    ctx.restore();
+    this.stampImages.set(stamp, { color, img });
+    return img;
   }
 
   /** The scratch canvas, at least `w` x `h` (cleared where a fill is put), or null where none can be made. */

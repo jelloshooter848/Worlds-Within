@@ -54,7 +54,8 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
   `lightDither(layout)` (the `RadialFill.dither` of a skin's `dither`: its Bayer size, between
   `bands` steps or `LIGHT_DITHER_LEVELS`); from Engine 0.16 polish P `dither.ts`:
   `ditheredRadial(fill, dither, bounds?)` (a radial fill's alpha bytes, ordered-dithered by
-  picture pixel with no RNG, which both 2D backends draw), `ditherValue`, `bayerRank`,
+  picture pixel with no RNG, which both 2D backends draw; table-driven and cached, so a steady
+  light gets the same stamp each frame), `ditherValue`, `bayerRank`,
   `bayerThreshold`, `stopsAlpha`,
   `flickerNoise(seed, key, frame, rate)` and `flickered` (deterministic flicker from `fxRng`),
   `ambientFor`, `blendedDarkness`, `mapParts`; room-wide particles through `SkinParticles.update(frame,

@@ -6,6 +6,7 @@ import {
   blendedDarkness,
   flickered,
   flickerNoise,
+  LIGHT_DITHER_FLICKER_STEPS,
   lightStops,
   mapParts,
   SkinLighting,
@@ -204,6 +205,30 @@ describe('SkinLighting', () => {
     expect(radii(5)).toEqual(radii(5));
     expect(radii(5)).not.toEqual(radii(6));
     expect(new Set(radii(5)).size).toBeGreaterThan(1);
+  });
+
+  it('steps a dithered flicker between a few values and keeps the radius whole, so falloffs repeat', () => {
+    const flicker = { amount: 0.3, rate: 3 };
+    const at = (dither: 0 | 8) => {
+      const l = new SkinLighting(skin({ kinds: { hero: { radius: 20, flicker } }, dither }), { seed: 5 });
+      return Array.from(
+        { length: 60 },
+        (_, f) => l.layout({ frame: f, entities: [ent()], map: null, view: VIEW, size: SIZE })!.lights[0]!,
+      );
+    };
+    const smooth = at(0);
+    const stepped = at(8);
+    for (const l of stepped) expect(Number.isInteger(l.radius)).toBe(true);
+    const steps = 2 * LIGHT_DITHER_FLICKER_STEPS + 1;
+    expect(new Set(stepped.map((l) => l.intensity)).size).toBeLessThanOrEqual(steps);
+    expect(new Set(stepped.map((l) => l.intensity)).size).toBeGreaterThan(1);
+    expect(new Set(smooth.map((l) => l.intensity)).size).toBeGreaterThan(steps);
+    // Each stepped value is the smooth one's noise rounded to the nearest step.
+    smooth.forEach((l, f) => {
+      const noise = (l.radius / 20 - 1) / flicker.amount;
+      const snapped = Math.round(noise * LIGHT_DITHER_FLICKER_STEPS) / LIGHT_DITHER_FLICKER_STEPS;
+      expect(stepped[f]!.radius).toBe(Math.round(20 * (1 + flicker.amount * snapped)));
+    });
   });
 
   it('gives the vignette with its defaults, and none at strength 0', () => {

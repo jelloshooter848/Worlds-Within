@@ -58,6 +58,7 @@ export {
   flickered,
   flickerNoise,
   LIGHT_DITHER_STOPS,
+  LIGHT_DITHER_FLICKER_STEPS,
   LIGHT_SMOOTH_STOPS,
   LIGHT_SPRITE_TICKS,
   lightDither,

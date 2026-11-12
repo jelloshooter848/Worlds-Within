@@ -76,8 +76,9 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
   sprite at scale 1 and whole pixels of `ditheredRadial`'s alpha bytes (`@engine/core/fx`, the
   same bytes the Canvas2D backend puts), written as premultiplied white into a pooled
   `DitherStamp` (a `BufferImageSource`, nearest filtering, rounded up to 32 texels a side, its
-  frame cut to the fill; one per dithered fill in the frame, reset by `beginFrame` and rewritten
-  next frame, so a flickering light makes no new texture), tinted and blended as above.
+  frame cut to the fill; one per dithered fill in the frame, reset by `beginFrame`, so a
+  flickering light makes no new texture, and rewritten and uploaded only when its stamp changes:
+  a steady light, which gets the same stamp each frame, uploads nothing), tinted and blended as above.
 
 - Tinted sheets (T13b-3): a sheet whose `image` is a `TintedImage` (a texture and a colour) draws
   every sprite with that colour as `tint` (and its alpha as alpha); a sheet whose `image` is a
@@ -230,4 +231,4 @@ of a glow, the mask of a clip and the nesting of transforms and scopes; quarter 
 against the same texel table as `canvas2d/renderer.test.ts`; and that the pools hand back the same
 objects frame after frame, reset. Its dithered block (polish P) checks a dithered fill's sprite
 (whole-pixel place and size, blend, tint), its texture holding `ditheredRadial`'s bytes, reused and
-resized next frame and byte-identical for the same fill.
+resized next frame and byte-identical for the same fill, and not uploaded again for a steady one.

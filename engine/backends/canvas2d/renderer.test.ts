@@ -152,12 +152,16 @@ describe('CanvasRenderer dithered radial fills (Engine 0.16 polish P, C1)', () =
   function ditherCtx() {
     const draws: { op: string; data: number[]; at: number[] }[] = [];
     let put: number[] = [];
+    const made = { images: 0 };
     const scratchCtx = {
-      createImageData: (w: number, h: number) => ({
-        width: w,
-        height: h,
-        data: new Uint8ClampedArray(w * h * 4),
-      }),
+      createImageData: (w: number, h: number) => (
+        made.images++,
+        {
+          width: w,
+          height: h,
+          data: new Uint8ClampedArray(w * h * 4),
+        }
+      ),
       putImageData: (img: { data: Uint8ClampedArray }) => (put = [...img.data]),
     };
     const g = globalThis as { OffscreenCanvas?: unknown };
@@ -184,11 +188,11 @@ describe('CanvasRenderer dithered radial fills (Engine 0.16 polish P, C1)', () =
     const restore = () => {
       g.OffscreenCanvas = had;
     };
-    return { ctx: ctx as unknown as CanvasRenderingContext2D, draws, restore };
+    return { ctx: ctx as unknown as CanvasRenderingContext2D, draws, restore, made };
   }
 
   it('puts the fill dithered in its colour and draws it in its blend, the same bytes every time', () => {
-    const { ctx, draws, restore } = ditherCtx();
+    const { ctx, draws, restore, made } = ditherCtx();
     try {
       const r = new CanvasRenderer(ctx);
       r.gradient(fill);
@@ -204,6 +208,11 @@ describe('CanvasRenderer dithered radial fills (Engine 0.16 polish P, C1)', () =
       for (const a of alphas) expect(steps).toContain(a);
       expect(alphas.size).toBeGreaterThan(2);
       expect(draws[2]!.data).toEqual(first);
+      // The same fill again is coloured once (its stamp's image data kept); another colour anew.
+      expect(made.images).toBe(1);
+      r.gradient({ ...fill, color: '#00ff00' });
+      expect(made.images).toBe(2);
+      expect(draws[3]!.data.slice(0, 3)).toEqual([0, 255, 0]);
     } finally {
       restore();
     }

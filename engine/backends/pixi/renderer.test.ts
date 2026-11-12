@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Container } from 'pixi.js';
 import { Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { blended, clipped, glowing, transformed, translucent } from '@engine/core/gfx/renderer';
@@ -486,5 +486,13 @@ describe('PixiRenderer dithered radial fills (Engine 0.16 polish P, C1)', () => 
     r.beginFrame();
     r.gradient(fill);
     expect((texture.source.resource as Uint8Array).slice()).toEqual(bytes);
+    // A steady fill (the same stamp from `ditheredRadial`) is not rewritten or uploaded again.
+    const update = vi.spyOn(texture.source, 'update');
+    r.beginFrame();
+    r.gradient(fill);
+    expect(update).not.toHaveBeenCalled();
+    r.beginFrame();
+    r.gradient({ ...fill, radius: 9 });
+    expect(update).toHaveBeenCalledTimes(1);
   });
 });
