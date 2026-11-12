@@ -11,7 +11,9 @@ import { launch, ROOT, serveBuilt } from './serve';
 // The tower-defense page built and served as `tests/browser/tower-defense-page.test.ts` serves it,
 // opened in headless Chromium on a 1920x1080 window in manual-loop mode (`?debug=step`, PixiJS, its
 // default backend), the `win` run file's input typed on the keyboard at its ticks to the middle of
-// wave 9 (tick 2450), then the speed button clicked twice (1x, 2x, 3x) and one more tick played.
+// wave 9 (tick 2450; the last 60 ticks one `step` call each, so the page draws every one and
+// the enemies' spawn fade-in and the shots' flights advance as on the live loop), then the speed
+// button clicked twice (1x, 2x, 3x) and one more tick played.
 // In manual-loop mode the scene still steps once a loop step (`SceneStack`'s speed is 1 there, so
 // the ticks stay the run's); the button and the HUD show the speed chosen.
 //
@@ -25,6 +27,13 @@ const GAME = 'games/samples/tower-defense/';
 const STEPS_PER_TICK = 2;
 /** The tick of the shot: wave 9 on the road, twelve enemies, wave 10 previewed. */
 const SHOT_TICK = 2450;
+/**
+ * The ticks before the shot played one `step` call each. In manual-loop mode the page draws once
+ * per `step(n)` call, however many loop steps it runs, and presentation that counts drawn frames
+ * (an enemy's 8-frame spawn fade-in, a projectile's flight) advances once per call; the last
+ * ticks are played one at a time so the shot draws them as the live loop does.
+ */
+const DRAWN_TICKS = 60;
 const KEYS: Record<string, string> = {
   up: 'ArrowUp',
   down: 'ArrowDown',
@@ -43,9 +52,19 @@ const hook = <T>(page: Page, name: string): Promise<T> =>
     name,
   ) as Promise<T>;
 
-/** `n` game ticks (`STEPS_PER_TICK` loop steps each). */
+/** `n` game ticks (`STEPS_PER_TICK` loop steps each), drawn once at the end. */
 const ticks = (page: Page, n: number): Promise<void> =>
   page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n * STEPS_PER_TICK);
+
+/**
+ * Plays from game tick `from` to `to`: in one call up to `DRAWN_TICKS` before the shot, then one
+ * call a tick so the page draws each of the last ticks.
+ */
+const playTo = async (page: Page, from: number, to: number): Promise<void> => {
+  const batched = Math.max(from, Math.min(to, SHOT_TICK - 1 - DRAWN_TICKS));
+  if (batched > from) await ticks(page, batched - from);
+  for (let t = batched; t < to; t++) await ticks(page, 1);
+};
 
 const [outArg, prefix = 'shot'] = process.argv.slice(2);
 if (outArg === undefined) {
@@ -74,14 +93,14 @@ try {
   let tick = 0;
   for (const s of run.input.steps) {
     if (s.frame >= SHOT_TICK) break;
-    if (s.frame > tick) await ticks(page, s.frame - tick);
+    if (s.frame > tick) await playTo(page, tick, s.frame);
     tick = Math.max(tick, s.frame);
     const hold = s.hold.map((a) => KEYS[a]!);
     for (const k of held) if (!hold.includes(k)) await page.keyboard.up(k);
     for (const k of hold) if (!held.includes(k)) await page.keyboard.down(k);
     held = hold;
   }
-  await ticks(page, SHOT_TICK - 1 - tick);
+  await playTo(page, tick, SHOT_TICK - 1);
   await page.click('#ww-speed');
   await page.click('#ww-speed');
   await ticks(page, 1);

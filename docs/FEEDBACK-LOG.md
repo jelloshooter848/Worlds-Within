@@ -2417,7 +2417,9 @@ Engine 0.16 part E).
 - **615.** The speed-up shot (06) is a page shot by a committed script,
   `tests/browser/td-review-shots.ts` (run with `pnpm exec tsx`, not a test), in manual-loop mode:
   there the scene steps at 1x, so the shot shows the control and the HUD at 3x, not its pace (the
-  page test checks the pace on the live loop).
+  page test checks the pace on the live loop). Manual-loop mode draws once per `step(n)` call,
+  so the script plays the last 60 ticks one call each, letting frame-counted looks (spawn
+  fade-in, projectile flights) advance as on the live loop.
 - **616.** Looks recorded, not fixed: the lives heart disappears at 0 lives (the engine's HUD
   `icon` draws only on a truthy value; 09); the level-1 towers are grey and look alike (02, 03);
   a hit brute's white flash is a full 24 px silhouette (07); on the page the pause and speed

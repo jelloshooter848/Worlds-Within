@@ -437,6 +437,13 @@ for the mini siege) and the page scales by a non-whole factor at 1920x1080. `pnp
 screenshot` draws only the effects alive at the shot tick, so a projectile shows at one place
 on its way.
 
+**Retaken after review:** the first 06 showed the enemies as faint ghosts in the road's colour
+and projectile dots trailing behind the shots. The script, not the page, was the cause: in
+manual-loop mode the page draws once per `__ww.step(n)` call, and the script played thousands of
+ticks in a few calls, so the enemies' 8-frame spawn fade-in and the projectiles' flights (which
+count drawn frames) had barely moved. The script now plays its last 60 ticks one call each, and
+the retaken 06 shows the green runners and the blue slowed enemies as 03 does.
+
 ### The mini siege's walls round
 
 The hosted walls round (`td-defence`, part F, drawn by `canvas2d-td-defence.json` on the same
