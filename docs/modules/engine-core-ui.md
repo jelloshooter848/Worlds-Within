@@ -65,6 +65,11 @@ ne?, lt?, lte?, gt?, gte? }`, the mixer's status test) draws it only while the t
   box across the bottom, widget `DIALOG_WIDGET`, `DIALOG_BOTTOM` px up, tall enough for its
   portrait), `endScreen`'s optional end trigger (its heading and credits), `MenuDialog`,
   `EndTrigger`; `checkMenus` checks portraits, page and speaker glyphs and trigger ids.
+  Engine 0.16 E6: `end.stars` (`{ status? (\`stars\`), count? (3), filled, empty, sheet?, palette?,
+  scale?, gap? }`, `EndStars`, `starsWon`, `STARS_STATUS`, `DEFAULT_STAR_COUNT`,
+`DEFAULT_STAR_GAP`): a centred row of frames from a sheet or texts in the title font under the
+credits, the first `stars`-many filled, none while the status lacks it; an end trigger's
+`stars: false`leaves it out;`checkMenus` checks its frames, sheet, palette and glyphs.
 - UI screens (T7): `UI_KIND`, `uiScreenSchema`, `checkUiWidgets`, `checkUiRefs`, `UiScreen`
   (`update(input)`, `draws()`, `open`, `close`, `focused`, `value`, `itemBox`), `Menu`, `Button`,
   `DialogBox`, `UiNav` (commands from actions with repeat), `UiInput`, `UiEvent`, `uiLook`,
@@ -109,6 +114,14 @@ day bar with coloured bands, tick marks and a marker at the time now along the b
       "format": "Day {day} {time} {phase}", "outline": "#000000",
       "dayBar": { "h": 3, "bands": [{ "hour": 5, "color": "#f0a070" }, { "hour": 7, "color": "#88c8f0" },
         { "hour": 19.5, "color": "#a05848" }, { "hour": 21, "color": "#101830" }], "marks": [6, 12, 18] } }
+
+From Engine 0.16 E6 the `preview` widget shows a `kind:count` status list (the tower defense's
+`nextWaveGroups`) as icons by kind (`frames`, else `frame`; a stand-in box otherwise) each with
+its count in the item's font through `format`, `gap` px after the icon and `spacing` px between
+groups (`previewGroups`, `DEFAULT_PREVIEW_SPACING`):
+
+    { "status": "nextWaveGroups", "as": "preview", "x": 4, "y": 4, "font": "small",
+      "frames": { "runner": "runner-icon", "brute": "brute-icon" }, "format": "x{value}" }
 
 Backends take the fonts as `fonts` (`SkinnedCanvasPresenter`, `canvasDisplay`,
 `skinSetCanvasPresenter`, `ThreeScene`, `ThreePresenter`, `threeDisplay`, `threeScenePresenter`);

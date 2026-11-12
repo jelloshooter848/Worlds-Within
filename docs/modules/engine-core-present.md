@@ -68,6 +68,14 @@ Import from `@engine/core/present` (`index.ts`).
   Engine 0.16 F8: a 3D skin's `rounds2d` (the rounds a 3D page draws in 2D), `labels` on 2D skins,
   2D kind fields `turnToFacing`, `ring` and `hitFlash`, and colour palettes (`#fff`,
   `isSilhouettePalette`: a silhouette, for hit flashes).
+  Engine 0.16 E6 (`projectile.ts`): an event entry's `projectile` (`projectileSchema`: `{ frame?,
+sheet?, palette?, color?, size?, ticks, arc?, ease?, turn?, impact?: { emit?, sound?, shake? } }`,
+  2D only, `wrong_backend_field` on a 3D skin; `projectileFlight(ev)`, `projectilePlace(look,
+from, to, age)`), a kind `ring`'s `tag` and `per` (the radius from a `range:` tag; `radius` or
+  `tag` needed), a label's `max: { tag }` (`labelBar(label, value, status, entity?)`: each
+  entity's own `maxhp:`) and the HUD widget `preview` (`frames` by kind, `spacing`). `validate`
+  checks a projectile's frame, sheet, palette, impact sound and emitters and a preview's frames
+  and font digits.
   Engine 0.16 F9: `HUD_HIDDEN_STATUS` (`hudHidden`): a frame whose status sets it shows no HUD
   item (and in 3D no label or place name), for a page's title screen; `hudPanelBoxes` (the shown
   `panel` and `minimap` boxes) and `boxesOverlap`; `scene3d.skirt` (`{ color, margin? }`,
@@ -226,4 +234,6 @@ Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `resolveSkinFrame`, `resolveMeshParts` and `resolveCamera3d`; `engine/core/present/camera.test.ts`
 covers `CameraFollower` and `cameraShake`; `engine/core/present/rts-camera.test.ts` covers
 `RtsCamera` (clamping, zoom limits, round trips at zoom 0.5, 1, 1.5 and 2, its hint through the
-follower) and `engine/backends/canvas2d/rts-camera.test.ts` its agreement with the presenter; `engine/core/present/stream.test.ts` the frame streams; `engine/core/present/fog.test.ts` (Engine 0.16 part D, D3) a frame's fog in the schema (bad cells and rows named), the skin's `fog` look (defaults, a bad field named at its path, the minimap fields on another item) and `fogBoxes` (runs, a soft edge covering every px once); `engine/core/present/readability.test.ts` (Engine 0.16 part D, D4) the `outline`, `team` and `screenScale` fields (accepted on 2D, refused on 3D, bad values at their path, a team outline without `team`) and their readings.
+follower) and `engine/backends/canvas2d/rts-camera.test.ts` its agreement with the presenter; `engine/core/present/stream.test.ts` the frame streams; `engine/core/present/fog.test.ts` (Engine 0.16 part D, D3) a frame's fog in the schema (bad cells and rows named), the skin's `fog` look (defaults, a bad field named at its path, the minimap fields on another item) and `fogBoxes` (runs, a soft edge covering every px once); `engine/core/present/readability.test.ts` (Engine 0.16 part D, D4) the `outline`, `team` and `screenScale` fields (accepted on 2D, refused on 3D, bad values at their path, a team outline without `team`) and their readings; `engine/core/present/projectile.test.ts` (Engine 0.16 E6) the projectile,
+ring, label `max` and preview fields, their cross-file checks, the flight's places and angles and
+`labelBar` against a tag.

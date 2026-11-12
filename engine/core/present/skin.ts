@@ -25,6 +25,7 @@ import {
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
 import { fogLookSchema } from './fog';
+import { projectileSchema } from './projectile';
 import { OUTLINE_TEAM, outlineSchema, screenScaleSchema, teamSchema } from './readability';
 import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
 import { checkDecorRefs, decorSchema, placesSchema, tileVarySchema as modelTileVarySchema } from './decor';
@@ -627,14 +628,32 @@ const kindEntry = z.strictObject({
     ),
   ring: z
     .strictObject({
-      radius: z.number().positive().describe('the radius in world px from the box centre'),
+      radius: z
+        .number()
+        .positive()
+        .exactOptional()
+        .describe('the radius in world px from the box centre (with `tag`: when the entity has no such tag)'),
+      tag: id
+        .exactOptional()
+        .describe(
+          "a tag prefix (`range:`): the radius is the number after it times `per` (an upgraded tower's range; Engine 0.16 E6); an entity without the tag draws `radius`, or no ring",
+        ),
+      per: z
+        .number()
+        .positive()
+        .exactOptional()
+        .describe("world px per unit of the tag's number (default the shown map's tile size, else 16)"),
       color: color.describe('the fill colour'),
       alpha: z.number().min(0).max(1).exactOptional().describe('the fill opacity (default 0.25)'),
       edge: color.exactOptional().describe('an opaque one-pixel rim in this colour'),
     })
+    .refine((r) => r.radius !== undefined || r.tag !== undefined, {
+      message: 'a ring needs "radius", "tag" or both',
+      params: { code: 'missing_field' },
+    })
     .exactOptional()
     .describe(
-      "2D: a flat disc under the sprite, centred on the box (a tower's range while it is placed, Engine 0.16 F8)",
+      "2D: a flat disc under the sprite, centred on the box (a tower's range while it is placed, Engine 0.16 F8; from a `range:` tag, E6)",
     ),
   byTag: z
     .array(tagEntry)
@@ -776,13 +795,14 @@ const eventEntry = z.strictObject({
     .describe(
       "a hit-pause, `{ ticks }`: the browser shell holds the game's ticks that many display frames (Engine 0.16)",
     ),
+  projectile: projectileSchema.exactOptional(),
 });
 
 /** The HUD item types drawn before Engine 0.16 T6, exactly as they were (`layoutHud`). */
 export const HUD_CLASSIC_TYPES = ['hearts', 'number', 'text', 'icon'] as const;
 
-/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`), and F4's world `clock`. */
-export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap', 'clock'] as const;
+/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`), F4's world `clock` and E6's wave `preview`. */
+export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap', 'clock', 'preview'] as const;
 
 /**
  * The tokens a `clock` HUD item's `format` replaces (Engine 0.16 F4), each with the clock status
@@ -871,7 +891,7 @@ const hudItem = z
     as: z
       .enum([...HUD_CLASSIC_TYPES, ...HUD_WIDGET_TYPES])
       .describe(
-        "how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice), `minimap` and (F4) `clock` (the world clock's text and a day bar; `status` is its prefix, default `clock`)",
+        "how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice), `minimap`, (F4) `clock` (the world clock's text and a day bar; `status` is its prefix, default `clock`) and (E6) `preview` (a row of icons with counts from a `kind:count,...` status list, such as the next wave's groups)",
       ),
     x: z.number().int().describe('left edge, screen pixels'),
     y: z.number().int().describe('top edge, screen pixels'),
@@ -890,7 +910,7 @@ const hudItem = z
       .record(z.string().min(1), id)
       .exactOptional()
       .describe(
-        'an icon\'s frame per status value (`{ "bomb": "bomb", "dash": "boots" }`; a value not listed shows `frame`), such as the selected item (Engine 0.16 part C T9)',
+        'an icon\'s frame per status value (`{ "bomb": "bomb", "dash": "boots" }`; a value not listed shows `frame`), such as the selected item (Engine 0.16 part C T9); a `preview`\'s frame per kind (Engine 0.16 E6)',
       ),
     half: id
       .exactOptional()
@@ -929,7 +949,13 @@ const hudItem = z
       .int()
       .min(0)
       .exactOptional()
-      .describe("px between a counter's icon and its number (default 2)"),
+      .describe("px between a counter's (or a preview group's) icon and its number (default 2)"),
+    spacing: z
+      .number()
+      .int()
+      .min(0)
+      .exactOptional()
+      .describe('a `preview`: px between one group and the next (default 4; Engine 0.16 E6)'),
     tween: z
       .strictObject({
         ticks: z.number().int().min(1).describe('display frames a change rolls over'),
@@ -1019,8 +1045,19 @@ const hudItem = z
     if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined && !flatPanel) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
     }
-    if (v.frames !== undefined && v.as !== 'icon')
-      ctx.addIssue({ code: 'custom', path: ['frames'], message: '`frames` is for "icon" only' });
+    if (v.frames !== undefined && v.as !== 'icon' && v.as !== 'preview')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['frames'],
+        message: '`frames` is for "icon" and "preview" only',
+      });
+    if (v.spacing !== undefined && v.as !== 'preview')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['spacing'],
+        message: '"spacing" goes with a "preview" item only',
+        params: { code: 'bad_field' },
+      });
     if (v.half !== undefined && v.as !== 'hearts')
       ctx.addIssue({ code: 'custom', path: ['half'], message: '`half` is for "hearts" only' });
     const statusFree =
@@ -1282,7 +1319,10 @@ function checkEventKeys(events: Record<string, unknown>, ctx: z.RefinementCtx): 
 function checkEmitRefs(
   skin: {
     emitters?: Record<string, unknown>;
-    events?: Record<string, { emit?: string | string[] }>;
+    events?: Record<
+      string,
+      { emit?: string | string[]; projectile?: { impact?: { emit?: string | string[] } } }
+    >;
     kinds: Record<string, { emit?: string | string[] }>;
     decor?: Record<string, { legend: Record<string, { emit?: string | string[] }> }>;
   },
@@ -1303,7 +1343,10 @@ function checkEmitRefs(
       });
     });
   };
-  for (const [type, entry] of Object.entries(skin.events ?? {})) check(['events', type], entry.emit);
+  for (const [type, entry] of Object.entries(skin.events ?? {})) {
+    check(['events', type], entry.emit);
+    check(['events', type, 'projectile', 'impact'], entry.projectile?.impact?.emit);
+  }
   for (const [kind, entry] of Object.entries(skin.kinds)) check(['kinds', kind], entry.emit);
   for (const [map, decor] of Object.entries(skin.decor ?? {}))
     for (const [ch, entry] of Object.entries(decor.legend)) check(['decor', map, 'legend', ch], entry.emit);
@@ -1514,6 +1557,16 @@ export const skinSchema = z
     checkMusicLayers(skin.music, ctx);
     checkEmitRefs(skin, ctx);
     checkLighting(skin, ctx);
+    // A projectile (Engine 0.16 E6) is drawn by the 2D walk only.
+    if (MESH_BACKENDS.includes(skin.backend))
+      for (const [key, entry] of Object.entries(skin.events ?? {}))
+        if (entry.projectile !== undefined)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['events', key, 'projectile'],
+            message: `"projectile" is a 2D field; backend "${skin.backend}" takes meshes`,
+            params: { code: 'wrong_backend_field' },
+          });
     checkMeshes(skin, ctx);
     checkShapes(skin.backend, skin.sheets, skin.kinds, ['kinds'], ['sheet', 'frames', 'fallbackColor'], ctx);
     checkShapes(
@@ -1740,6 +1793,23 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     if (entry.sound !== undefined && !sounds.has(entry.sound)) {
       missing(['events', type, 'sound'], 'song or sfx', entry.sound);
     }
+    // A projectile (Engine 0.16 E6): its frame like any frame, its impact's sound like any sound.
+    const shot = entry.projectile;
+    if (shot === undefined) continue;
+    const at: FieldPath = ['events', type, 'projectile'];
+    if (shot.impact?.sound !== undefined && !sounds.has(shot.impact.sound))
+      missing([...at, 'impact', 'sound'], 'song or sfx', shot.impact.sound);
+    if (shot.palette !== undefined && !palettes.has(shot.palette))
+      missing([...at, 'palette'], 'palette', shot.palette);
+    if (shot.frame === undefined) continue;
+    if (shot.sheet === undefined && skin.sheets?.sheet === undefined)
+      issues.push({
+        name,
+        path: [...at, 'sheet'],
+        code: 'missing_field',
+        message: 'a projectile frame needs "sheet" (or sheets.sheet)',
+      });
+    else sheetAt(at, shot.sheet, one(shot.frame));
   }
   issues.push(...checkMusicSongs(name, skin, others));
   issues.push(...checkHudFonts(name, skin, others, sprites));
@@ -1892,7 +1962,10 @@ function checkHudFonts(
     if (font === undefined) {
       // Classic items keep their old reading (a sprite font, unchecked); a counter or styled text
       // must name a font file or a sprite.
-      const styled = item.as === 'counter' || HUD_TEXT_STYLE_FIELDS.some((f) => item[f] !== undefined);
+      const styled =
+        item.as === 'counter' ||
+        item.as === 'preview' ||
+        HUD_TEXT_STYLE_FIELDS.some((f) => item[f] !== undefined);
       if (styled && !sprites.has(item.font))
         issues.push({
           name,
@@ -1927,7 +2000,7 @@ function checkHudFonts(
         missingGlyphs(glyphs, item.format.split(HUD_VALUE_TOKEN).join('')),
         'used in this format',
       );
-    if (item.as === 'number' || item.as === 'counter')
+    if (item.as === 'number' || item.as === 'counter' || item.as === 'preview')
       report('font', missingGlyphs(glyphs, HUD_DIGITS), 'a number shows every digit');
   });
   return issues;

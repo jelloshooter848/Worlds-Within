@@ -244,10 +244,16 @@ export const labelSchema = z.strictObject({
     .describe('`text` (the value), `bar` (a number of `max`) or `timer` (ticks as m:ss)'),
   format: z.string().exactOptional().describe('text and timer: the text, `{value}` replaced by the value'),
   max: z
-    .union([z.number().positive(), z.string().min(1)])
+    .union([
+      z.number().positive(),
+      z.string().min(1),
+      z.strictObject({
+        tag: z.string().min(1).describe('a tag prefix: the number after it (`maxhp:` on `maxhp:12`)'),
+      }),
+    ])
     .exactOptional()
     .describe(
-      'bar: the full value, a number or a status field (default 100; a tag value `n/m` gives its own)',
+      'bar: the full value, a number, a status field or (Engine 0.16 E6) `{ tag: "<prefix>" }`, the number of the entity\'s first tag with that prefix (each enemy its own `maxhp:`) (default 100; a tag value `n/m` gives its own)',
     ),
   font: z.string().min(1).exactOptional().describe('text and timer: a font file of the game'),
   color: color.exactOptional().describe('text: the ink (default white); bar: the fill (default green)'),
@@ -371,18 +377,29 @@ export function labelValue(
   return Object.hasOwn(status, from.status) ? status[from.status] : undefined;
 }
 
-/** A bar label's value and full value: a number, or a tag's `n/m` text; null when there is none. */
+/**
+ * A bar label's value and full value: a number, or a tag's `n/m` text; null when there is none.
+ * The full value is the label's `max`: a number, a status field, or (Engine 0.16 E6) the number
+ * after the entity's first tag with a prefix (`{ tag: "maxhp:" }`, so each enemy has its own); a
+ * `max` that reads nothing falls back as if it were left out.
+ */
 export function labelBar(
   label: DeepReadonly<SkinLabel>,
   value: string | number | boolean | undefined,
   status: DeepReadonly<PresentFrame['status']>,
+  entity?: DeepReadonly<Pick<PresentEntity, 'tags'>>,
 ): { value: number; max: number } | null {
+  const read = (m: unknown) =>
+    typeof m === 'number' ? m : typeof m === 'string' && m.trim() !== '' ? Number(m) : undefined;
   let max: number | undefined;
-  if (typeof label.max === 'number') max = label.max;
-  else if (label.max !== undefined) {
-    const m = status[label.max];
-    max = typeof m === 'number' ? m : typeof m === 'string' && m.trim() !== '' ? Number(m) : undefined;
+  const spec = label.max;
+  if (typeof spec === 'number') max = spec;
+  else if (typeof spec === 'string') max = read(status[spec]);
+  else if (spec !== undefined) {
+    const tag = entity?.tags.find((t) => t.startsWith(spec.tag));
+    max = tag === undefined ? undefined : read(tag.slice(spec.tag.length));
   }
+  if (max !== undefined && !Number.isFinite(max)) max = undefined;
   if (typeof value === 'number') return { value, max: max ?? 100 };
   if (typeof value !== 'string') return null;
   const pair = /^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/.exec(value);

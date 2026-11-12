@@ -66,6 +66,24 @@ zoom)` instead of the zoom, the box's `screenScalePivot` kept where the zoom put
   its RGBA pixels to `recolorPixels`); without `recolor`, or where it gives null (no canvas, a
   headless sheet), sprites draw without outline or team colour. A skin without the fields draws
   exactly the calls it did.
+- The tower defense's looks (Engine 0.16 E6). **Projectiles**: an event's skin entry with a
+  `projectile` (`@engine/core/present`'s `projectile.ts`) starts a flight in `takeEvents` (the
+  event's `fromX`/`fromY` to its `x`/`y`, `projectileFlight`; without both points, or with
+  `PROJECTILE_MAX` (256) in the air, the impact happens at once at the event's point).
+  `landProjectiles` (right after the events, before the particles step) lands every flight whose
+  age (`frame.frame` minus its event's frame) reached `ticks`, also on a frame that skipped past
+  it (a sped-up page), each exactly once: its `impact`'s `emit` through `SkinParticles.event` at the
+  landing point (the presentation RNG, as any emitter), its `sound` through `onSound` and its
+  `shake` on the `CameraFx`; a frame number that went back (a new level) drops the flights.
+  `drawProjectiles` draws those in flight after the entities and under the particles, at
+  `projectilePlace` (the eased share of the way, raised by the `arc`): the frame centred on the
+  place at the zoom (through `transformed` turned to the tangent, rounded to whole degrees, with
+  `turn`), else a `size` square in `color`. `projectileCount` is how many fly. **Rings from a
+  tag**: `ringRadius(ring, tags, tileSize?)`: with `tag` the number after it times `per` (default
+  the shown map's tile size, else `DEFAULT_RING_PER` 16), else `radius`, else no ring (an
+  upgraded tower's range). A ring draws only its rows on the picture (`discRows` from the
+  top to the bottom of the picture), so a zoom punch that makes it huge stays cheap. **Bars against a tag**: a label's `max: { tag: "maxhp:" }` is read per
+  entity (`labelBar`'s `entity`). A skin without these fields draws exactly the calls it did.
 - `recolor.ts` (D4, pure): `RecolorSpec` (`silhouette`, `mask`, `hue`, `tint`), `recolorPixels`
   (RGBA in place; clear pixels untouched; `hue` leaves greys below `HUE_MIN_SATURATION` and keeps
   lightness), `recolorKey`, `hexRgb`, `rgbToHsl`, `hslToRgb`, `hueInRange` (wraps through 360),
@@ -106,4 +124,12 @@ in `tests/runs/`; the fog and the minimap on both 2D backends in
 spec's pixels, the colour helpers, the cache once per spec and null without a recolour), Canvas2D's
 `readability.test.ts` (outline, mask, tint and box pixels; zoom-stable bars 16x2 at zoom 0.5, 1
 and 2) and `tests/browser/readability-parity.test.ts` (both backends; strict bound at zoom 1 and
-2, where half-size sprites sample differently at 0.5, and the bar's size at all three).
+2, where half-size sprites sample differently at 0.5, and the bar's size at all three). E6: the
+`tower-defense looks` block of `draw.test.ts` (a square's places frame by frame, landing on its
+frame with its sound once and a burst, a skipped landing frame, a new level dropping flights, an
+impact at once without a start, a frame turned to its way on the arc, rings from a tag and the map's
+tile size or `per`, bars against each enemy's own max) and `tests/browser/td-looks-parity.test.ts`
+(rings, bars, the wave preview and projectiles in flight and landed on both 2D backends within
+the strict bound; a frame turned to an arbitrary angle samples differently, so its box is held to
+a few edge pixels), and the `towerDefense` switch of `tests/runs/effects.ts` in the invariance
+tests.

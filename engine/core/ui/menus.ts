@@ -9,6 +9,7 @@ import { layoutText } from './text';
 import { DialogBox } from './dialog';
 import { UI_DIALOG_MARGIN } from './screen';
 import {
+  UI_STYLE_DEFAULTS,
   uiStyleSchema,
   type UiMenuItemSpec,
   type UiScreenFile,
@@ -241,6 +242,57 @@ const dialogSchema = z.strictObject({
     .describe('lines of text the box holds (3; taller when the portrait needs it)'),
 });
 
+/** The status key an end screen's star row reads when it names none. */
+export const STARS_STATUS = 'stars';
+
+/** Stars in an end screen's row when it gives no `count`. */
+export const DEFAULT_STAR_COUNT = 3;
+
+/** Px between two stars of an end screen's row when it gives no `gap`. */
+export const DEFAULT_STAR_GAP = 4;
+
+/**
+ * An end screen's star rating (Engine 0.16 E6, the tower defense's 1-3 stars): a row of `count`
+ * stars, the first `status`-many filled. With `sheet`, `filled` and `empty` are its frames (a
+ * sprite file or a skin's PNG image sheet); without, texts drawn in the title font, the filled in
+ * the heading colour and the empty in the style's `disabledText`.
+ */
+const starsSchema = z.strictObject({
+  status: z
+    .string()
+    .min(1)
+    .exactOptional()
+    .describe(
+      `the status key with the stars won, a whole number (default \`${STARS_STATUS}\`); no row while the status lacks it`,
+    ),
+  count: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .exactOptional()
+    .describe(`stars in the row (default ${DEFAULT_STAR_COUNT})`),
+  filled: z
+    .string()
+    .min(1)
+    .describe('a won star: a frame of `sheet`, or without one a text in the title font (`*`)'),
+  empty: z.string().min(1).describe('a star not won: a frame of `sheet`, or a text in the title font (`-`)'),
+  sheet: z
+    .string()
+    .min(1)
+    .exactOptional()
+    .describe("a sprite file of the game (or a skin's PNG image sheet) holding the two frames"),
+  palette: z.string().min(1).exactOptional().describe('a palette file to recolour the frames with'),
+  scale: z.number().int().min(1).max(8).exactOptional().describe('whole-number scale of the frames (1)'),
+  gap: z
+    .number()
+    .int()
+    .min(0)
+    .max(32)
+    .exactOptional()
+    .describe(`px between two stars (default ${DEFAULT_STAR_GAP})`),
+});
+
 /** An end trigger: the status test that says the game is over, its dialog and the end screen's heading. */
 const endTriggerSchema = z.strictObject({
   when: mixWhenSchema.describe(
@@ -268,6 +320,10 @@ const endTriggerSchema = z.strictObject({
     .describe(
       'a song (or layered music entry) played when this end opens its dialog or end screen (else `end.music`; Engine 0.16 part C T9)',
     ),
+  stars: z
+    .boolean()
+    .exactOptional()
+    .describe("`false` leaves the end screen's star row out for this end (a loss; Engine 0.16 E6)"),
 });
 
 /** The lines the level-clear and end screens show when they give none. */
@@ -420,6 +476,11 @@ export const menusSchema = z
           .describe(
             'the stats it shows, summed over the levels cleared this play (default coins, time, deaths)',
           ),
+        stars: starsSchema
+          .exactOptional()
+          .describe(
+            'a star rating row under the credits (Engine 0.16 E6): `{ status?, count?, filled, empty, sheet?, palette?, scale?, gap? }`',
+          ),
         items: itemList(END_ITEMS, 'end')
           .exactOptional()
           .describe(`its menu: ${END_ITEMS.join(', ')} (default title)`),
@@ -487,6 +548,7 @@ export type MenuControl = z.output<typeof controlSchema>;
 export type StatLine = z.output<typeof statLineSchema>;
 export type MenuDialog = z.output<typeof dialogSchema>;
 export type EndTrigger = z.output<typeof endTriggerSchema>;
+export type EndStars = z.output<typeof starsSchema>;
 
 /** The settings items a game shows: its list, else all but `colour`. */
 export function settingsItems(menus: MenusSpec): readonly SettingsItem[] {
@@ -1034,13 +1096,15 @@ export function endScreen(
   menus: MenusSpec,
   ctx: MenuBuildContext,
   status: StatValues,
-  ending?: Pick<EndTrigger, 'heading' | 'credits'>,
+  ending?: Pick<EndTrigger, 'heading' | 'credits' | 'stars'>,
 ): UiScreenFile {
   const end = {
     ...menus.end,
     ...(ending?.heading !== undefined && { heading: ending.heading }),
     ...(ending?.credits !== undefined && { credits: ending.credits }),
   };
+  const stars =
+    ending?.stars === false || end.stars === undefined ? null : starRow(menus, ctx, end.stars, status);
   const lines = end.lines ?? DEFAULT_STAT_LINES;
   const items = (end.items ?? ['title']) as EndItem[];
   const rh = rowHeight(ctx.fonts, menus.font) + 1;
@@ -1048,8 +1112,9 @@ export function endScreen(
   const width = headedWidth(menus, ctx, title, Math.min(ctx.screen.width - 8, 200));
   const creditsH =
     end.credits === undefined ? 0 : textHeight(ctx.fonts, menus.font, end.credits, width - 24) + 8;
+  const starsH = stars === null ? 0 : stars.h + 8;
   const statsH = lines.length * rh;
-  const bodyH = creditsH + statsH + 8 + menuHeight(ctx, menus, items.length);
+  const bodyH = creditsH + starsH + statsH + 8 + menuHeight(ctx, menus, items.length);
   const widgets = framedScreen(
     menus,
     ctx,
@@ -1069,12 +1134,13 @@ export function endScreen(
               text: end.credits,
             } as UiWidgetSpec,
           ]),
-      ...statRows(menus, ctx, lines, status, top + creditsH, width),
+      ...(stars === null ? [] : stars.widgets(top + creditsH)),
+      ...statRows(menus, ctx, lines, status, top + creditsH + starsH, width),
       {
         id: 'main',
         type: 'menu',
         anchor: 'top',
-        y: top + creditsH + statsH + 8,
+        y: top + creditsH + starsH + statsH + 8,
         w: menuWidth(menus, ctx, items, 96),
         panel: false,
         items: buttons(menus, items),
@@ -1085,6 +1151,87 @@ export function endScreen(
   const hint = menuHint(ctx.keys, false, false);
   if (hint !== '') widgets.push(hintStrip(menus, ctx, 1), hintWidget(menus, hint));
   return { style: menusUiStyle(menus), focus: 'main', widgets };
+}
+
+/**
+ * The stars won (Engine 0.16 E6): the status value as a whole number held to `0..count`, or null
+ * when the status lacks it or it is no number (no row is shown).
+ */
+export function starsWon(stars: Pick<EndStars, 'status' | 'count'>, status: StatValues): number | null {
+  const raw = status[stars.status ?? STARS_STATUS];
+  const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return null;
+  return Math.min(stars.count ?? DEFAULT_STAR_COUNT, Math.max(0, Math.round(n)));
+}
+
+/**
+ * An end screen's star row, centred on the picture: its height and its widgets from a top (image
+ * widgets with `sheet`, else texts in the title font; ids `star-0`, ...); null when the status gives no stars.
+ */
+function starRow(
+  menus: MenusSpec,
+  ctx: MenuBuildContext,
+  stars: EndStars,
+  status: StatValues,
+): { h: number; widgets: (top: number) => UiWidgetSpec[] } | null {
+  const won = starsWon(stars, status);
+  if (won === null) return null;
+  const count = stars.count ?? DEFAULT_STAR_COUNT;
+  const gap = stars.gap ?? DEFAULT_STAR_GAP;
+  const scale = stars.scale ?? 1;
+  const head = heading(menus);
+  const font = ctx.fonts(head.font);
+  const size = (star: string): { w: number; h: number } => {
+    if (stars.sheet !== undefined) {
+      const s = ctx.frameSize(stars.sheet, stars.palette, star);
+      return s === null ? { w: 0, h: 0 } : { w: s.w * scale, h: s.h * scale };
+    }
+    if (font === null) return { w: 0, h: 0 };
+    const t = layoutText(font, star);
+    return { w: t.width, h: t.height };
+  };
+  const looks = Array.from({ length: count }, (_, i) => (i < won ? stars.filled : stars.empty));
+  const sizes = looks.map(size);
+  const h = Math.max(0, ...sizes.map((s) => s.h));
+  const total = sizes.reduce((sum, s) => sum + s.w, 0) + gap * (count - 1);
+  const W = ctx.screen.width;
+  const disabled = menus.style?.disabledText ?? UI_STYLE_DEFAULTS.disabledText;
+  return {
+    h,
+    widgets: (top) => {
+      let left = Math.floor(W / 2) - Math.floor(total / 2);
+      return looks.map((star, i): UiWidgetSpec => {
+        const { w, h: sh } = sizes[i]!;
+        // An `anchor: top` widget's `x` is from the centre: its box sits at (W - w) / 2 + x.
+        const x = left - Math.floor((W - w) / 2);
+        const y = top + Math.floor((h - sh) / 2);
+        left += w + gap;
+        if (stars.sheet !== undefined)
+          return {
+            id: `star-${i}`,
+            type: 'image',
+            anchor: 'top',
+            x,
+            y,
+            sheet: stars.sheet,
+            frame: star,
+            ...(stars.palette !== undefined && { palette: stars.palette }),
+            ...(scale !== 1 && { scale }),
+          };
+        return {
+          id: `star-${i}`,
+          type: 'text',
+          anchor: 'top',
+          x,
+          y,
+          text: star,
+          font: head.font,
+          color: i < won ? head.color : disabled,
+          outline: head.outline,
+        };
+      });
+    },
+  };
 }
 
 /** Px between a shell dialog box and the bottom of the picture. */
@@ -1184,6 +1331,11 @@ function menuTexts(menus: MenusSpec): { path: FieldPath; text: string; font: str
     add(['end'], menus.end.heading ?? MENU_HEADINGS.end, head);
     if (menus.end.credits !== undefined) add(['end', 'credits'], menus.end.credits);
     statTexts(['end'], menus.end.lines);
+    const stars = menus.end.stars;
+    if (stars !== undefined && stars.sheet === undefined) {
+      add(['end', 'stars', 'filled'], stars.filled, head);
+      add(['end', 'stars', 'empty'], stars.empty, head);
+    }
     (menus.end.items ?? ['title']).forEach((id, i) =>
       label(menus.end?.items ? ['end', 'items', i] : ['end'], id),
     );
@@ -1250,6 +1402,22 @@ export function checkMenus(menus: MenusSpec, refs: MenusRefs): Omit<KindIssue, '
   if (menus.style?.panel !== undefined) frameAt(['style', 'panel'], menus.style.panel);
   if (menus.title.music !== undefined && !refs.sounds.has(menus.title.music))
     missing(['title', 'music'], 'song', menus.title.music);
+  const stars = menus.end?.stars;
+  if (stars?.sheet !== undefined) {
+    const at = (field: 'filled' | 'empty') => {
+      const sprite = refs.sprites.get(stars.sheet!);
+      if (sprite?.frames && !Object.hasOwn(sprite.frames, stars[field]))
+        out.push({
+          path: ['end', 'stars', field],
+          code: 'missing_frame',
+          message: `sprite "${stars.sheet}" has no frame "${stars[field]}"`,
+        });
+    };
+    if (!refs.sprites.has(stars.sheet)) missing(['end', 'stars', 'sheet'], 'sprite', stars.sheet);
+    else (['filled', 'empty'] as const).forEach(at);
+    if (stars.palette !== undefined && !refs.palettes.has(stars.palette))
+      missing(['end', 'stars', 'palette'], 'palette', stars.palette);
+  }
   if (menus.end?.music !== undefined && !refs.sounds.has(menus.end.music))
     missing(['end', 'music'], 'song', menus.end.music);
   (menus.triggers?.end ?? []).forEach((t, i) => {

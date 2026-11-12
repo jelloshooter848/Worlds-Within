@@ -261,6 +261,30 @@ view? }` (the frame's fog, the world box the picture shows) draws, after the til
   colours, the view outline cut to the box, `minimapPointToWorld`, `SkinHud` and `skinMinimap`)
   and in the browser `tests/browser/fog-parity.test.ts` (both 2D backends).
 
+Engine 0.16 E6 (the tower defense):
+
+- `hud.ts`: the `preview` widget (a wave preview): `previewGroups(value)` reads a `kind:count`
+  status list in order (a part without a count counts 1; an empty part, no kind or a count that is
+  not a whole number above 0 is left out); `SkinHud` lays each group out left to right from the
+  item's `x`/`y`: its kind's icon (`frames.<kind>`, else `frame`, from `sheet`; a
+  `PREVIEW_MISSING_SIDE` (8) box in `sheets.fallbackColor`, else `HUD_FALLBACK_COLOR`, flagged
+  `missing`, when there is none), then with a font `gap` px (default 2) and the count through
+  `format` with its caps centred on the icon, then `spacing` px (`DEFAULT_PREVIEW_SPACING`, 4). No
+  status, no draws.
+- `menus.ts`: `end.stars` (`{ status?, count?, filled, empty, sheet?, palette?, scale?, gap? }`,
+  `EndStars`): a row of `count` (default `DEFAULT_STAR_COUNT`, 3) stars under the credits and over
+  the stat lines, centred on the picture `gap` (`DEFAULT_STAR_GAP`, 4) px apart, the first
+  `starsWon` filled (`starsWon(stars, status)`: the status value (`STARS_STATUS`, `stars`, by
+  default) rounded and held to `0..count`, null for a missing or non-numeric value: no row). With
+  `sheet` each star is an `image` widget of the `filled` or `empty` frame (at `scale`); without,
+  a `text` widget of that text in the title font, filled in the heading colour, empty in the
+  style's `disabledText`, outlined. Widget ids `star-0`, ... An end trigger's `stars: false`
+  leaves the row out (a loss). `checkMenus`: with `sheet` the sheet (`missing_ref`), the frames
+  (`missing_frame` at `end.stars.filled` / `.empty`) and the palette; without, the glyphs of both
+  texts in the title font (`missing_glyph`).
+- Tested in `hud.test.ts` (`the wave preview`) and `menus.test.ts` (`the end screen's stars`,
+  and the stars' checks through `loadContent`).
+
 ## Rules
 
 - Pure: `engine/core/ui/**` is on `PURE_CORE` (`config/layers.js`). No DOM, clock or

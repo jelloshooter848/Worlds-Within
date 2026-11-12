@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { layoutHud, type HudFrameSize, type PresentEntity, type PresentMap, type SkinFile } from '../present';
 import { buildFont, type FontLookup } from './font';
 import { clockStatus, worldClock } from '../clock';
-import { clockHudText, SkinHud, hudValueText, skinMinimap, type SkinHudInput } from './hud';
+import { clockHudText, previewGroups, SkinHud, hudValueText, skinMinimap, type SkinHudInput } from './hud';
 import type { UiDraw } from './paint';
 import {
   barFill,
@@ -470,5 +470,65 @@ describe('the clock widget (Engine 0.16 F4)', () => {
     expect(fills.at(-1)).toEqual({ kind: 'fill', x: 4 + 12, y: 9, w: 1, h: 4, color: '#fcfcfc' });
     const evening = hud.layout(input(clock(2, 18))).filter((d) => d.kind === 'fill');
     expect(evening.at(-1)).toMatchObject({ x: 4 + 36 });
+  });
+});
+
+describe('the wave preview (Engine 0.16 E6)', () => {
+  it('reads a kind:count list in order, skipping what is not one', () => {
+    expect(previewGroups('runner:6,brute:1')).toEqual([
+      { kind: 'runner', count: 6 },
+      { kind: 'brute', count: 1 },
+    ]);
+    expect(previewGroups('runner, ,boss:0,bat:x,:3,imp')).toEqual([
+      { kind: 'runner', count: 1 },
+      { kind: 'imp', count: 1 },
+    ]);
+    expect(previewGroups(3)).toEqual([]);
+  });
+
+  it("draws each group's icon by kind and its count, left to right", () => {
+    const hud = new SkinHud(
+      skin([
+        {
+          status: 'nextWaveGroups',
+          as: 'preview',
+          x: 4,
+          y: 2,
+          frames: { runner: 'coin' },
+          font: 'small',
+          format: 'x{value}',
+          spacing: 5,
+        },
+      ]),
+      { fonts: FONTS },
+    );
+    expect(hud.usesUi).toBe(true);
+    const draws = hud.layout(input({ nextWaveGroups: 'runner:6,brute:12' }));
+    const icons = draws.filter((d) => d.kind !== 'glyph');
+    const glyphs = draws.filter((d) => d.kind === 'glyph') as { ch: string; x: number; y: number }[];
+    // The runner's 8 px icon, 2 px, "x6" (two 2 px glyphs, 1 px apart), 5 px, then the brute's
+    // stand-in box (no frame for it, and no item `frame`).
+    expect(icons).toEqual([
+      { kind: 'image', sheet: 'ui', frame: 'coin', sx: 0, sy: 0, sw: 8, sh: 8, x: 4, y: 2, w: 8, h: 8 },
+      { kind: 'fill', x: 24, y: 2, w: 8, h: 8, color: '#ff00ff', missing: true },
+    ]);
+    expect(glyphs.map((g) => [g.ch, g.x, g.y])).toEqual([
+      ['x', 14, 4],
+      ['6', 17, 4],
+      ['x', 34, 4],
+      ['1', 37, 4],
+      ['2', 40, 4],
+    ]);
+    expect(hud.layout(input({}))).toEqual([]);
+    expect(hud.layout(input({ nextWaveGroups: '' }))).toEqual([]);
+  });
+
+  it("uses the item's frame for a kind it does not list, and draws icons only without a font", () => {
+    const hud = new SkinHud(skin([{ status: 'q', as: 'preview', x: 0, y: 0, frame: 'coin', gap: 3 }]));
+    const draws = hud.layout(input({ q: 'a:1,b:2' }));
+    expect(draws.map((d) => [d.kind, (d as { x: number }).x])).toEqual([
+      ['image', 0],
+      ['image', 12],
+    ]);
   });
 });

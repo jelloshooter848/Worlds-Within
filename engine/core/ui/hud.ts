@@ -3,6 +3,8 @@ import {
   DEFAULT_HUD_FONT,
   HUD_CLOCK_FORMAT,
   HUD_CLOCK_TOKENS,
+  HUD_FALLBACK_COLOR,
+  HUD_FALLBACK_SIZE,
   HUD_VALUE_TOKEN,
   hudGlyphs,
   hudItemShown,
@@ -22,6 +24,7 @@ import {
 } from '../present';
 import type { Font, FontLookup } from './font';
 import { sliceInsets, type Box } from './nine-slice';
+import { measureLine } from './text';
 import { DEFAULT_TEXT_COLOR, panelDraws, textDraws, type TextStyle, type UiDraw, type UiFill } from './paint';
 import { barFill, barRatio, CounterRoll, dayBarDraws, minimapDraws } from './widgets';
 
@@ -210,6 +213,8 @@ export class SkinHud {
         return has ? this.bar(item, box, value, input) : [];
       case 'counter':
         return has ? this.counter(item, index, value, input) : [];
+      case 'preview':
+        return has ? this.preview(item, value, input) : [];
       case 'number':
       case 'text': {
         if (!has && !(item.as === 'text' && item.format !== undefined)) return [];
@@ -330,6 +335,57 @@ export class SkinHud {
     return out;
   }
 
+  /**
+   * The wave preview (Engine 0.16 E6): for each group of the status list (`previewGroups`), left
+   * to right from the item's `x`/`y`, its kind's icon (`frames.<kind>`, else `frame`, from `sheet`;
+   * an `PREVIEW_MISSING_SIDE` box in `sheets.fallbackColor` when there is none or the sheet lacks
+   * it), `gap` px, then the count through `format` in the item's font with its caps centred on the
+   * icon (no text without a font), then `spacing` px to the next group.
+   */
+  private preview(item: DeepReadonly<SkinHudItem>, value: unknown, input: SkinHudInput): UiDraw[] {
+    const out: UiDraw[] = [];
+    const font = this.fontOf(item);
+    let x = item.x;
+    for (const group of previewGroups(value)) {
+      const frames = item.frames as Readonly<Record<string, string>> | undefined;
+      const name =
+        frames !== undefined && Object.hasOwn(frames, group.kind) ? frames[group.kind] : item.frame;
+      const sprite = name === undefined ? null : this.sprite({ sheet: item.sheet, frame: name });
+      const size = sprite && input.frameSize(sprite.sheet, sprite.palette, sprite.frame);
+      let iconW = PREVIEW_MISSING_SIDE;
+      let iconH = PREVIEW_MISSING_SIDE;
+      if (sprite && size) {
+        out.push({
+          kind: 'image',
+          ...sprite,
+          sx: 0,
+          sy: 0,
+          sw: size.w,
+          sh: size.h,
+          x,
+          y: item.y,
+          w: size.w,
+          h: size.h,
+        });
+        iconW = size.w;
+        iconH = size.h;
+      } else {
+        const color = this.skin.sheets?.fallbackColor ?? HUD_FALLBACK_COLOR;
+        out.push({ kind: 'fill', x, y: item.y, w: iconW, h: iconH, color, missing: true });
+      }
+      x += iconW;
+      if (font !== null) {
+        x += item.gap ?? DEFAULT_COUNTER_GAP;
+        const text = hudValueText(item, group.count);
+        const y = item.y + Math.max(0, Math.floor((iconH - font.baseline) / 2));
+        out.push(...textDraws(font, text, x, y, this.style(item)));
+        x += measureLine(font, text);
+      }
+      x += item.spacing ?? DEFAULT_PREVIEW_SPACING;
+    }
+    return out;
+  }
+
   private counter(
     item: DeepReadonly<SkinHudItem>,
     index: number,
@@ -374,6 +430,32 @@ export class SkinHud {
     return out;
   }
 }
+
+/**
+ * A `preview` item's groups (Engine 0.16 E6): a status list `kind:count,kind:count` (the tower
+ * defense's `nextWaveGroups`), in order; a part without a count (`runner`) counts 1, an empty or
+ * malformed part (no kind, a count that is not a whole number above 0) is left out.
+ */
+export function previewGroups(value: unknown): { kind: string; count: number }[] {
+  if (typeof value !== 'string') return [];
+  const out: { kind: string; count: number }[] = [];
+  for (const part of value.split(',')) {
+    const text = part.trim();
+    if (text === '') continue;
+    const colon = text.lastIndexOf(':');
+    const kind = colon < 0 ? text : text.slice(0, colon).trim();
+    const count = colon < 0 ? 1 : Number(text.slice(colon + 1).trim());
+    if (kind === '' || !Number.isInteger(count) || count < 1) continue;
+    out.push({ kind, count });
+  }
+  return out;
+}
+
+/** Px between one `preview` group and the next when the item gives no `spacing`. */
+export const DEFAULT_PREVIEW_SPACING = 4;
+
+/** The side of a `preview` group's stand-in box when its kind has no frame (the classic HUD's). */
+export const PREVIEW_MISSING_SIDE = HUD_FALLBACK_SIZE;
 
 /** A one-px frame round `box` in `color`: top, bottom, left and right. */
 export function borderDraws(box: Box, color: string): UiFill[] {

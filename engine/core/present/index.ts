@@ -192,6 +192,18 @@ export {
   type HudText,
 } from './hud';
 export {
+  PROJECTILE_DEFAULT_COLOR,
+  PROJECTILE_DEFAULT_SIZE,
+  PROJECTILE_MAX,
+  projectileFlight,
+  projectileImpactSchema,
+  projectilePlace,
+  projectileSchema,
+  type ProjectilePlace,
+  type SkinProjectile,
+  type SkinProjectileImpact,
+} from './projectile';
+export {
   DEFAULT_SHADOW,
   DEFAULT_SUN_DIRECTION,
   FOG_KINDS,

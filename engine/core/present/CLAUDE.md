@@ -283,6 +283,27 @@ parallax?, tiles? }` (a platformer level's id is its map's), so one skin gives e
     silhouette in the colour while the entity has the tag). A palette that is a colour (`#fff`,
     `isSilhouettePalette`) is never a palette file: `checkSkinRefs` accepts it and the 2D sheet
     lookup (`contentSheets`, `silhouetteSheet`) draws the sheet as a silhouette in it.
+  - The tower defense's looks (Engine 0.16 E6, `projectile.ts`): an event entry's `projectile`
+    (`projectileSchema`, each field `.describe`d: `{ frame?, sheet?, palette?, color?
+(PROJECTILE_DEFAULT_COLOR), size? (1-16 world px, PROJECTILE_DEFAULT_SIZE 2), ticks (1-240),
+arc? (world px at mid-flight), ease? (bad_ease), turn?, impact?: { emit?, sound?, shake? } }`):
+    a sprite frame or square flying from the event's `fromX`/`fromY` to its `x`/`y` over `ticks`
+    presentation frames, then its impact where it lands; 2D only (`wrong_backend_field` on a 3D
+    skin); the impact's `emit` must name emitters (`missing_ref` at
+    `events.<key>.projectile.impact.emit`); across files its frame (`missing_frame`; a frame with
+    neither `sheet` nor `sheets.sheet` is `missing_field`), sheet, palette and impact sound
+    (`missing_ref`). Pure readings: `projectileFlight(ev)` (both points, else null) and
+    `projectilePlace(look, from, to, age)` (`{ x, y, angle }`: the eased share `s` of the way, the
+    line raised by `arc * 4 s (1 - s)`, the angle of the path's tangent in degrees clockwise from
+    right; null before it starts and from `ticks` on, when it has landed). Presentation only:
+    started by frame events and timed by frame numbers, never in a frame or a hash. A kind `ring`
+    takes `tag` (a prefix, `range:`) and `per` (world px per unit; the 2D walk's `ringRadius`) and
+    needs `radius`, `tag` or both (`missing_field`). A label's `max` may be `{ tag: "<prefix>" }`
+    (scene3d.ts: `labelBar(label, value, status, entity?)` reads the entity's own `maxhp:`; a max
+    that reads nothing falls back as if left out). The HUD widget `preview` (`HUD_WIDGET_TYPES`;
+    the UI kit lays it out) shows a `kind:count` status list; `frames` (kind -> frame) is allowed
+    on `icon` and `preview`, `spacing` on `preview` only (`bad_field`); `checkSkinRefs` checks its
+    frames and that its font has every digit. Tested in `projectile.test.ts`.
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
     round ones use `LOW_POLY_SEGMENTS`) that fills the entity box (or tile) and is `depth` px
