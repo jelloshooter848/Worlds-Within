@@ -58,6 +58,9 @@ name `towerdefense` (from Engine 0.14 T9 with `roundBots()`: `TdBot` for a `td-d
   status `nextWaveKinds`/`nextWaveGroups`, enemy tags `maxhp:<n>` and `slow`, ghost tags
   `range:<cells>`. No existing hash moved; the sample's cannon gained a splash (level 2) and a
   slow (level 3), guarded by `runs/shells.run.json`.
+- Engine 0.16 E9 (presentation only, no hash moved): the status gains `killed`, `wavesHeld`
+  (started waves with nothing left to come or on the path) and `nearGate` (enemies within
+  `TD_NEAR_GATE_CELLS`, 8, path cells of the exit), for the sample's end screen and danger music.
 - Engine 0.16 E7 (presentation only, no hash moved): with the cursor on a tower the ghost is
   tagged `selected` and carries that tower's `range:` now (not the chosen type's), so a skin
   rings the selected tower.

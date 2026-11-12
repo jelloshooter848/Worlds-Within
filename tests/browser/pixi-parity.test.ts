@@ -107,11 +107,19 @@ const CASES: Case[] = [
   },
   {
     name: "The Winding Road on Kenney's CC0 Tower Defense pack (Engine 0.16 E7)",
-    run: 'games/samples/tower-defense/runs/won.run.json',
+    run: 'games/samples/tower-defense/runs/win.run.json',
     // The 16:9 map (E8): the three tower types turned to their targets at levels 1-3, the selected
     // tower's ring, enemies walking with health bars, slowed (ice blue) and struck (white), shells
-    // in flight and landing.
-    tiles: ['1300', '2400', '2760', '2900', '2900+fade*10'],
+    // in flight and landing; from E9 the full game's win: the wave preview and the selected
+    // tower's upgrade and sell in the HUD, the last wave at the gate and the round won.
+    tiles: ['1300', '2400', '2760', '2900', '2900+fade*10', '3100', '3145'],
+    bound: STRICT,
+  },
+  {
+    name: 'The Winding Road lost by a thin defence (Engine 0.16 E9)',
+    run: 'games/samples/tower-defense/runs/lost.run.json',
+    // Leaks at the gate (the breach flash and shake) and the round lost.
+    tiles: ['700', '1300', '1489', '1500'],
     bound: STRICT,
   },
 ];

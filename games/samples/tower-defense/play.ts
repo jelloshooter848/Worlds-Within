@@ -1,6 +1,8 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { InputFrame } from '@engine/core/input/input-manager';
+import { InputRecorder } from '@engine/core/input/input-recorder';
+import type { InputScript } from '@engine/core/input/scripted-input';
 import { PendingEvents } from '@engine/core/present';
 import type { Scene } from '@engine/core/scene';
 import type { TdEvent, TdGame, TdWorld } from '@kits/towerdefense';
@@ -26,7 +28,15 @@ import type { TdPicture } from './picture';
  * action pressed on any of them counts as pressed, and as held, on the tick, and every tap
  * arrives), so no press falls between ticks. One press held for one tick on the page is one press
  * in a run file: a run file's `input` typed tick by tick plays the same round (the browser test
- * does it with `won.run.json`).
+ * does it with `win.run.json`).
+ *
+ * **Recording** (Engine 0.16 E9): every tick's merged input goes into an `InputRecorder`, so
+ * `recording()` is the round played so far as a run file's `ticks` and `input`, whatever speed the
+ * shell's speed control played it at (the shell steps the scene once per tick, each tick with its
+ * own merged input): `runs/sped-up.run.json` is the win's defence played at 2x and 3x and exported
+ * this way. A key pressed again on the very next tick without a released tick between reads as
+ * held on, so a recording is exact for input with a released tick between presses (the kit's
+ * `TdBot`, a person tapping keys).
  */
 
 /** Game ticks the page plays per second (the loop steps 60 times a second). */
@@ -46,6 +56,8 @@ export class TdPlay implements Scene {
   readonly game: TdGame;
   readonly tickRate = TICKS_PER_SECOND;
   private picture: TdPicture | null = null;
+  /** Every tick's merged input since tick 0 (`recording()`). */
+  private readonly recorder = new InputRecorder();
   /** The events of the ticks since the last draw. */
   private readonly pending: PendingEvents<TdWorld, TdEvent>;
 
@@ -61,8 +73,14 @@ export class TdPlay implements Scene {
 
   /** One game tick (the shell calls it `TICKS_PER_SECOND` times a second, with merged input). */
   update(input: InputFrame): void {
+    this.recorder.recordFrame(input);
     this.game.step(input);
     this.pending.add(this.game.world, this.game.events);
+  }
+
+  /** The round played so far as a run file's `ticks` and `input` (Engine 0.16 E9). */
+  recording(): { ticks: number; input: InputScript } {
+    return { ticks: this.tick, input: this.recorder.script() };
   }
 
   /** The game the page plays, for the shell's step hook (`window.__ww`). */

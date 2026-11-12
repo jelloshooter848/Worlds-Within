@@ -14,6 +14,7 @@ import {
   facingToward,
   presentWorld,
   TD_EVENT_TYPES,
+  TD_NEAR_GATE_CELLS,
   TD_TILES,
   tdFrames,
   TdPresentState,
@@ -63,6 +64,9 @@ describe('presentWorld', () => {
       waveCount: 2,
       enemies: 0,
       outcome: 'playing',
+      killed: 0,
+      wavesHeld: 0,
+      nearGate: 0,
       nextWave: 40,
       nextWaveKinds: 'runner',
       nextWaveGroups: 'runner:2',
@@ -375,6 +379,29 @@ describe('splash, slow, health bars, the wave preview and stars (Engine 0.16 E4)
     status = presentWorld(w, { size: SIZE }).status;
     expect(status.nextWaveKinds).toBeUndefined();
     expect(status.nextWaveGroups).toBeUndefined();
+  });
+
+  it('counts kills, waves held and enemies near the gate in the status (Engine 0.16 E9)', () => {
+    const w = world();
+    w.startWave();
+    let nearSeen = 0;
+    let status = presentWorld(w, { size: SIZE }).status;
+    expect(status).toMatchObject({ killed: 0, wavesHeld: 0, nearGate: 0 });
+    while (w.outcome === 'playing' && w.tick < 400) {
+      w.step();
+      status = presentWorld(w, { size: SIZE }).status;
+      const near = w.enemies.filter((e) => e.progress >= w.pathEnd - TD_NEAR_GATE_CELLS * CELL_SUB);
+      expect(status.nearGate).toBe(near.length);
+      nearSeen = Math.max(nearSeen, near.length);
+      expect(status.killed).toBe(w.stats.killed);
+      if (w.waveLeft(1) > 0) expect(status.wavesHeld).toBe(0);
+    }
+    // No tower: the first wave walks to the gate (the whole tiny path is near it) and leaks.
+    expect(nearSeen).toBeGreaterThan(0);
+    expect(w.waveLeft(1)).toBe(0);
+    const held = [1, 2].filter((n) => n <= w.wavesStarted && w.waveLeft(n) === 0).length;
+    expect(held).toBeGreaterThan(0);
+    expect(presentWorld(w, { size: SIZE }).status.wavesHeld).toBe(held);
   });
 
   it('changes nothing in a round with splash and slow: hashes are the same presented or not', () => {

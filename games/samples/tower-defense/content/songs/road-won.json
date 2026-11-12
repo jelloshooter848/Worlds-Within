@@ -1,0 +1,9 @@
+{
+  "id": "road-won",
+  "bpm": 150,
+  "loop": false,
+  "pulse1": "v10 @1 l8 o4 c e g > c < g > c e g c2 r2",
+  "pulse2": "v6 @2 l4 o3 e g e > e < c2 r2",
+  "triangle": "l4 o2 c g c g c2 r2",
+  "noise": "v5 l8 k r h r k r h r k4 s4 r2"
+}

@@ -9,9 +9,11 @@ import { launchChromium, NoBrowserError } from '../../engine/tools/screenshot';
 
 // The tower-defense sample's screenshots (Engine 0.12 T5): `pnpm cli screenshot` plays its run
 // files through the view module (`view.ts`) in headless Chromium. Before any wave (the build run,
-// tick 120: towers, the cursor and the ghost), a wave being fought (the won run at tick 1300) and
-// the round lost (the lost run at tick 480; Engine 0.16 E8's 16:9 map). Each picture must match the headless run's state
-// hashes and be byte-identical on a second run, and the three must differ. Skipped where Chromium
+// tick 120: towers, the cursor and the ghost), a wave being fought (the win run at tick 1300) and
+// the round lost (the lost run at tick 1500, a thin defence broken in wave 6; Engine 0.16 E9), and
+// (E9) the end screen over the win (three stars) and over the loss (`--overlay end`). Each picture
+// must match the headless run's state hashes and be byte-identical on a second run, and the five
+// must differ. Skipped where Chromium
 // is not installed (never in CI).
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -31,7 +33,12 @@ async function browserMissing(): Promise<string | null> {
 const missing = await browserMissing();
 if (missing) console.warn(`skipping the tower-defense screenshots: ${missing}`);
 
-async function shot(run: string, tick: number, n: number): Promise<Record<string, unknown>> {
+async function shot(
+  run: string,
+  tick: number,
+  n: number,
+  overlay?: string,
+): Promise<Record<string, unknown>> {
   let stdout = '';
   const code = await main(
     [
@@ -40,7 +47,8 @@ async function shot(run: string, tick: number, n: number): Promise<Record<string
       '--tick',
       String(tick),
       '--out',
-      join(temp, `${run}-${tick}-${n}.png`),
+      join(temp, `${run}-${tick}-${overlay ?? 'play'}-${n}.png`),
+      ...(overlay === undefined ? [] : ['--overlay', overlay]),
       '--json',
     ],
     { stdout: (t) => void (stdout += t), stderr: () => {}, cwd: ROOT, outDir: join(temp, 'out') },
@@ -56,20 +64,23 @@ describe.skipIf(missing !== null)('the tower-defense sample through pnpm cli scr
   const sha: Record<string, unknown> = {};
   it.each([
     ['build', 120, 'towers before any wave'],
-    ['won', 1300, 'a wave being fought'],
-    ['lost', 480, 'the round lost'],
-  ] as [string, number, string][])(
+    ['win', 1300, 'a wave being fought'],
+    ['lost', 1500, 'the round lost'],
+    ['win', 3150, 'the end screen with three stars', 'end'],
+    ['lost', 1500, 'the end screen of a loss', 'end'],
+  ] as [string, number, string, string?][])(
     '%s at tick %i (%s) is deterministic',
-    async (run, tick) => {
-      const first = await shot(run, tick, 1);
-      const second = await shot(run, tick, 2);
+    async (run, tick, _what, overlay) => {
+      const first = await shot(run, tick, 1, overlay);
+      const second = await shot(run, tick, 2, overlay);
       expect(second.sha256).toBe(first.sha256);
-      sha[`${run}-${tick}`] = first.sha256;
+      expect(first.overlay ?? null).toBe(overlay ?? null);
+      sha[`${run}-${tick}-${overlay ?? ''}`] = first.sha256;
     },
     120_000,
   );
 
   it('shows different pictures at each', () => {
-    expect(new Set(Object.values(sha)).size).toBe(3);
+    expect(new Set(Object.values(sha)).size).toBe(5);
   });
 });

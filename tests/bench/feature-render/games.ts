@@ -45,7 +45,7 @@ export const FEATURE_GAMES: Record<FeatureMap, FeatureGameDef> = {
   },
   td: {
     dir: 'games/samples/tower-defense',
-    run: 'runs/won.run.json',
+    run: 'runs/win.run.json',
     tick: 500,
     units: 300,
     font: 'road-small',

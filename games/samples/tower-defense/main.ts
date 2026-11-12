@@ -6,10 +6,10 @@ import type { InputManager } from '@engine/core/input/input-manager';
 import { keyHintMap } from '@engine/core/input/key-hints';
 import { controlsHint } from '@engine/core/minigame';
 import type { JsonObject } from '@engine/core/headless';
+import type { InputScript } from '@engine/core/input/scripted-input';
 import { bootBrowserGame } from '@engine/core/shell';
-import { contentFonts } from '@engine/core/ui';
 import { canvasDisplay } from '@engine/backends/canvas2d';
-import { TD_CONTROLS } from '@kits/towerdefense';
+import { sellValue, TD_CONTROLS, upgradeCost } from '@kits/towerdefense';
 import { loadTowerDefense } from './content';
 import { tdLook, tdPicture } from './picture';
 import { TdPlay } from './play';
@@ -20,13 +20,17 @@ import gameFiles from 'virtual:game-files';
  * `bootBrowserGame`: PixiJS (WebGL) with the sample's skin (Engine 0.16 T13b-8; Canvas2D where
  * WebGL is missing or with `?backend=canvas2d`), the keyboard and gamepad, the touch pad (on
  * a phone), pointer taps (place towers by tapping: frame input, gap D1), the shell's `audio`
- * option (the song `road` once the first key, tap or click unlocks sound, and the skin's event
- * sounds) and its volume control (the player's volumes stored per game, gap M1). The scene is
- * `TdPlay` (`play.ts`, stepped at its own `tickRate` by the shell, gap D2); this file is only the
- * DOM: the bar under the picture (Wave, Tower and Sell buttons, pressing through the shell's
- * `InputManager.press`, and the status line, whose hint before the first wave is the kit's
- * `TD_CONTROLS` written with the player's key names, lesson D14) and `window.wwTd` for scripts
- * (the browser test).
+ * option and mixer (Engine 0.16 E9: the skin's layered `road` music, calm with the danger layer
+ * mixed in while enemies near the gate or in the late waves, once the first key, tap or click
+ * unlocks sound; the skin's event sounds varied by the seed), its volume control (the player's
+ * volumes stored per game, gap M1), the speed control (`game.json`'s `menus.speeds`: F, gamepad
+ * RT or the shell's speed button) and the end screen (`menus.triggers.end`: the stars, the stats
+ * and a jingle). The scene is `TdPlay` (`play.ts`, stepped at its own `tickRate` by the shell, gap
+ * D2); this file is only the DOM: the bar under the picture (Wave, Build, Tower and Sell buttons,
+ * pressing through the shell's `InputManager.press`, Build reading Upgrade and Sell its value
+ * while the cursor is on a tower, and the status line, whose hint before the first wave is the
+ * kit's `TD_CONTROLS` written with the player's key names, lesson D14) and `window.wwTd` for
+ * scripts (the browser test).
  */
 
 /** What the page offers scripts (the browser test) on `window.wwTd`. */
@@ -37,13 +41,17 @@ export interface TdHook {
   kit(): JsonObject;
   /** The cursor's cell and the chosen tower type. */
   cursor(): { col: number; row: number; tower: string };
+  /** The round played so far as a run file's `ticks` and `input` (`TdPlay.recording`, Engine 0.16 E9). */
+  recording(): { ticks: number; input: InputScript };
 }
 
 // The skin's PNG sheets (Kenney's CC0 Tower Defense, Engine 0.16 E7) decoded before the first frame.
 const content = await withContentImages(mustLoad(loadTowerDefense(gameFiles), 'the tower-defense sample'));
 const look = tdLook(content);
-const fonts = contentFonts(content);
+const fonts = look.fonts;
 const status = document.getElementById('status') as HTMLElement;
+const buildButton = document.getElementById('build') as HTMLButtonElement;
+const sellButton = document.getElementById('sell') as HTMLButtonElement;
 /** The shell's input once booted: the player's key names for the hint (the defaults until then). */
 let input: InputManager | null = null;
 
@@ -51,7 +59,13 @@ let play: TdPlay | null = null;
 const booted = await bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
-  audio: { sfx: contentSfx(content), songs: contentSongs(content), music: 'road' },
+  audio: {
+    sfx: contentSfx(content),
+    songs: contentSongs(content),
+    music: 'road',
+    mix: look.skin.music,
+    seed: content.manifest.start.seed,
+  },
   // The title, pause and settings screens (Engine 0.16 T9); Back to title reloads the page, whose
   // bar and hook hold on to the first scene.
   menus: { spec: content.manifest.menus, fonts, sheets: look.sheet, restart: 'reload' },
@@ -89,12 +103,14 @@ if (booted && play) {
   input = booted.input;
   const pressed = booted.input;
   button('wave', 'start');
+  button('build', 'jump');
   button('tower', 'attack');
   button('sell', 'special');
   const hook: TdHook = {
     tick: () => scene.tick,
     kit: () => scene.game.snapshot()['kit'] as JsonObject,
     cursor: () => scene.game.controls.view(),
+    recording: () => scene.recording(),
   };
   (window as unknown as { wwTd: TdHook }).wwTd = hook;
 
@@ -118,6 +134,15 @@ function showStatus(scene: TdPlay): void {
           : '';
   const text = [`tick ${w.tick}`, note].filter((s) => s !== '').join(' | ');
   if (status.textContent !== text) status.textContent = text;
+  // The selected tower's upgrade and sell (Engine 0.16 E9): the buttons read what Z and C do now.
+  const cursor = scene.game.controls.view();
+  const tower = w.towerAt(cursor.col, cursor.row);
+  const type = tower === undefined ? undefined : w.towerTypes[tower.type];
+  const up = tower === undefined || type === undefined ? null : upgradeCost(type, tower.level);
+  const build = tower === undefined ? 'Build' : up === null ? 'Top level' : `Upgrade ${up}`;
+  const sell = tower === undefined || type === undefined ? 'Sell' : `Sell ${sellValue(type, tower.level)}`;
+  if (buildButton.textContent !== build) buildButton.textContent = build;
+  if (sellButton.textContent !== sell) sellButton.textContent = sell;
 }
 
 /** The kit's controls (`TD_CONTROLS`, lesson D14) with the player's key names: no page strings. */

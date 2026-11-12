@@ -1,5 +1,5 @@
 {
-  "run": "games/samples/tower-defense/runs/won.run.json",
+  "run": "games/samples/tower-defense/runs/sped-up.run.json",
   "hashes": [
     {
       "tick": 0,
@@ -99,35 +99,39 @@
     },
     {
       "tick": 2400,
-      "hash": "645e6e73ca249732"
+      "hash": "9c3ff19f4e308389"
     },
     {
       "tick": 2500,
-      "hash": "31bb8e83f0d645d0"
+      "hash": "35ddcabf1d7cb1c7"
     },
     {
       "tick": 2600,
-      "hash": "34edfafb92169efa"
+      "hash": "be44bbb352f5ace0"
     },
     {
       "tick": 2700,
-      "hash": "89c65c2922342f45"
+      "hash": "696d0c6529b7128e"
     },
     {
       "tick": 2800,
-      "hash": "452f3b5d05df5a05"
+      "hash": "c09a0692b7d49f67"
     },
     {
       "tick": 2900,
-      "hash": "3e4c019df9d05e28"
+      "hash": "dd9f5a4093960e96"
     },
     {
       "tick": 3000,
-      "hash": "ea7d18c6863ff401"
+      "hash": "6a97d7b6f2672152"
     },
     {
       "tick": 3100,
-      "hash": "e2afb4d53558d4e8"
+      "hash": "5403df6020c4b1bc"
+    },
+    {
+      "tick": 3150,
+      "hash": "da6e7f7dbfc333a1"
     }
   ]
 }

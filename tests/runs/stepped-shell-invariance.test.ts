@@ -336,10 +336,17 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
     if (booted.menus !== null && run.ticks >= 150) expect(paused, 'the pause menu showed').toBeGreaterThan(0);
     // Display frames the loop took no tick on: hit-pauses, closing transitions, the pause menu.
     if (run.ticks >= 90) expect(frames - run.ticks, 'ticks were held').toBeGreaterThan(0);
-    // Once the end screen opened, its own music (`menus.end.music`, a fanfare) is the last song.
-    const endSong = ends > 0 ? shown.manifest.menus?.end?.music : undefined;
-    if (song !== undefined)
-      expect(booted.mixer?.state().song, 'the layered song played').toBe(endSong ?? song);
+    // Once the end screen opened, its own music (`menus.end.music`, a fanfare, or from Engine 0.16
+    // E9 the ending trigger's jingle) is the last song.
+    const endSongs = [
+      shown.manifest.menus?.end?.music,
+      ...(shown.manifest.menus?.triggers?.end ?? []).map((t) => t.music),
+    ].filter((m) => m !== undefined);
+    if (song !== undefined) {
+      const last = booted.mixer?.state().song;
+      if (ends > 0 && endSongs.length > 0) expect(endSongs, 'the end music played').toContain(last);
+      else expect(last, 'the layered song played').toBe(song);
+    }
     // Part B's screens and the respawn transition: what showed is checked over every run below
     // (a respawn that comes as a round's outcome plays under the round scene's own transition).
     // A round the 3D skin draws in 2D went to the page's round layer (Engine 0.16 F9).

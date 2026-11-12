@@ -203,7 +203,9 @@ Status (`presentStatus`): `gold`, `lives`, `wave` (`n/m`), `waveNumber`, `waveCo
 `outcome`, `nextWave` (ticks to the timer's next wave, only with a timer and waves left),
 `nextWaveKinds` (`runner,brute`) and `nextWaveGroups` (`runner:6,brute:1`) while a wave is still to
 start and the round is playing (E4, the HUD's wave preview), `stars` only on a map with a rating
-(E4) and, with
+(E4), from Engine 0.16 E9 `killed` (the enemies killed), `wavesHeld` (started waves with no enemy
+left to come or on the path: an end screen's waves held) and `nearGate` (enemies within
+`TD_NEAR_GATE_CELLS`, 8, path cells of the exit: a skin's danger music) and, with
 a cursor, `tower` and `towerCost`, and with the cursor on a tower (selected; Engine 0.16 E3)
 `selected` (`tower-<id>`), `sellValue` and, while it has a level above it, `upgradeCost` (0 with
 `upgrade-costs-gold` off). Camera: the map's centre, `bounds` the map, `zoom` if given.

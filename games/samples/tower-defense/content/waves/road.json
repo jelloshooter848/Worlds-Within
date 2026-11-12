@@ -134,7 +134,7 @@
           "kind": "runner",
           "count": 24,
           "spacing": 6,
-          "hp": 12,
+          "hp": 14,
           "speed": 5,
           "bounty": 3,
           "jitter": 2
@@ -147,7 +147,7 @@
           "kind": "brute",
           "count": 8,
           "spacing": 18,
-          "hp": 55,
+          "hp": 62,
           "speed": 3,
           "bounty": 10
         },
@@ -155,7 +155,7 @@
           "kind": "runner",
           "count": 16,
           "spacing": 6,
-          "hp": 13,
+          "hp": 15,
           "speed": 6,
           "bounty": 3,
           "jitter": 3

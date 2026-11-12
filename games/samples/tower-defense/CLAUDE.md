@@ -19,15 +19,18 @@ art, skin, songs, sfx, fonts, menus, page and the five run files with their gold
 kept unchanged as the test game `games/td-classic`. **E7** put it on a CC0 art pack, Kenney's
 Tower Defense (top-down), with a new 2D skin ("The CC0 art pack and the skin (E7)" below); no run
 file or hash moved. **E8** rebuilt the content as the 16:9 map ("The Winding Road map (E8)"
-below): every run file was replaced by guard runs on the new map. This file is the
-worked example of a tower-defense game on the kit ("How it was built", below).
+below): every run file was replaced by guard runs on the new map. **E9** made it the full game
+("The full game (E9)" below): the waves tuned, the `win`, `lost` and `sped-up` runs, layered
+music, the HUD's wave preview and the selected tower's prices, and the end screen with the stars.
+This file is the worked example of a tower-defense game on the kit ("How it was built", below).
 
 ## How to play
 
 `pnpm dev`, then open `games/samples/tower-defense/` from the launcher (or the built page from
 `pnpm build && pnpm preview`). Keep the enemies on the road from reaching the gate on the right:
 build towers on the stone pads at the road's bends, upgrade them, then send each of the ten
-waves. A win rates one to three stars by the lives left.
+waves. A win rates one to three stars by the lives left; three stars take a strong defence (the
+last two waves are tuned to break through a thin spot).
 
 - Keys (and the touch pad on a phone): arrows move the cursor, Z (jump) builds the chosen tower on
   the cursor's pad, X (attack) picks the next tower type (arrow, cannon, frost), C (special) sells
@@ -40,12 +43,19 @@ waves. A win rates one to three stars by the lives left.
   tapping is a run file (`games/td-classic/runs/tapped.run.json` on the classic road).
 - The shell's sound control at the top right (Engine 0.15, gap M1): mute and the volume, kept in
   this browser for this game.
-- The bar under the picture: Wave, Tower and Sell (the same as Enter, X and C), and the status
-  line (the tick, then `the road is held!` or `the road is lost`).
+- The bar under the picture: Wave, Build, Tower and Sell (the same as Enter, Z, X and C; with the
+  cursor on a tower Build reads `Upgrade <cost>` or `Top level` and Sell `Sell <value>`, Engine
+  0.16 E9), and the status line (the tick, then `the road is held!` or `the road is lost`).
 - The HUD: gold, lives, the wave (`started/total`) and, with the timer running, the ticks to the
   next wave; at the bottom left the chosen tower and its cost (the HUD sits on the grass rows
   above and below the road: rows 0 and 15 hold no path or pad). The ghost tower on the cursor is green
-  where it can be built and red where not (a path cell, a taken pad, too little gold).
+  where it can be built and red where not (a path cell, a taken pad, too little gold), its range
+  ringed. From E9 also `next` and the next wave's groups (an icon and a count per kind), the
+  selected tower's upgrade cost (an up arrow) and `sell <value>`, and the speed (`2x`, `3x`) at
+  the top right above 1x.
+- The end (E9): once the round is won or lost the end screen opens over it: `The road is held!`
+  with one to three stars, or `The gate has fallen`; the waves held, lives left, gold and enemies
+  stopped; a jingle (`road-won`, `road-lost`); Back to title.
 
 The page plays 30 game ticks a second (`TICKS_PER_SECOND` in `play.ts`, the scene's `tickRate`,
 which the shell paces since Engine 0.15, gap D2); the tools play the same ticks, so a run file's
@@ -103,14 +113,18 @@ which the shell paces since Engine 0.15, gap D2); the tools play the same ticks,
   - `frost`: 15 gold, range 2, 1 damage, cooldown 10, slows to 60% for 20 ticks; level 2 (12
     gold: 50% for 30), level 3 (18 gold: range 3, 2 damage, 40% for 40).
 - `content/waves/road.json` (E8): a timer of 500 ticks and ten waves of runners and brutes, each
-  bigger or tougher (hp 3 to 55, bounty 2 to 10), the runners with jitter: 1 eight runners; 2 ten
+  bigger or tougher (hp 3 to 62, bounty 2 to 10), the runners with jitter: 1 eight runners; 2 ten
   runners; 3 two brutes with six fast runners behind (they overtake); 4 fourteen runners; 5 four
   brutes and eight fast runners; 6 eighteen runners; 7 six brutes; 8 twelve fast runners and four
-  brutes; 9 twenty-four runners; 10 eight brutes and sixteen fast runners. 140 enemies in all.
-  The numbers are a first pass, tuned by playtest in E9.
+  brutes; 9 twenty-four runners (hp 14); 10 eight brutes (hp 62) and sixteen fast runners (hp
+  15). 140 enemies in all. E9 tuned waves 9 and 10 (from 12, 55 and 13): E8's twelve-tower
+  defence held everything with 158 gold left over; now it wins with 17 lives (two stars) and
+  three stars take a thirteenth tower (`WIN_PLAN`).
 - `content/sprites/td.txt`: the text art still used (Engine 0.16 E7 moved the cells, towers,
   enemies and shots to the CC0 pack and removed them here): `cursor-0/1` (16x16, palette `td`)
-  and the HUD icons `icon-gold`, `icon-lives`, `icon-wave`, `icon-timer` (8x8).
+  and the HUD icons `icon-gold`, `icon-lives`, `icon-wave`, `icon-timer` and (E9) `icon-runner`,
+  `icon-brute` (the wave preview), `icon-up` (the upgrade cost) (8x8), and the end screen's
+  `star-on` and `star-off` (16x16).
   `content/sprites/td-font.txt`: the HUD font (the mini siege's, with a `/` added for the wave),
   palette `td`.
 - `content/palettes/td.json`: the NES colours the text art uses (E7 removed the recolours
@@ -120,7 +134,10 @@ which the shell paces since Engine 0.15, gap D2); the tools play the same ticks,
 - `content/sfx/`: `place`, `sell`, `refused`, `wave`, `arrow`, `boom`, `kill`, `leak`, `clear`,
   `won`, `lost` and, from E7, `upgrade`, `spawn`, `launch` (the cannon firing), `frost`,
   `splash`, `chill` (a slow), plus the menus' `ui-move`, `ui-select`, `ui-back` (MML, one short
-  phrase each). `content/songs/road.json`: the looping song (four channels, MML).
+  phrase each). `content/songs/road.json`: the looping song (four channels, MML); from E9
+  `road-danger.json` (its danger layer: the same tempo and length, a staccato sting, a pumping
+  bass and driving drums) and the end screen's jingles `road-won.json` and `road-lost.json`
+  (played once).
 - `assets/kenney-tower-defense/`, `assets/CREDITS.md`, `tools/road-art.ts` and
   `assets.test.ts`: the CC0 pack (below).
 - `picture.ts`: `tdLook(content)` (the skin, sheets, size; the grass colour is the skin's
@@ -130,22 +147,30 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 - `view.ts`: `createView(content, seed, opts?)`, the engine's `frameView` over `createGame` and the
   pictures above (the cursor and ghost shown), for `pnpm cli screenshot` and the backend parity
   test.
+- `plans.ts` (E9): `WIN_PLAN` and `LOST_PLAN`, the `TdBot` plans of the `win` and `lost` runs
+  (tests only).
 - `play.ts`: `TdPlay`, the page's `Scene` (no DOM, no clock): one game tick per `update`, its
   `tickRate` `TICKS_PER_SECOND` (30): the shell's `SceneStack` steps it every `STEPS_PER_TICK` (2)
   loop steps with the steps' input merged (`MergedInput`: pressed on any step counts on the tick,
   every tap arrives; Engine 0.15, gap D2, which removed the sample's own `TickInput` and counter).
   Keys and taps are frame input the kit's `TdGame` reads (gap D1); `headless()` is the game, for
-  `window.__ww`.
+  `window.__ww`. From E9 every tick's merged input goes into an `InputRecorder`: `recording()` is
+  `{ ticks, input }`, the round so far as a run file's, at any speed (exact for input with a
+  released tick between presses).
 - `main.ts` + `index.html` (title "Tower defense: The Winding Road, ...", the name the games index
   shows): the page: `bootBrowserGame` with Canvas2D, `game` (the volume
   control's storage key, gap M1), the touch pad, `pointer: true` and `audio` (the sfx and the song
   `road`), the bar (Wave, Tower, Sell, pressing through the shell's `InputManager.press`, and the
   status; before the first wave its hint is the kit's `TD_CONTROLS` written by `controlsHint` with
-  the player's key names, Engine 0.15 T10, lesson D14: the page's `HINT` string is gone) and `window.wwTd` (`tick()`, `kit()`, `cursor()`) for the browser test. No cell-to-client
+  the player's key names, Engine 0.15 T10, lesson D14: the page's `HINT` string is gone) and `window.wwTd` (`tick()`, `kit()`, `cursor()`, from E9 `recording()`) for the browser test.
+  From E9 also the skin's layered `music` and the seed to the shell's mixer (`audio.mix`,
+  `audio.seed`) and the Build button. No cell-to-client
   copy (gap D13): the test taps through the kit's `screenAtCell` and `window.__ww.toClient`.
 - `play.test.ts`: `TdPlay` on a `SceneStack` (paced at its `tickRate`) into the null backend: the
-  `won` input typed one tick at a time wins all ten waves with three stars and the run's golden
-  hash at tick 3100 and shows every kind of event; one tick every two loop steps; a key pressed
+  `win` input typed one tick at a time wins all ten waves with three stars and the run's golden
+  hash at tick 3150, shows every kind of event and records itself as the run's input; (E9) the
+  same input at 1x and at 3x (`SceneStack.speed`, `advance`) gives every golden hash; `WIN_PLAN`
+  played by the bot at 2x and 3x records the `sped-up` run file (`WW_UPDATE_GOLDEN=1` writes it); one tick every two loop steps; a key pressed
   for one loop step counts; frame taps move, place, upgrade and sell (each tap at a cell's centre
   from the kit's `screenAtCell` on the 30 x 16 map, gap D13); `InputManager.press` presses on the
   next tick.
@@ -159,16 +184,17 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
   the HUD, three tower types with two upgrades each, the cannon's splash and the frost's slow, ten
   waves with the timer, the star thresholds),
   the start state, every run file played twice to the same snapshots with its assertions passing,
-  won and lost, each run failing without each rule in its `guards`, and the `won` input equal to
-  the bot's plan. Engine 0.15 T14 (the asset audit): no look, tag look or tile with its own
+  win and lost, each run failing without each rule in its `guards`, the `win` and `lost` inputs
+  equal to their bot plans, E8's twelve towers winning with two stars, and the `sped-up` golden
+  hashes equal to the win's (E9). Engine 0.15 T14 (the asset audit): no look, tag look or tile with its own
   fallback colour; every tick of every run drawn through `view.ts`'s Canvas2D picture without a
   fallback box (the bundle's PNG sheets decoded size-only for Node); the one song's channels the
   same length; the skin's sounds (events' and projectiles' impacts) exactly the sfx files. E7: the
   three tower types at levels 1-3 idle and firing, shots, ghosts (ring, blocked, selected),
   enemies' steps, slow look, hit flash and health bars, every road frame in the cut sheet and a
   sound for every kit event.
-- `runs/` (Engine 0.16 E8, "The Winding Road map (E8)" below): nine run files, each with sync
-  `hashes` and a golden `<name>.hashes.json`, made from `TdBot` plans:
+- `runs/` (Engine 0.16 E8, "The Winding Road map (E8)" below, and E9): ten run files, each with
+  sync `hashes` and a golden `<name>.hashes.json`, made from `TdBot` plans:
   - `build.run.json` (120 ticks): an arrow on the path is refused (`not_build_cell`), cannons
     bought on (3, 2) and (14, 2), a frost refused (`too_poor`), the second cannon sold for 12 and
     the frost bought on (4, 4). Guards `build-on-build-cells`, `build-costs-gold`, `sell-refunds`.
@@ -185,13 +211,19 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
     `wave-timer`.
   - `leak.run.json` (360 ticks): one arrow on (4, 4) against wave 1 kills four runners, four leak
     (20 lives to 16). Guards `tower-range`, `tower-cooldown`, `leak-costs-life`.
-  - `lost.run.json` (480 ticks): no towers, waves 1 to 3 sent at once; the twentieth leak loses
-    the round at tick 478 (no stars). Guards `spawn-spacing`, `enemies-walk`, `leak-costs-life`,
+  - `lost.run.json` (1500 ticks, E9; E8's was no towers and three waves at once): a thin
+    defence (`LOST_PLAN`: two arrows, each upgraded once), every wave sent as the last clears;
+    waves 1 to 3 held, leaks from wave 4, the twentieth leak in wave 6 loses the round at tick
+    1489 (no stars, 36 killed). Guards `spawn-spacing`, `enemies-walk`, `leak-costs-life`,
     `lose-at-zero-lives`.
-  - `won.run.json` (3100 ticks): twelve towers built and upgraded between waves, all ten waves
-    sent with Enter and held with all 20 lives; won at tick 3090 with three stars. Guards
-    `towers-fire`, `kill-bounty`, `win-on-clear`. (E9 adds the full game's win, loss and sped-up
-    runs.)
+  - `win.run.json` (3150 ticks, E9; replaces E8's `won`): the good defence (`WIN_PLAN`): thirteen
+    towers built and upgraded between waves, all ten waves sent with Enter; two brutes of wave 10
+    get through; won at tick 3141 with 18 lives, three stars, 138 killed. Guards `towers-fire`,
+    `kill-bounty`, `win-on-clear`.
+  - `sped-up.run.json` (3150 ticks, E9): the win's defence played on the page's scene at 2x
+    between waves and 3x during them (the shell's speed control), the bot deciding once a tick,
+    and exported by `TdPlay.recording()`: the same input as `win`, and its golden file equals
+    `win.hashes.json` at every hashed tick (tested). No `guards` (the win guards them).
 
 ## Rules
 
@@ -222,20 +254,23 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 ## Testing
 
 `pnpm test games/samples/tower-defense`; `pnpm -s cli validate games/samples/tower-defense`;
-`pnpm -s cli run games/samples/tower-defense/runs/won.run.json` (and `build`, `upgrade`,
-`splash`, `slow`, `target`, `timer`, `leak`, `lost`);
+`pnpm -s cli run games/samples/tower-defense/runs/win.run.json` (and `build`, `upgrade`,
+`splash`, `slow`, `target`, `timer`, `leak`, `lost`, `sped-up`);
 `pnpm -s cli mutants games/samples/tower-defense` (exit 0, strict, 18 rules guarded);
 `pnpm test tests/runs` (golden hashes, the mutants test and backend parity through `view.ts`).
 
-The art and the page: `pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick
-1300` (a PNG in `.ww-out/screenshots/`, the same bytes every time; `--json` gives its sha256 and
+The art and the page: `pnpm -s cli screenshot games/samples/tower-defense/runs/win.run.json --tick
+1300` (`--tick 3150 --overlay end` the end screen with its stars) (a PNG in `.ww-out/screenshots/`, the same bytes every time; `--json` gives its sha256 and
 `matchesHeadless`). In headless Chromium (skipped where none is installed):
 `pnpm test tests/browser/tower-defense-page.test.ts` builds the repo, follows the games index's
 link to the page (as "The Winding Road"), checks the shell's volume control, places an arrow with two taps and starts a wave with the Wave button (it kills runners),
-then types the `won` run's input on the keyboard and wins at tick 3090 with 20 lives and three
-stars, with no page errors; `pnpm test tests/browser/tower-defense-shots.test.ts` takes `build` at
-tick 120, `won` at 1300 and `lost` at 480 twice each (byte-identical, matching the headless
-hashes, all different).
+then (E9) follows the link again to the title, starts, and on the live loop cycles the speed with
+F and the speed button (3x plays more ticks a second), and from the title with
+`?debug=step&title=show` types the `win` run's input on the keyboard to the win at 18 lives and
+three stars and the end screen (its jingle playing, the game held, the page's recording the run's
+input), with no page errors; `pnpm test tests/browser/tower-defense-shots.test.ts` takes `build` at
+tick 120, `win` at 1300, `lost` at 1500 and the end screen over `win` at 3150 and `lost` at 1500
+twice each (byte-identical, matching the headless hashes, all different).
 `pnpm test tests/build/pages.test.ts` checks the launcher lists it.
 
 ## Title screen, pause menu and settings (Engine 0.16 T9)
@@ -315,7 +350,7 @@ games/samples/tower-defense/tools/road-art.ts`; `ROAD_FRAMES` lays it out and is
   look tests above, every tick of every run without a fallback box, the golden hashes unchanged,
   `pnpm -s cli screenshot games/samples/tower-defense/runs/splash.run.json --tick 160 --scale 3`
   (the pack on Canvas2D) and `tests/browser/pixi-parity.test.ts`'s tower-defense case (from E8
-  the `won` run) (Canvas2D
+  the `won` run, from E9 `win` and `lost`) (Canvas2D
   against PixiJS within the strict bound). The page decodes the sheets before booting
   (`withContentImages` in `main.ts`).
 
@@ -344,3 +379,40 @@ games/samples/tower-defense` exits 0, strict, 18 rules guarded. `td-classic` and
   grid, the `won` input to tick 3100, an upgrade by tap), `engine/tools/edit.test.ts` (the map's
   rows), `tests/browser/tower-defense-page.test.ts`, `tower-defense-shots.test.ts` and
   `pixi-parity.test.ts` (the new runs and ticks).
+
+## The full game (Engine 0.16 part E, E9)
+
+All ten waves from the title to the star rating, in data and glue only (one kit addition, status
+only).
+
+- **Balance** (`content/waves/road.json`): waves 9 and 10 toughened (above). Played by the kit's
+  bot: E8's twelve-tower defence wins with 17 lives (two stars), `WIN_PLAN` (a thirteenth arrow,
+  upgraded, on (24, 4) before wave 10) with 18 (three stars, the threshold), `LOST_PLAN` (two
+  arrows) loses in wave 6. Tested in `tower-defense.test.ts`.
+- **Runs**: `win`, `lost` and `sped-up` (above, "Files"). `sped-up` is the win's defence played
+  on `TdPlay` stepped by a `SceneStack` at 2x and 3x (`play.test.ts`), so its golden file equals
+  the win's; `tests/runs/sped-up-shell.test.ts`, `presentation-invariance.test.ts` and
+  `stepped-shell-invariance.test.ts` cover all three (each under `LONG_RUN_TICKS`, so presented
+  whole), and `backend-parity.test.ts` and this folder's asset test draw every tick of them
+  without a fallback box.
+- **Music**: the skin's `music.road`, layers `calm` (`road`) and `danger` (`road-danger`), mixed
+  by the kit's status: silent danger once the round is over, full while an enemy is within 8
+  cells of the gate (`nearGate`), 0.6 from wave 8 while enemies are on the road, calm otherwise.
+  The page passes it to the shell's mixer (`audio.mix`) with the seed (sounds varied per event).
+  Every kit event already had its sound (E7); the end screen's jingles are the triggers' `music`.
+- **HUD**: `next` and the wave preview (`as: preview`, `nextWaveGroups`, the text icons), the
+  selected tower's `upgradeCost` (icon and number) and `sellValue` (`sell {value}`), the speed
+  (`{value}x`, `when` above 1); texts in `road-small` (the presenter gets the font files:
+  `TdLook.fonts`).
+- **The end**: `menus.end` (heading, credits, stars from the HUD sheet `td`, `star-on` and
+  `star-off` at 2x, the lines Waves held `wavesHeld/waveCount`, Lives left, Gold, Enemies stopped
+  `killed`) and `menus.triggers.end` (`outcome` `won`: `The road is held!`, `road-won`; `lost`:
+  `The gate has fallen`, `road-lost`, `stars: false`). Tested in `tower-defense.test.ts` (the
+  triggers on the runs' frames, the end screen's stars and lines, the mix, the HUD) and the
+  browser tests.
+- **Kit status** (`kits/towerdefense/present.ts`): `killed`, `wavesHeld`, `nearGate`; no hash
+  moved.
+- **The page**: the Build/Upgrade button, `window.wwTd.recording()`, the mixer. Upgrade and sell
+  work by keys (Z, C), pointer (a click on a selected tower, a right click), touch (a tap, a
+  long-press, the bar's buttons) and gamepad (its jump and special buttons, the shell's
+  bindings); the range shows while placing (the ghost's ring) and on the selected tower.

@@ -1072,6 +1072,129 @@
       "x": 70,
       "y": 256,
       "font": "td-font"
+    },
+    {
+      "status": "nextWaveGroups",
+      "as": "text",
+      "format": "next",
+      "x": 178,
+      "y": 4,
+      "font": "road-small",
+      "color": "#fcfcfc",
+      "shadow": "#000000"
+    },
+    {
+      "status": "nextWaveGroups",
+      "as": "preview",
+      "x": 204,
+      "y": 4,
+      "sheet": "td",
+      "frames": {
+        "runner": "icon-runner",
+        "brute": "icon-brute"
+      },
+      "frame": "icon-runner",
+      "font": "road-small",
+      "color": "#fcfcfc",
+      "shadow": "#000000",
+      "gap": 2,
+      "spacing": 5
+    },
+    {
+      "status": "speed",
+      "as": "text",
+      "format": "{value}x",
+      "x": 440,
+      "y": 4,
+      "font": "road-small",
+      "color": "#fcd800",
+      "shadow": "#000000",
+      "when": {
+        "status": "speed",
+        "gt": 1
+      }
+    },
+    {
+      "status": "upgradeCost",
+      "as": "icon",
+      "x": 100,
+      "y": 256,
+      "frame": "icon-up",
+      "sheet": "td"
+    },
+    {
+      "status": "upgradeCost",
+      "as": "number",
+      "x": 110,
+      "y": 256,
+      "font": "td-font"
+    },
+    {
+      "status": "sellValue",
+      "as": "text",
+      "format": "sell {value}",
+      "x": 140,
+      "y": 257,
+      "font": "road-small",
+      "color": "#fcfcfc",
+      "shadow": "#000000"
     }
-  ]
+  ],
+  "music": {
+    "road": {
+      "layers": {
+        "calm": "road",
+        "danger": "road-danger"
+      },
+      "fade": 40,
+      "mix": [
+        {
+          "when": {
+            "status": "outcome",
+            "ne": "playing"
+          },
+          "layers": {
+            "calm": 1,
+            "danger": 0
+          },
+          "fade": 20
+        },
+        {
+          "when": {
+            "status": "nearGate",
+            "gte": 1
+          },
+          "layers": {
+            "calm": 1,
+            "danger": 1
+          },
+          "fade": 15
+        },
+        {
+          "when": [
+            {
+              "status": "waveNumber",
+              "gte": 8
+            },
+            {
+              "status": "enemies",
+              "gte": 1
+            }
+          ],
+          "layers": {
+            "calm": 1,
+            "danger": 0.6
+          },
+          "fade": 45
+        },
+        {
+          "layers": {
+            "calm": 1,
+            "danger": 0
+          },
+          "fade": 90
+        }
+      ]
+    }
+  }
 }

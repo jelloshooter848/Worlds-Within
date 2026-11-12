@@ -490,13 +490,32 @@ export function cameraHint(world: TdWorld, tileSize = TD_TILE_SIZE, zoom?: numbe
   return hint;
 }
 
+/** Path cells before the exit within which an enemy counts as near the gate (`nearGate`). */
+export const TD_NEAR_GATE_CELLS = 8;
+
+/** The started waves with no enemy left to come or on the path. */
+function wavesHeld(world: TdWorld): number {
+  let held = 0;
+  for (let n = 1; n <= world.wavesStarted; n++) if (world.waveLeft(n) === 0) held++;
+  return held;
+}
+
+/** The enemies on the path within `TD_NEAR_GATE_CELLS` cells of the exit. */
+function nearGate(world: TdWorld): number {
+  const from = world.pathEnd - TD_NEAR_GATE_CELLS * CELL_SUB;
+  return world.enemies.filter((e) => e.progress >= from).length;
+}
+
 /**
  * The HUD: `gold`, `lives`, `wave` (`n/m`: waves started of all), `waveNumber`, `waveCount`,
  * `enemies` (on the path), `outcome` (`playing`, `won`, `lost`), `nextWave` (ticks to the timer's
  * next wave, only with a timer and waves left), while a wave is still to start and the round is
  * playing `nextWaveKinds` (its enemy kinds in the order they first come, `runner,brute`) and
  * `nextWaveGroups` (each with its count, `runner:6,brute:1`; Engine 0.16 E4, for a HUD preview),
- * `stars` only when the map has a rating (0 until won, then 1-3; `TdWorld.stars`), and with a cursor `tower` (the chosen type) and
+ * `stars` only when the map has a rating (0 until won, then 1-3; `TdWorld.stars`), and (Engine 0.16
+ * E9, for the end screen's stats and the music's danger layer) `killed` (enemies killed so far),
+ * `wavesHeld` (started waves with no enemy left to come or on the path) and `nearGate` (enemies
+ * within `TD_NEAR_GATE_CELLS` path cells of the exit), and with a cursor `tower` (the chosen type) and
  * `towerCost`; with the cursor on a tower (Engine 0.16 E3: that tower is selected) also
  * `selected` (its entity id, `tower-<id>`), `sellValue` (what selling it gives back now) and, while
  * it has a level above it, `upgradeCost`.
@@ -514,6 +533,9 @@ export function presentStatus(
     waveCount: total,
     enemies: world.enemies.length,
     outcome: world.outcome,
+    killed: world.stats.killed,
+    wavesHeld: wavesHeld(world),
+    nearGate: nearGate(world),
   };
   const timer = world.waves.timer;
   if (timer !== undefined && world.wavesStarted < total && world.outcome === 'playing')

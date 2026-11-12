@@ -24,8 +24,13 @@ changed. Since Engine 0.16 E7 it is drawn from Kenney's CC0 Tower Defense pack
 and 24 px and a sheet cut from them by `tools/road-art.ts` (checked byte for byte), with a new
 skin: three tower types (arrow, cannon, frost) at levels 1-3 turned to their targets,
 walking enemies with hit flashes, slowed looks and health bars, range rings on the ghost and the
-selected tower, projectiles with impacts, and a sound for every event. Its `CLAUDE.md` is the
-worked example of a tower-defense game.
+selected tower, projectiles with impacts, and a sound for every event. Since Engine 0.16 E9 it is
+the full game: the waves tuned so a good defence wins (three stars only just) and a thin one
+loses, the run files `win`, `lost` and `sped-up`, layered music (calm, with a danger layer near
+the gate and in the late waves), the HUD's wave preview, the selected tower's upgrade and sell
+prices and the speed, the bar's Build/Upgrade button, and an end screen with the stars, the waves
+held, lives, gold and kills and a jingle. Its `CLAUDE.md` is the worked example of a tower-defense
+game.
 
 ## Public API entry points
 
@@ -35,7 +40,10 @@ worked example of a tower-defense game.
   (`td-towers`), `waves/road.json` (`td-waves`), `sprites/td.txt` (the cursor and HUD icons, the
   only text art left) and `sprites/td-font.txt`, `palettes/td.json`, `skins/canvas2d.json` (the
   pack's art keyed on the kit's kinds and tags: `level:`, `blocked`, `selected`, `range:`, `hit`,
-  `slow`, `hp:`/`maxhp:`; Engine 0.16 E7), `sfx/` (one per kit event) and `songs/road.json`.
+  `slow`, `hp:`/`maxhp:`; Engine 0.16 E7; from E9 its `music` and HUD widgets), `sfx/` (one per
+  kit event) and `songs/` (`road`, its danger layer `road-danger`, the jingles `road-won` and
+  `road-lost`). `game.json`'s `menus.end` and `menus.triggers.end` (Engine 0.16 E9): the end
+  screen.
 - `assets/kenney-tower-defense/` (`tilesheet-16.png`, `tilesheet-24.png`, `road-art.png`,
   `license.txt`) and `assets/CREDITS.md`; `tools/road-art.ts` (`roadArt`, `ROAD_FRAMES`: the cut
   sheet from the pack's); `assets.test.ts`.
@@ -45,7 +53,10 @@ worked example of a tower-defense game.
   and merged by the shell since Engine 0.15, gap D2; keys and taps are frame input the kit reads,
   gap D1); `main.ts` + `index.html`: the page over `bootBrowserGame` (the shell's volume control,
   gap M1; the bar's buttons through `InputManager.press`; the status's hint from the kit's
-  `TD_CONTROLS` with the player's keys, lesson D14; `window.wwTd` for scripts).
+  `TD_CONTROLS` with the player's keys, lesson D14; `window.wwTd` for scripts, with
+  `recording()`, Engine 0.16 E9: `TdPlay.recording()`, the round's ticks and input).
+- `plans.ts` (Engine 0.16 E9): `WIN_PLAN` and `LOST_PLAN`, the kit's `TdBot` plans the full-game
+  run files were played from (tests only).
 - `headless.ts`: `createGame(content, seed, opts?)`, the kit's `TdGame` (snapshot
   `{ round, controls, kit }`).
 - `content.ts`: `loadTowerDefense(files)`, `sampleRound(content)`; the page's data
@@ -53,8 +64,11 @@ worked example of a tower-defense game.
 - `runs/` (Engine 0.16 E8): `build` (placing, refusals, selling), `upgrade` (two upgrades, a
   refused third), `splash` (the cannon's splash kill), `slow` (the frost tower), `target` (the
   runner furthest along shot first), `timer` (the first wave by the timer), `leak` (lives lost to
-  a thin defence), `lost` (no defence, the round lost) and `won` (all ten waves held, three
-  stars), each with sync `hashes` and golden `<name>.hashes.json`.
+  a thin defence), and from E9 the full game's `win` (a good defence, `WIN_PLAN` in `plans.ts`:
+  all ten waves held with 18 lives, three stars), `lost` (a thin defence, `LOST_PLAN`: two arrows,
+  lost in wave 6) and `sped-up` (the win's defence played on the page's scene at 2x and 3x and
+  exported by `TdPlay.recording()`: the win's golden hashes at every hashed tick), each with
+  golden `<name>.hashes.json` (sync `hashes` on all but `sped-up`'s copy of the win's).
 
 ## Imports allowed
 
@@ -66,17 +80,19 @@ worked example of a tower-defense game.
 
 `pnpm test games/samples/tower-defense` (with `assets.test.ts`: the credits, the files kept, the cut
 sheet byte for byte), `pnpm -s cli validate games/samples/tower-defense --json`,
-`pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json` (and the other eight),
+`pnpm -s cli run games/samples/tower-defense/runs/win.run.json --json` (and the other nine),
 `pnpm -s cli mutants games/samples/tower-defense --json` (exit 0, `strict: true`, every rule
 guarded; `tests/runs/tower-defense-mutants.test.ts`), `pnpm test tests/runs` (golden hashes,
 backend parity). How to play: arrows move, Z or a second tap builds, X picks the tower, C or a
 right click sells, Z or a tap on a selected tower upgrades it, Enter or the Wave button sends a
 wave, F or the speed button speeds the game up. The page and the art:
-`pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick 1300 --json`
+`pnpm -s cli screenshot games/samples/tower-defense/runs/win.run.json --tick 1300 --json`
 (deterministic PNG), `tests/browser/tower-defense-page.test.ts` (the built page opened from the
-games index's link, the volume control, played by taps and by keys, no page errors) and `tests/browser/tower-defense-shots.test.ts`
+games index's link, the volume control, played by taps; from E9 the title, the speed control
+on the live loop, and the `win` input typed from the title to the end screen with its stars and
+jingle, no page errors) and `tests/browser/tower-defense-shots.test.ts`
 (headless Chromium; skipped where none is installed), `tests/browser/pixi-parity.test.ts` (the
-`won` run on Canvas2D and PixiJS within the strict bound), `tests/build/pages.test.ts` (the
+`win` and `lost` runs on Canvas2D and PixiJS within the strict bound), `tests/build/pages.test.ts` (the
 launcher).
 
 ## 2D backend choice

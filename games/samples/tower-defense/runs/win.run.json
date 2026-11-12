@@ -1,6 +1,6 @@
 {
   "game": "..",
-  "ticks": 3100,
+  "ticks": 3150,
   "input": {
     "steps": [
       {
@@ -2268,331 +2268,515 @@
         "hold": []
       },
       {
-        "frame": 2573,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2574,
-        "hold": []
-      },
-      {
-        "frame": 2575,
-        "hold": ["left"]
-      },
-      {
         "frame": 2576,
-        "hold": []
+        "hold": ["left"]
       },
       {
         "frame": 2577,
-        "hold": ["up"]
+        "hold": []
       },
       {
         "frame": 2578,
-        "hold": []
+        "hold": ["left"]
       },
       {
         "frame": 2579,
-        "hold": ["up"]
+        "hold": []
       },
       {
         "frame": 2580,
-        "hold": []
-      },
-      {
-        "frame": 2581,
-        "hold": ["jump"]
-      },
-      {
-        "frame": 2582,
-        "hold": []
-      },
-      {
-        "frame": 2583,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2584,
-        "hold": []
-      },
-      {
-        "frame": 2585,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2586,
-        "hold": []
-      },
-      {
-        "frame": 2587,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2588,
-        "hold": []
-      },
-      {
-        "frame": 2589,
-        "hold": ["jump"]
-      },
-      {
-        "frame": 2590,
-        "hold": []
-      },
-      {
-        "frame": 2591,
-        "hold": ["right"]
-      },
-      {
-        "frame": 2592,
-        "hold": []
-      },
-      {
-        "frame": 2593,
-        "hold": ["right"]
-      },
-      {
-        "frame": 2594,
-        "hold": []
-      },
-      {
-        "frame": 2595,
-        "hold": ["right"]
-      },
-      {
-        "frame": 2596,
-        "hold": []
-      },
-      {
-        "frame": 2597,
-        "hold": ["right"]
-      },
-      {
-        "frame": 2598,
-        "hold": []
-      },
-      {
-        "frame": 2599,
-        "hold": ["right"]
-      },
-      {
-        "frame": 2600,
-        "hold": []
-      },
-      {
-        "frame": 2601,
-        "hold": ["down"]
-      },
-      {
-        "frame": 2602,
-        "hold": []
-      },
-      {
-        "frame": 2603,
-        "hold": ["down"]
-      },
-      {
-        "frame": 2604,
-        "hold": []
-      },
-      {
-        "frame": 2605,
-        "hold": ["jump"]
-      },
-      {
-        "frame": 2606,
-        "hold": []
-      },
-      {
-        "frame": 2607,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2608,
-        "hold": []
-      },
-      {
-        "frame": 2609,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2610,
-        "hold": []
-      },
-      {
-        "frame": 2611,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2612,
-        "hold": []
-      },
-      {
-        "frame": 2613,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2614,
-        "hold": []
-      },
-      {
-        "frame": 2615,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2616,
-        "hold": []
-      },
-      {
-        "frame": 2617,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2618,
-        "hold": []
-      },
-      {
-        "frame": 2619,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2620,
-        "hold": []
-      },
-      {
-        "frame": 2621,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2622,
-        "hold": []
-      },
-      {
-        "frame": 2623,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2624,
-        "hold": []
-      },
-      {
-        "frame": 2625,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2626,
-        "hold": []
-      },
-      {
-        "frame": 2627,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2628,
-        "hold": []
-      },
-      {
-        "frame": 2629,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2630,
-        "hold": []
-      },
-      {
-        "frame": 2631,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2632,
-        "hold": []
-      },
-      {
-        "frame": 2633,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2634,
-        "hold": []
-      },
-      {
-        "frame": 2635,
         "hold": ["up"]
       },
       {
-        "frame": 2636,
+        "frame": 2581,
         "hold": []
+      },
+      {
+        "frame": 2582,
+        "hold": ["up"]
+      },
+      {
+        "frame": 2583,
+        "hold": []
+      },
+      {
+        "frame": 2584,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 2585,
+        "hold": []
+      },
+      {
+        "frame": 2586,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2587,
+        "hold": []
+      },
+      {
+        "frame": 2588,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2589,
+        "hold": []
+      },
+      {
+        "frame": 2590,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2591,
+        "hold": []
+      },
+      {
+        "frame": 2592,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 2593,
+        "hold": []
+      },
+      {
+        "frame": 2594,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2595,
+        "hold": []
+      },
+      {
+        "frame": 2596,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2597,
+        "hold": []
+      },
+      {
+        "frame": 2598,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2599,
+        "hold": []
+      },
+      {
+        "frame": 2600,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2601,
+        "hold": []
+      },
+      {
+        "frame": 2602,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2603,
+        "hold": []
+      },
+      {
+        "frame": 2604,
+        "hold": ["down"]
+      },
+      {
+        "frame": 2605,
+        "hold": []
+      },
+      {
+        "frame": 2606,
+        "hold": ["down"]
+      },
+      {
+        "frame": 2607,
+        "hold": []
+      },
+      {
+        "frame": 2608,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 2609,
+        "hold": []
+      },
+      {
+        "frame": 2610,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2611,
+        "hold": []
+      },
+      {
+        "frame": 2612,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2613,
+        "hold": []
+      },
+      {
+        "frame": 2614,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2615,
+        "hold": []
+      },
+      {
+        "frame": 2616,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2617,
+        "hold": []
+      },
+      {
+        "frame": 2618,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2619,
+        "hold": []
+      },
+      {
+        "frame": 2620,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2621,
+        "hold": []
+      },
+      {
+        "frame": 2622,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2623,
+        "hold": []
+      },
+      {
+        "frame": 2624,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2625,
+        "hold": []
+      },
+      {
+        "frame": 2626,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2627,
+        "hold": []
+      },
+      {
+        "frame": 2628,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2629,
+        "hold": []
+      },
+      {
+        "frame": 2630,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2631,
+        "hold": []
+      },
+      {
+        "frame": 2632,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2633,
+        "hold": []
+      },
+      {
+        "frame": 2634,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2635,
+        "hold": []
+      },
+      {
+        "frame": 2636,
+        "hold": ["left"]
       },
       {
         "frame": 2637,
-        "hold": ["jump"]
+        "hold": []
       },
       {
         "frame": 2638,
-        "hold": []
+        "hold": ["up"]
       },
       {
         "frame": 2639,
-        "hold": ["left"]
+        "hold": []
       },
       {
         "frame": 2640,
-        "hold": []
-      },
-      {
-        "frame": 2641,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2642,
-        "hold": []
-      },
-      {
-        "frame": 2643,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2644,
-        "hold": []
-      },
-      {
-        "frame": 2645,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2646,
-        "hold": []
-      },
-      {
-        "frame": 2647,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2648,
-        "hold": []
-      },
-      {
-        "frame": 2649,
-        "hold": ["left"]
-      },
-      {
-        "frame": 2650,
-        "hold": []
-      },
-      {
-        "frame": 2651,
         "hold": ["jump"]
       },
       {
-        "frame": 2652,
+        "frame": 2641,
         "hold": []
       },
       {
+        "frame": 2642,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2643,
+        "hold": []
+      },
+      {
+        "frame": 2644,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2645,
+        "hold": []
+      },
+      {
+        "frame": 2646,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2647,
+        "hold": []
+      },
+      {
+        "frame": 2648,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2649,
+        "hold": []
+      },
+      {
+        "frame": 2650,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2651,
+        "hold": []
+      },
+      {
+        "frame": 2652,
+        "hold": ["left"]
+      },
+      {
         "frame": 2653,
-        "hold": ["start"]
+        "hold": []
       },
       {
         "frame": 2654,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 2655,
+        "hold": []
+      },
+      {
+        "frame": 2656,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2657,
+        "hold": []
+      },
+      {
+        "frame": 2658,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2659,
+        "hold": []
+      },
+      {
+        "frame": 2660,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2661,
+        "hold": []
+      },
+      {
+        "frame": 2662,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2663,
+        "hold": []
+      },
+      {
+        "frame": 2664,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2665,
+        "hold": []
+      },
+      {
+        "frame": 2666,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2667,
+        "hold": []
+      },
+      {
+        "frame": 2668,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2669,
+        "hold": []
+      },
+      {
+        "frame": 2670,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2671,
+        "hold": []
+      },
+      {
+        "frame": 2672,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2673,
+        "hold": []
+      },
+      {
+        "frame": 2674,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2675,
+        "hold": []
+      },
+      {
+        "frame": 2676,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2677,
+        "hold": []
+      },
+      {
+        "frame": 2678,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2679,
+        "hold": []
+      },
+      {
+        "frame": 2680,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2681,
+        "hold": []
+      },
+      {
+        "frame": 2682,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2683,
+        "hold": []
+      },
+      {
+        "frame": 2684,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2685,
+        "hold": []
+      },
+      {
+        "frame": 2686,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2687,
+        "hold": []
+      },
+      {
+        "frame": 2688,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2689,
+        "hold": []
+      },
+      {
+        "frame": 2690,
+        "hold": ["up"]
+      },
+      {
+        "frame": 2691,
+        "hold": []
+      },
+      {
+        "frame": 2692,
+        "hold": ["up"]
+      },
+      {
+        "frame": 2693,
+        "hold": []
+      },
+      {
+        "frame": 2694,
+        "hold": ["up"]
+      },
+      {
+        "frame": 2695,
+        "hold": []
+      },
+      {
+        "frame": 2696,
+        "hold": ["up"]
+      },
+      {
+        "frame": 2697,
+        "hold": []
+      },
+      {
+        "frame": 2698,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 2699,
+        "hold": []
+      },
+      {
+        "frame": 2700,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 2701,
+        "hold": []
+      },
+      {
+        "frame": 2702,
+        "hold": ["start"]
+      },
+      {
+        "frame": 2703,
         "hold": []
       }
     ]
@@ -2610,9 +2794,21 @@
     },
     {
       "tick": 37,
-      "path": "kit.gold",
+      "path": "kit.killed",
       "op": "eq",
-      "value": 15
+      "value": 0
+    },
+    {
+      "tick": 37,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 37,
+      "path": "kit.earned",
+      "op": "eq",
+      "value": 0
     },
     {
       "tick": 213,
@@ -2629,6 +2825,12 @@
       "path": "kit.killed",
       "op": "eq",
       "value": 8
+    },
+    {
+      "tick": 213,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
     },
     {
       "tick": 213,
@@ -2654,6 +2856,12 @@
     },
     {
       "tick": 404,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 404,
       "path": "kit.earned",
       "op": "eq",
       "value": 36
@@ -2673,6 +2881,12 @@
       "path": "kit.killed",
       "op": "eq",
       "value": 26
+    },
+    {
+      "tick": 558,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
     },
     {
       "tick": 558,
@@ -2698,6 +2912,12 @@
     },
     {
       "tick": 828,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 828,
       "path": "kit.earned",
       "op": "eq",
       "value": 88
@@ -2717,6 +2937,12 @@
       "path": "kit.killed",
       "op": "eq",
       "value": 52
+    },
+    {
+      "tick": 1188,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
     },
     {
       "tick": 1188,
@@ -2742,6 +2968,12 @@
     },
     {
       "tick": 1446,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 1446,
       "path": "kit.earned",
       "op": "eq",
       "value": 168
@@ -2761,6 +2993,12 @@
       "path": "kit.killed",
       "op": "eq",
       "value": 76
+    },
+    {
+      "tick": 1854,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
     },
     {
       "tick": 1854,
@@ -2786,12 +3024,18 @@
     },
     {
       "tick": 2316,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 2316,
       "path": "kit.earned",
       "op": "eq",
       "value": 288
     },
     {
-      "tick": 2654,
+      "tick": 2703,
       "path": "round.events",
       "op": "contains",
       "value": {
@@ -2801,19 +3045,42 @@
       }
     },
     {
-      "tick": 2654,
+      "tick": 2703,
       "path": "kit.killed",
       "op": "eq",
       "value": 116
     },
     {
-      "tick": 2654,
+      "tick": 2703,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 2703,
       "path": "kit.earned",
       "op": "eq",
       "value": 360
     },
     {
-      "tick": 3090,
+      "tick": 3123,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "leak",
+        "enemy": 122,
+        "kind": "brute",
+        "lives": 19
+      }
+    },
+    {
+      "tick": 3140,
+      "path": "kit.outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 3141,
       "path": "round.events",
       "op": "contains",
       "value": {
@@ -2821,25 +3088,43 @@
       }
     },
     {
-      "tick": 3100,
+      "tick": 3150,
       "path": "kit.outcome",
       "op": "eq",
       "value": "won"
     },
     {
-      "tick": 3100,
+      "tick": 3150,
       "path": "kit.lives",
       "op": "eq",
-      "value": 20
+      "value": 18
     },
     {
-      "tick": 3100,
+      "tick": 3150,
+      "path": "kit.leaked",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 3150,
       "path": "kit.killed",
       "op": "eq",
-      "value": 140
+      "value": 138
     },
     {
-      "tick": 3100,
+      "tick": 3150,
+      "path": "kit.towers",
+      "op": "eq",
+      "value": 13
+    },
+    {
+      "tick": 3150,
+      "path": "kit.wave",
+      "op": "eq",
+      "value": 10
+    },
+    {
+      "tick": 3150,
       "path": "kit.stars",
       "op": "eq",
       "value": 3
@@ -2938,35 +3223,39 @@
     },
     {
       "tick": 2400,
-      "hash": "645e6e73ca249732"
+      "hash": "9c3ff19f4e308389"
     },
     {
       "tick": 2500,
-      "hash": "31bb8e83f0d645d0"
+      "hash": "35ddcabf1d7cb1c7"
     },
     {
       "tick": 2600,
-      "hash": "34edfafb92169efa"
+      "hash": "be44bbb352f5ace0"
     },
     {
       "tick": 2700,
-      "hash": "89c65c2922342f45"
+      "hash": "696d0c6529b7128e"
     },
     {
       "tick": 2800,
-      "hash": "452f3b5d05df5a05"
+      "hash": "c09a0692b7d49f67"
     },
     {
       "tick": 2900,
-      "hash": "3e4c019df9d05e28"
+      "hash": "dd9f5a4093960e96"
     },
     {
       "tick": 3000,
-      "hash": "ea7d18c6863ff401"
+      "hash": "6a97d7b6f2672152"
     },
     {
       "tick": 3100,
-      "hash": "e2afb4d53558d4e8"
+      "hash": "5403df6020c4b1bc"
+    },
+    {
+      "tick": 3150,
+      "hash": "da6e7f7dbfc333a1"
     }
   ]
 }

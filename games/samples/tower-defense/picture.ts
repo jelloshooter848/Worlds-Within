@@ -5,6 +5,7 @@ import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import { FramePicture, FrameStream, mustSkinSet, type Presenter, type SkinFile } from '@engine/core/present';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
+import { contentFonts, type FontLookup } from '@engine/core/ui';
 import {
   tdFrames,
   type TdCursorView,
@@ -29,12 +30,14 @@ import {
  */
 
 /**
- * What drawing the game needs: the skin, the sprite sheets and the picture size. The colour behind
- * the map (the grass) is the skin's `background` (gap G36), which the backend clears to.
+ * What drawing the game needs: the skin, the sprite sheets, the font files (the HUD's wave
+ * preview, sell value and speed, Engine 0.16 E9) and the picture size. The colour behind the map
+ * (the grass) is the skin's `background` (gap G36), which the backend clears to.
  */
 export interface TdLook {
   skin: SkinFile;
   sheet: SheetLookup;
+  fonts: FontLookup;
   screen: ScreenSize;
 }
 
@@ -43,6 +46,7 @@ export function tdLook(content: ContentBundle): TdLook {
   return {
     skin: mustSkinSet(content, 'canvas2d', 'the tower-defense sample').main,
     sheet: contentSheets(content),
+    fonts: contentFonts(content),
     screen: content.manifest.screen,
   };
 }
@@ -75,6 +79,7 @@ export function tdCanvasPicture(
 ): TdPicture {
   const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
     size: look.screen,
+    fonts: look.fonts,
     ...(onSound && { onSound }),
   });
   return tdPicture(presenter, look.screen, cursor);

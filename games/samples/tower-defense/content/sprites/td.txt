@@ -99,3 +99,71 @@ kkkkkkk.
 .k.y.k..
 kkkkkkk.
 ........
+
+; Engine 0.16 E9: the wave preview's enemy icons (a runner, a brute), the selected tower's upgrade
+; mark, and the end screen's stars (16x16, won and not won).
+frame icon-runner
+...kk...
+..kggk..
+..kggk..
+.kgGGgk.
+kgkggkgk
+..kGGk..
+.kgk.kgk
+.kk...kk
+
+frame icon-brute
+........
+..kkkk..
+.kGGGGk.
+kkgggggk
+kGGwGGGk
+kgggggGk
+kGkGkGkk
+.k.k.k..
+
+frame icon-up
+...k....
+..kek...
+.keeek..
+keeeeek.
+kkeeekk.
+..keek..
+..keek..
+..kkkk..
+
+frame star-on
+.......kk.......
+......kyyk......
+......kyyk......
+.....kyyyyk.....
+.....kyyyyk.....
+kkkkkyyyyyykkkkk
+kyyyyyyyyyyyyyyk
+.kyyyyywyyyyyyk.
+..kyyyyyyyyyyk..
+...kyyyyyyyyk...
+...kyyyyyyyyk...
+..kyyyykkyyyyk..
+..kyyyk..kyyyk..
+.kyyyk....kyyyk.
+.kyyk......kyyk.
+.kkk........kkk.
+
+frame star-off
+.......kk.......
+......kaak......
+......kaak......
+.....kaaaak.....
+.....kaaaak.....
+kkkkkaaaaaakkkkk
+kaaaaaaaaaaaaaak
+.kaaaaaaaaaaaak.
+..kaaaaaaaaaak..
+...kaaaaaaaak...
+...kaaaaaaaak...
+..kaaaakkaaaak..
+..kaaak..kaaak..
+.kaaak....kaaak.
+.kaak......kaak.
+.kkk........kkk.

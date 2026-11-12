@@ -1,11 +1,11 @@
 {
   "game": "..",
-  "ticks": 480,
+  "ticks": 1500,
   "input": {
     "steps": [
       {
         "frame": 0,
-        "hold": ["start"]
+        "hold": ["right"]
       },
       {
         "frame": 1,
@@ -13,7 +13,7 @@
       },
       {
         "frame": 2,
-        "hold": ["start"]
+        "hold": ["down"]
       },
       {
         "frame": 3,
@@ -21,46 +21,506 @@
       },
       {
         "frame": 4,
-        "hold": ["start"]
+        "hold": ["down"]
       },
       {
         "frame": 5,
+        "hold": []
+      },
+      {
+        "frame": 6,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 7,
+        "hold": []
+      },
+      {
+        "frame": 8,
+        "hold": ["right"]
+      },
+      {
+        "frame": 9,
+        "hold": []
+      },
+      {
+        "frame": 10,
+        "hold": ["right"]
+      },
+      {
+        "frame": 11,
+        "hold": []
+      },
+      {
+        "frame": 12,
+        "hold": ["down"]
+      },
+      {
+        "frame": 13,
+        "hold": []
+      },
+      {
+        "frame": 14,
+        "hold": ["down"]
+      },
+      {
+        "frame": 15,
+        "hold": []
+      },
+      {
+        "frame": 16,
+        "hold": ["down"]
+      },
+      {
+        "frame": 17,
+        "hold": []
+      },
+      {
+        "frame": 18,
+        "hold": ["down"]
+      },
+      {
+        "frame": 19,
+        "hold": []
+      },
+      {
+        "frame": 20,
+        "hold": ["down"]
+      },
+      {
+        "frame": 21,
+        "hold": []
+      },
+      {
+        "frame": 22,
+        "hold": ["down"]
+      },
+      {
+        "frame": 23,
+        "hold": []
+      },
+      {
+        "frame": 24,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 25,
+        "hold": []
+      },
+      {
+        "frame": 26,
+        "hold": ["start"]
+      },
+      {
+        "frame": 27,
+        "hold": []
+      },
+      {
+        "frame": 166,
+        "hold": ["left"]
+      },
+      {
+        "frame": 167,
+        "hold": []
+      },
+      {
+        "frame": 168,
+        "hold": ["left"]
+      },
+      {
+        "frame": 169,
+        "hold": []
+      },
+      {
+        "frame": 170,
+        "hold": ["up"]
+      },
+      {
+        "frame": 171,
+        "hold": []
+      },
+      {
+        "frame": 172,
+        "hold": ["up"]
+      },
+      {
+        "frame": 173,
+        "hold": []
+      },
+      {
+        "frame": 174,
+        "hold": ["up"]
+      },
+      {
+        "frame": 175,
+        "hold": []
+      },
+      {
+        "frame": 176,
+        "hold": ["up"]
+      },
+      {
+        "frame": 177,
+        "hold": []
+      },
+      {
+        "frame": 178,
+        "hold": ["up"]
+      },
+      {
+        "frame": 179,
+        "hold": []
+      },
+      {
+        "frame": 180,
+        "hold": ["up"]
+      },
+      {
+        "frame": 181,
+        "hold": []
+      },
+      {
+        "frame": 182,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 183,
+        "hold": []
+      },
+      {
+        "frame": 184,
+        "hold": ["start"]
+      },
+      {
+        "frame": 185,
+        "hold": []
+      },
+      {
+        "frame": 317,
+        "hold": ["right"]
+      },
+      {
+        "frame": 318,
+        "hold": []
+      },
+      {
+        "frame": 319,
+        "hold": ["right"]
+      },
+      {
+        "frame": 320,
+        "hold": []
+      },
+      {
+        "frame": 321,
+        "hold": ["down"]
+      },
+      {
+        "frame": 322,
+        "hold": []
+      },
+      {
+        "frame": 323,
+        "hold": ["down"]
+      },
+      {
+        "frame": 324,
+        "hold": []
+      },
+      {
+        "frame": 325,
+        "hold": ["down"]
+      },
+      {
+        "frame": 326,
+        "hold": []
+      },
+      {
+        "frame": 327,
+        "hold": ["down"]
+      },
+      {
+        "frame": 328,
+        "hold": []
+      },
+      {
+        "frame": 329,
+        "hold": ["down"]
+      },
+      {
+        "frame": 330,
+        "hold": []
+      },
+      {
+        "frame": 331,
+        "hold": ["down"]
+      },
+      {
+        "frame": 332,
+        "hold": []
+      },
+      {
+        "frame": 333,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 334,
+        "hold": []
+      },
+      {
+        "frame": 335,
+        "hold": ["start"]
+      },
+      {
+        "frame": 336,
+        "hold": []
+      },
+      {
+        "frame": 461,
+        "hold": ["start"]
+      },
+      {
+        "frame": 462,
+        "hold": []
+      },
+      {
+        "frame": 764,
+        "hold": ["start"]
+      },
+      {
+        "frame": 765,
+        "hold": []
+      },
+      {
+        "frame": 1489,
+        "hold": ["start"]
+      },
+      {
+        "frame": 1490,
+        "hold": []
+      },
+      {
+        "frame": 1491,
+        "hold": ["start"]
+      },
+      {
+        "frame": 1492,
+        "hold": []
+      },
+      {
+        "frame": 1493,
+        "hold": ["start"]
+      },
+      {
+        "frame": 1494,
+        "hold": []
+      },
+      {
+        "frame": 1495,
+        "hold": ["start"]
+      },
+      {
+        "frame": 1496,
+        "hold": []
+      },
+      {
+        "frame": 1497,
+        "hold": ["start"]
+      },
+      {
+        "frame": 1498,
         "hold": []
       }
     ]
   },
   "assertions": [
     {
-      "tick": 5,
-      "path": "kit.wave",
-      "op": "eq",
-      "value": 3
+      "tick": 27,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "wave",
+        "wave": 1,
+        "by": "button"
+      }
     },
     {
-      "tick": 248,
+      "tick": 27,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 27,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 27,
+      "path": "kit.earned",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 185,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "wave",
+        "wave": 2,
+        "by": "button"
+      }
+    },
+    {
+      "tick": 185,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 8
+    },
+    {
+      "tick": 185,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 185,
+      "path": "kit.earned",
+      "op": "eq",
+      "value": 16
+    },
+    {
+      "tick": 336,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "wave",
+        "wave": 3,
+        "by": "button"
+      }
+    },
+    {
+      "tick": 336,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 18
+    },
+    {
+      "tick": 336,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 336,
+      "path": "kit.earned",
+      "op": "eq",
+      "value": 36
+    },
+    {
+      "tick": 462,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "wave",
+        "wave": 4,
+        "by": "button"
+      }
+    },
+    {
+      "tick": 462,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 26
+    },
+    {
+      "tick": 462,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 462,
+      "path": "kit.earned",
+      "op": "eq",
+      "value": 60
+    },
+    {
+      "tick": 687,
       "path": "round.events",
       "op": "contains",
       "value": {
         "type": "leak",
-        "enemy": 1,
+        "enemy": 30,
         "kind": "runner",
         "lives": 19
       }
     },
     {
-      "tick": 300,
-      "path": "kit.lives",
-      "op": "eq",
-      "value": 16
+      "tick": 765,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "wave",
+        "wave": 5,
+        "by": "button"
+      }
     },
     {
-      "tick": 477,
+      "tick": 765,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 32
+    },
+    {
+      "tick": 765,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 12
+    },
+    {
+      "tick": 765,
+      "path": "kit.earned",
+      "op": "eq",
+      "value": 72
+    },
+    {
+      "tick": 1265,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "wave",
+        "wave": 6,
+        "by": "timer"
+      }
+    },
+    {
+      "tick": 1265,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 34
+    },
+    {
+      "tick": 1265,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 1265,
+      "path": "kit.earned",
+      "op": "eq",
+      "value": 81
+    },
+    {
+      "tick": 1488,
       "path": "kit.outcome",
       "op": "eq",
       "value": "playing"
     },
     {
-      "tick": 478,
+      "tick": 1489,
       "path": "round.events",
       "op": "contains",
       "value": {
@@ -68,25 +528,49 @@
       }
     },
     {
-      "tick": 480,
+      "tick": 1500,
       "path": "kit.outcome",
       "op": "eq",
       "value": "lost"
     },
     {
-      "tick": 480,
+      "tick": 1500,
       "path": "kit.lives",
       "op": "eq",
       "value": 0
     },
     {
-      "tick": 480,
+      "tick": 1500,
+      "path": "kit.leaked",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 1500,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 36
+    },
+    {
+      "tick": 1500,
+      "path": "kit.towers",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 1500,
+      "path": "kit.wave",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 1500,
       "path": "kit.stars",
       "op": "eq",
       "value": 0
     }
   ],
-  "hashEvery": 20,
+  "hashEvery": 50,
   "guards": ["spawn-spacing", "enemies-walk", "leak-costs-life", "lose-at-zero-lives"],
   "hashes": [
     {
@@ -94,52 +578,112 @@
       "hash": "d02aa6bb19e82982"
     },
     {
-      "tick": 260,
-      "hash": "7ed903ba48fa1b13"
+      "tick": 200,
+      "hash": "82b714ad6e487072"
     },
     {
-      "tick": 280,
-      "hash": "52f0fb36ecc7a9ed"
+      "tick": 250,
+      "hash": "9f2a8a76017cded1"
     },
     {
       "tick": 300,
-      "hash": "6d96203a94657b41"
+      "hash": "2ef051c2192ba0b4"
     },
     {
-      "tick": 320,
-      "hash": "b2b03544f7caa8ca"
-    },
-    {
-      "tick": 340,
-      "hash": "5ce2145910177720"
-    },
-    {
-      "tick": 360,
-      "hash": "d178f80264c37733"
-    },
-    {
-      "tick": 380,
-      "hash": "aff605ca3e37bdcf"
+      "tick": 350,
+      "hash": "0504a01c4a96e7d8"
     },
     {
       "tick": 400,
-      "hash": "5e1bd98ec87daa16"
+      "hash": "8e3a0e003a7ce273"
     },
     {
-      "tick": 420,
-      "hash": "465c955d87c97b4d"
+      "tick": 450,
+      "hash": "1a4c89716328698c"
     },
     {
-      "tick": 440,
-      "hash": "04babbe46ea43457"
+      "tick": 500,
+      "hash": "40dc9d3751f686da"
     },
     {
-      "tick": 460,
-      "hash": "2438b6c47c7c670c"
+      "tick": 550,
+      "hash": "dfda11726f020d2d"
     },
     {
-      "tick": 480,
-      "hash": "c8b5c8eeefa80859"
+      "tick": 600,
+      "hash": "da92fac6bdec36af"
+    },
+    {
+      "tick": 650,
+      "hash": "77d1d9fb262344ca"
+    },
+    {
+      "tick": 700,
+      "hash": "a7494c8aafb7f0af"
+    },
+    {
+      "tick": 750,
+      "hash": "a7b29316eb2e454c"
+    },
+    {
+      "tick": 800,
+      "hash": "07e7a02a93e1f389"
+    },
+    {
+      "tick": 850,
+      "hash": "8d4aed1e38f301e8"
+    },
+    {
+      "tick": 900,
+      "hash": "c53e761e950fdcdb"
+    },
+    {
+      "tick": 950,
+      "hash": "7ef0c4709ff0b69e"
+    },
+    {
+      "tick": 1000,
+      "hash": "e3eb8d639cab0c74"
+    },
+    {
+      "tick": 1050,
+      "hash": "e6e75b4100966426"
+    },
+    {
+      "tick": 1100,
+      "hash": "8c70b60db3f56ff6"
+    },
+    {
+      "tick": 1150,
+      "hash": "8248aafbcc679e1b"
+    },
+    {
+      "tick": 1200,
+      "hash": "677fe12575ecd41a"
+    },
+    {
+      "tick": 1250,
+      "hash": "5aff2fee2073bd6b"
+    },
+    {
+      "tick": 1300,
+      "hash": "95fc65be7e1624b5"
+    },
+    {
+      "tick": 1350,
+      "hash": "e2fc394c7f54074d"
+    },
+    {
+      "tick": 1400,
+      "hash": "12d4f23ea3ebb228"
+    },
+    {
+      "tick": 1450,
+      "hash": "e05c83bb6c9445f0"
+    },
+    {
+      "tick": 1500,
+      "hash": "d72fe702a1473afd"
     }
   ]
 }

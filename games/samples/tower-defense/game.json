@@ -57,6 +57,29 @@
       { "actions": ["start"], "label": "Send the wave" },
       { "tap": "F or the speed button", "label": "Speed" }
     ],
+    "end": {
+      "heading": "The end",
+      "credits": "Art: Kenney's Tower Defense pack (CC0)",
+      "stars": { "filled": "star-on", "empty": "star-off", "sheet": "td", "scale": 2, "gap": 6 },
+      "lines": [
+        { "label": "Waves held", "status": "wavesHeld", "of": "waveCount" },
+        { "label": "Lives left", "status": "lives" },
+        { "label": "Gold", "status": "gold" },
+        { "label": "Enemies stopped", "status": "killed" }
+      ],
+      "items": ["title"]
+    },
+    "triggers": {
+      "end": [
+        { "when": { "status": "outcome", "eq": "won" }, "heading": "The road is held!", "music": "road-won" },
+        {
+          "when": { "status": "outcome", "eq": "lost" },
+          "heading": "The gate has fallen",
+          "music": "road-lost",
+          "stars": false
+        }
+      ]
+    },
     "speeds": [1, 2, 3]
   },
   "headless": "headless.ts",

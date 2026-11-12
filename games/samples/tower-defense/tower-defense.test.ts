@@ -15,9 +15,14 @@ import {
   resolveSkinEvent,
   resolveSkinFrame,
   resolveSkinKind,
+  type DeepReadonly,
   type PresentEntity,
+  type PresentFrame,
 } from '@engine/core/present';
+import { LayerMix, mixWhenHolds } from '@engine/core/audio/mix';
+import { contentFonts, endScreen, type EndTrigger, type MenuBuildContext } from '@engine/core/ui';
 import { TD_EVENT_TYPES, TD_TILE_SIZE, TdBot, TOWERDEFENSE_RULES, type TdBotStep } from '@kits/towerdefense';
+import { LOST_PLAN, WIN_PLAN } from './plans';
 import { loadTowerDefense, sampleRound } from './content';
 import { createGame } from './headless';
 import { tdLook } from './picture';
@@ -145,8 +150,19 @@ describe('the tower-defense headless', () => {
     expect(snap['controls']).toEqual({ col: 3, row: 2, tower: 'arrow', held: [0, 0, 0, 0] });
   });
 
-  it('finds the nine run files', () => {
-    expect(RUNS).toEqual(['build', 'leak', 'lost', 'slow', 'splash', 'target', 'timer', 'upgrade', 'won']);
+  it('finds the ten run files', () => {
+    expect(RUNS).toEqual([
+      'build',
+      'leak',
+      'lost',
+      'slow',
+      'sped-up',
+      'splash',
+      'target',
+      'timer',
+      'upgrade',
+      'win',
+    ]);
   });
 
   it.each(RUNS)('plays %s to the same snapshots twice and passes its assertions', (name) => {
@@ -155,18 +171,54 @@ describe('the tower-defense headless', () => {
     expect(failing(name, a)).toEqual([]);
   });
 
-  it('wins all ten waves with three stars, and loses with no defence', () => {
-    const won = play('won').at(-1)!;
-    expect(won['kit']).toMatchObject({
+  it('wins all ten waves with three stars with a good defence, and loses with a thin one (Engine 0.16 E9)', () => {
+    const win = play('win').at(-1)!;
+    expect(win['kit']).toMatchObject({
       outcome: 'won',
-      lives: 20,
-      leaked: 0,
+      lives: 18,
+      leaked: 2,
       wave: 10,
-      towers: 12,
+      towers: 13,
+      killed: 138,
       stars: 3,
     });
     const lost = play('lost').at(-1)!;
-    expect(lost['kit']).toMatchObject({ outcome: 'lost', lives: 0, leaked: 20, towers: 0, stars: 0 });
+    expect(lost['kit']).toMatchObject({
+      outcome: 'lost',
+      lives: 0,
+      leaked: 20,
+      wave: 6,
+      towers: 2,
+      stars: 0,
+    });
+  });
+
+  it('keeps three stars hard: the 0.16 E8 defence (twelve towers) wins the tuned waves with two', () => {
+    const plan = WIN_PLAN.filter(
+      (s) => !(s.do === 'place' || s.do === 'upgrade') || s.col !== 24 || s.row !== 4,
+    );
+    expect(plan).toHaveLength(WIN_PLAN.length - 2);
+    const game = createGame(content, SEED);
+    const bot = new TdBot(plan);
+    const input = new ScriptedInput({ steps: [] });
+    while (game.world.outcome === 'playing' && game.world.tick < 4000) {
+      input.setHeld(bot.next(game));
+      input.next();
+      game.step(input);
+    }
+    expect(game.snapshot()['kit']).toMatchObject({ outcome: 'won', towers: 12, stars: 2 });
+  });
+
+  it('gives the sped-up run the golden hashes of the win at every hashed tick (Engine 0.16 E9)', () => {
+    const golden = (name: string) =>
+      (
+        JSON.parse(readFileSync(new URL(`./runs/${name}.hashes.json`, import.meta.url), 'utf8')) as {
+          hashes: { tick: number; hash: string }[];
+        }
+      ).hashes;
+    expect(runFile('sped-up').ticks).toBe(runFile('win').ticks);
+    expect(golden('sped-up')).toEqual(golden('win'));
+    expect(golden('sped-up').length).toBeGreaterThan(30);
   });
 
   it('passes the rules switched off to the kit: each run fails without a rule it guards', () => {
@@ -177,63 +229,13 @@ describe('the tower-defense headless', () => {
       }
   });
 
-  it("plays the won run file exactly as the kit's bot plays its plan", () => {
-    const plan: TdBotStep[] = [
-      { do: 'place', tower: 'arrow', col: 4, row: 4 },
-      { do: 'place', tower: 'arrow', col: 6, row: 10 },
-      { do: 'place', tower: 'cannon', col: 9, row: 10 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'place', tower: 'frost', col: 11, row: 5 },
-      { do: 'upgrade', col: 4, row: 4 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'place', tower: 'arrow', col: 15, row: 5 },
-      { do: 'upgrade', col: 6, row: 10 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'upgrade', col: 9, row: 10 },
-      { do: 'place', tower: 'arrow', col: 17, row: 11 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'upgrade', col: 4, row: 4 },
-      { do: 'upgrade', col: 6, row: 10 },
-      { do: 'place', tower: 'cannon', col: 20, row: 11 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'upgrade', col: 15, row: 5 },
-      { do: 'upgrade', col: 17, row: 11 },
-      { do: 'upgrade', col: 11, row: 5 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'upgrade', col: 9, row: 10 },
-      { do: 'upgrade', col: 20, row: 11 },
-      { do: 'place', tower: 'frost', col: 22, row: 7 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'upgrade', col: 20, row: 11 },
-      { do: 'upgrade', col: 15, row: 5 },
-      { do: 'upgrade', col: 17, row: 11 },
-      { do: 'place', tower: 'cannon', col: 25, row: 7 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'upgrade', col: 25, row: 7 },
-      { do: 'upgrade', col: 11, row: 5 },
-      { do: 'place', tower: 'arrow', col: 27, row: 9 },
-      { do: 'upgrade', col: 27, row: 9 },
-      { do: 'wave' },
-      { do: 'clear' },
-      { do: 'upgrade', col: 25, row: 7 },
-      { do: 'upgrade', col: 22, row: 7 },
-      { do: 'upgrade', col: 27, row: 9 },
-      { do: 'place', tower: 'arrow', col: 13, row: 8 },
-      { do: 'place', tower: 'arrow', col: 7, row: 8 },
-      { do: 'wave' },
-      { do: 'clear' },
-    ];
-    const run = runFile('won');
+  it.each([
+    ['win', WIN_PLAN],
+    ['lost', LOST_PLAN],
+  ] as const)("plays the %s run file exactly as the kit's bot plays its plan", (name, plan) => {
+    const run = runFile(name);
     const game = createGame(content, SEED);
-    const bot = new TdBot(plan);
+    const bot = new TdBot(plan as readonly TdBotStep[]);
     const input = new ScriptedInput({ steps: [] });
     const snaps = [canonicalJson(game.snapshot())];
     for (let t = 0; t < run.ticks; t++) {
@@ -242,7 +244,7 @@ describe('the tower-defense headless', () => {
       game.step(input);
       snaps.push(canonicalJson(game.snapshot()));
     }
-    expect(snaps).toEqual(play('won').map((s) => canonicalJson(s)));
+    expect(snaps).toEqual(play(name).map((s) => canonicalJson(s)));
   });
 });
 
@@ -286,15 +288,21 @@ describe('the tower-defense assets (Engine 0.15 T14 audit)', () => {
     expect(fallbacks.slice(0, 5)).toEqual([]);
   });
 
-  it('has one song with channels of one length, and an sfx for every sound the skin names', () => {
+  it('has its songs with channels of one length, the danger layer in step with the calm one, and an sfx for every sound the skin names', () => {
     const songs = contentSongs(content);
-    expect(songs.map((s) => s.id)).toEqual(['road']);
-    const song = songs[0]!;
-    expect(compileSong(song).length).toBeGreaterThan(0);
-    const lengths = (['pulse1', 'pulse2', 'triangle', 'noise'] as const).map(
-      (ch) => parseMml(song[ch]!, ch.startsWith('pulse') ? 'pulse' : (ch as 'triangle' | 'noise')).length,
-    );
-    expect(new Set(lengths).size).toBe(1);
+    // The looping `road` and its danger layer (Engine 0.16 E9), and the end screen's jingles.
+    expect(songs.map((s) => s.id).sort()).toEqual(['road', 'road-danger', 'road-lost', 'road-won']);
+    for (const song of songs) {
+      expect(compileSong(song).length, song.id).toBeGreaterThan(0);
+      const lengths = (['pulse1', 'pulse2', 'triangle', 'noise'] as const).map(
+        (ch) => parseMml(song[ch]!, ch.startsWith('pulse') ? 'pulse' : (ch as 'triangle' | 'noise')).length,
+      );
+      expect(new Set(lengths).size, song.id).toBe(1);
+    }
+    const byId = (id: string) => songs.find((s) => s.id === id)!;
+    expect(byId('road-danger')).toMatchObject({ bpm: byId('road').bpm, loop: true });
+    expect([byId('road-won').loop, byId('road-lost').loop]).toEqual([false, false]);
+    expect(skin.music?.['road']?.layers).toEqual({ calm: 'road', danger: 'road-danger' });
     const sfx = new Set(contentSfx(content).map((s) => s.id));
     // An event's own sound and (Engine 0.16 E7) its projectile's impact sound.
     const sounds = Object.values(skin.events ?? {}).flatMap((e) => [
@@ -381,5 +389,118 @@ describe('the tower-defense assets (Engine 0.15 T14 audit)', () => {
       const ev = type === 'td-end' ? { type, result: 'won' } : { type };
       expect(resolveSkinEvent(skin.events, ev)?.sound, type).toEqual(expect.any(String));
     }
+  });
+});
+
+describe('the full game: the end screen, the music, the HUD (Engine 0.16 E9)', () => {
+  const menus = content.manifest.menus!;
+  const { skin } = tdLook(content);
+
+  /** Every presented frame of a run file through `view.ts` (the cursor and HUD status included). */
+  function eachFrame(name: string, fn: (frame: DeepReadonly<PresentFrame>) => void): void {
+    const run = runFile(name);
+    const view = createView(content, SEED);
+    const input = new ScriptedInput(run.input);
+    fn(view.frame!() as DeepReadonly<PresentFrame>);
+    for (let t = 0; t < run.ticks; t++) {
+      input.next();
+      view.step(input);
+      fn(view.frame!() as DeepReadonly<PresentFrame>);
+    }
+  }
+
+  /** The first end trigger that fires on a run's frames, with the status it fired on. */
+  function ending(name: string) {
+    let hit: { trigger: EndTrigger; status: Record<string, string | number | boolean> } | null = null;
+    eachFrame(name, (frame) => {
+      const trigger = menus.triggers?.end?.find((t) => mixWhenHolds(t.when, frame.status));
+      if (hit === null && trigger !== undefined) hit = { trigger, status: { ...frame.status } };
+    });
+    return hit as { trigger: EndTrigger; status: Record<string, string | number | boolean> } | null;
+  }
+
+  const ctx: MenuBuildContext = {
+    screen: content.manifest.screen,
+    fonts: contentFonts(content),
+    frameSize: () => ({ w: 16, h: 16 }),
+    keys: {},
+  };
+
+  it('ends the win on the end screen with three stars, the waves held, lives, gold and kills, and a jingle', () => {
+    const won = ending('win')!;
+    expect(won.trigger).toMatchObject({ heading: 'The road is held!', music: 'road-won' });
+    expect(won.status).toMatchObject({ outcome: 'won', stars: 3, wavesHeld: 10, waveCount: 10, lives: 18 });
+    const file = endScreen(menus, ctx, won.status, won.trigger);
+    const stars = file.widgets.flatMap((w) =>
+      w.type === 'image' && w.id?.startsWith('star-') ? [w.frame] : [],
+    );
+    expect(stars).toEqual(['star-on', 'star-on', 'star-on']);
+    const texts = file.widgets.flatMap((w) => (w.type === 'text' ? [w.text] : []));
+    expect(texts).toEqual(
+      expect.arrayContaining([
+        'The road is held!',
+        'Waves held',
+        '10/10',
+        'Lives left',
+        '18',
+        'Enemies stopped',
+        '138',
+      ]),
+    );
+    expect(contentSongs(content).find((s) => s.id === 'road-won')?.loop).toBe(false);
+  });
+
+  it('ends the loss on the end screen with no stars, the waves held and its own jingle', () => {
+    const lost = ending('lost')!;
+    expect(lost.trigger).toMatchObject({ heading: 'The gate has fallen', music: 'road-lost', stars: false });
+    // Waves 1 to 5 went by (wave 4 and 5 with leaks); wave 6 broke through.
+    expect(lost.status).toMatchObject({ outcome: 'lost', lives: 0, wavesHeld: 5, waveNumber: 6 });
+    const file = endScreen(menus, ctx, lost.status, lost.trigger);
+    expect(file.widgets.some((w) => w.id?.startsWith('star-'))).toBe(false);
+    expect(file.widgets.flatMap((w) => (w.type === 'text' ? [w.text] : []))).toContain('5/10');
+  });
+
+  it('mixes the danger layer in while enemies near the gate and in the late waves, calm otherwise', () => {
+    const mix = new LayerMix(skin.music!['road']!);
+    const seen: { near: number; wave: number; enemies: number; danger: number }[] = [];
+    let last: DeepReadonly<PresentFrame>['status'] = {};
+    eachFrame('win', (frame) => {
+      last = frame.status;
+      const gains = mix.update(frame.status);
+      seen.push({
+        near: Number(frame.status['nearGate']),
+        wave: Number(frame.status['waveNumber']),
+        enemies: Number(frame.status['enemies']),
+        danger: gains['danger']!,
+      });
+    });
+    expect(seen[0]!.danger).toBe(0);
+    // Calm through the early waves held far from the gate.
+    expect(seen.filter((s) => s.wave <= 3).every((s) => s.near > 0 || s.danger < 1)).toBe(true);
+    expect(seen.some((s) => s.near > 0 && s.danger === 1)).toBe(true);
+    expect(seen.some((s) => s.wave >= 8 && s.enemies > 0 && s.near === 0 && s.danger === 0.6)).toBe(true);
+    // Won: the danger fades out (20 ticks).
+    for (let i = 0; i < 20; i++) mix.update(last);
+    expect(mix.update(last)['danger']).toBe(0);
+  });
+
+  it('shows the wave preview, the selected tower’s upgrade and sell, and the speed in the HUD', () => {
+    const hud = skin.hud ?? [];
+    const item = (status: string, as: string) => hud.find((h) => h.status === status && h.as === as);
+    expect(item('nextWaveGroups', 'preview')).toMatchObject({
+      sheet: 'td',
+      frames: { runner: 'icon-runner', brute: 'icon-brute' },
+    });
+    expect(item('upgradeCost', 'number')).toBeDefined();
+    expect(item('sellValue', 'text')?.format).toBe('sell {value}');
+    expect(item('speed', 'text')?.when).toEqual({ status: 'speed', gt: 1 });
+    // On the win's frames: the preview's groups before each wave, a tower selected with its prices.
+    const statuses: DeepReadonly<PresentFrame>['status'][] = [];
+    eachFrame('win', (frame) => statuses.push(frame.status));
+    expect(statuses[0]).toMatchObject({ nextWaveGroups: 'runner:8' });
+    expect(statuses.some((s) => s['nextWaveGroups'] === 'brute:8,runner:16')).toBe(true);
+    expect(
+      statuses.some((s) => typeof s['upgradeCost'] === 'number' && typeof s['sellValue'] === 'number'),
+    ).toBe(true);
   });
 });
