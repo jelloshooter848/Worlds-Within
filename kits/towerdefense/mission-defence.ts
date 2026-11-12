@@ -20,7 +20,7 @@ import type {
 } from '@engine/core/minigame';
 import type { MissionAdapter, MissionDef, MissionReport } from '@engine/core/missions';
 import type { PresentFrame } from '@engine/core/present';
-import { TD_CONTROLS } from './controls';
+import { TD_CONTROLS, TD_UPGRADE_CONTROL } from './controls';
 import { TdGame } from './game';
 import { cellKinds, LEGEND, type Cell } from './map';
 import { describeWorld } from './present';
@@ -220,6 +220,12 @@ export const tdDefenceParamsSchema = z
       .min(1)
       .exactOptional()
       .describe('ticks after which the wave starts by itself; left out, only the start button starts it'),
+    upgrades: z
+      .boolean()
+      .exactOptional()
+      .describe(
+        'true: towers whose type has `levels` can be upgraded in the round (Engine 0.16 E3); left out or false, every tower type plays without its levels',
+      ),
     wave: z.array(waveEntrySchema).min(1).describe('which world units come down the path, in this order'),
     outcomes: z
       .array(ruleSchema)
@@ -289,6 +295,8 @@ export interface TdDefenceInput extends JsonObject {
   /** The round's lives, or the map's `start.lives` when left out. */
   lives?: number;
   timer?: number;
+  /** True: tower types keep their `levels` (Engine 0.16 E3); left out, they play without them. */
+  upgrades?: boolean;
   /** The walls in order, or null for the map's own build cells. */
   walls: TdWall[] | null;
   /** With `walls`: the map character whose cells they stand on (every build cell when left out). */
@@ -306,6 +314,7 @@ const roundInputSchema = z.strictObject({
   gold: z.int().min(0).exactOptional(),
   lives: z.int().min(1).exactOptional(),
   timer: z.int().min(1).exactOptional(),
+  upgrades: z.boolean().exactOptional(),
   walls: z
     .array(
       refSchema.extend({
@@ -515,6 +524,7 @@ export function tdDefenceInput(
   if (params.budget) input.gold = budgetOf(entities, params.budget);
   if (params.lives !== undefined) input.lives = params.lives;
   if (params.timer !== undefined) input.timer = params.timer;
+  if (params.upgrades === true) input.upgrades = true;
   if (params.build?.slot !== undefined) input.slot = params.build.slot;
   return input;
 }
@@ -897,9 +907,12 @@ export function tdDefenceProblems(
  * the wave list named as the map names it) and plays it as a `TdDefenceRound`. Throws (no round
  * starts) on an unknown map or more walls than cells.
  */
-/** The `td-defence` round's controls (lesson D14): the kit's `TD_CONTROLS`, and select gives up. */
+/**
+ * The `td-defence` round's controls (lesson D14): the kit's `TD_CONTROLS` but upgrading (a round
+ * plays without levels unless its params say `upgrades`, Engine 0.16 E3), and select gives up.
+ */
 export const TD_DEFENCE_CONTROLS: readonly MiniGameControl[] = [
-  ...TD_CONTROLS,
+  ...TD_CONTROLS.filter((c) => c !== TD_UPGRADE_CONTROL),
   { actions: ['select'], label: 'give up' },
 ];
 
@@ -945,7 +958,17 @@ export function tdDefence(opts: TdDefenceOptions): MiniGameDef {
       const roundOpts: { size?: ScreenSize; disabledRules?: readonly string[] } = {};
       if (opts.size) roundOpts.size = opts.size;
       if (opts.disabledRules) roundOpts.disabledRules = opts.disabledRules;
-      return new TdDefenceRound({ map, towers, waves }, seed, cells, input.foes, ctx, roundOpts);
+      // Engine 0.16 E3: tower levels only when the mission's params ask, so a round is as before.
+      const roundTowers: TowerTable =
+        input.upgrades === true
+          ? towers
+          : Object.fromEntries(
+              Object.entries(towers).map(([id, t]) => {
+                const { levels: _levels, ...type } = t;
+                return [id, type];
+              }),
+            );
+      return new TdDefenceRound({ map, towers: roundTowers, waves }, seed, cells, input.foes, ctx, roundOpts);
     },
   };
 }

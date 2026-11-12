@@ -33,6 +33,7 @@ import type { MissionDef } from '../missions';
 import { HostScene } from './host-scene';
 import { UiScene } from './ui-scene';
 import { VOLUME_CONTROL_ID } from './volume-control';
+import { SPEED_BUTTON_ID, SPEED_PAD_BUTTON } from './game-speed';
 import { DEFAULT_VOLUMES, readVolumes, volumesKey } from '../save/settings';
 import { buildFont, KEY_NAME_GLYPHS, menusSchema } from '../ui';
 
@@ -1352,5 +1353,157 @@ describe('bootBrowserGame: dialogs and the end screen from data (Engine 0.16 par
     expect(dialogsFromQuery('?debug=step&dialogs=show')).toBe(true);
     expect(dialogsFromQuery('?title=show&dialogs=skip')).toBe(false);
     expect(dialogsFromQuery('?title=skip')).toBe(false);
+  });
+});
+
+describe('the speed-up control (Engine 0.16 E5)', () => {
+  /**
+   * Boots a game with `speeds: [1, 2, 3]` whose picture presents a frame (its status read back) and
+   * whose every tick is hashed, on a fake page with fake storage. `frames` display frames of 17 ms
+   * are stepped by `requestAnimationFrame` after `before(booted)` (unless the page is manual).
+   */
+  async function boot(opts: { search?: string; speed?: number; frames?: number; speeds?: number[] } = {}) {
+    const storage = fakeStorage();
+    const { body, listeners } = fakeBootPage();
+    let onFrame: ((t: number) => void) | null = null;
+    vi.stubGlobal('requestAnimationFrame', (fn: (t: number) => void) => {
+      onFrame = fn;
+      return 1;
+    });
+    let now = 0;
+    vi.stubGlobal('performance', { now: () => now });
+    let pads: { buttons: { pressed: boolean }[]; axes: number[] }[] = [];
+    vi.stubGlobal('navigator', { getGamepads: () => pads });
+    (globalThis.window as unknown as { location: { search: string } }).location.search = opts.search ?? '';
+    let tick = 0;
+    let state = 1;
+    const hashes: string[] = [];
+    const statuses: unknown[] = [];
+    const game = {
+      step: () => {
+        tick++;
+        state = (state * 31 + tick) % 1_000_003;
+        hashes.push(stateHash({ tick, state }));
+      },
+      snapshot: () => ({ tick, state }),
+      world: {},
+      events: [] as never[],
+      miniGame: () => null,
+    };
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      game: 'speedy',
+      speeds: opts.speeds ?? [1, 2, 3],
+      displays: {
+        canvas2d: () => ({ ...display(), presenter: { present: (f) => void statuses.push(f.status) } }),
+      },
+      scene: (stack, shown) =>
+        new HostScene({
+          stack,
+          game,
+          picture: () => ({
+            draw: () => shown.presenter.present({ status: { tick }, events: [], entities: [] } as never),
+          }),
+        }),
+    });
+    if (booted === null) throw new Error('no boot');
+    if (opts.speed !== undefined) booted.speed!.set(opts.speed);
+    const frames = (n: number) => {
+      for (let i = 0; i < n; i++) {
+        now += 1000 / 60;
+        onFrame!(now);
+      }
+    };
+    if (!booted.loop.manual) frames(opts.frames ?? 0);
+    const button = (body as unknown as FakeEl).children.find((c) => c['id'] === SPEED_BUTTON_ID)!;
+    const key = (code: string) =>
+      (listeners.get('keydown') ?? []).forEach((fn) => fn({ code, repeat: false, target: null }));
+    const setPad = (down: boolean) => {
+      const buttons = Array.from({ length: 10 }, () => ({ pressed: false }));
+      buttons[SPEED_PAD_BUTTON]!.pressed = down;
+      pads = [{ buttons, axes: [] }];
+    };
+    return { booted, body, button, key, setPad, frames, hashes, statuses, storage, game };
+  }
+
+  it('steps the speed in ticks a loop step, with the same hash at every tick as normal speed', async () => {
+    const normal = await boot({ frames: 200 });
+    const steps = normal.hashes.length; // the loop steps 60 frames take
+    expect(steps).toBeGreaterThan(190);
+    for (const speed of [2, 3]) {
+      const fast = await boot({ frames: 60, speed });
+      const ticks = fast.hashes.length;
+      expect(ticks).toBeGreaterThanOrEqual(59 * speed);
+      expect(ticks % speed).toBe(0);
+      expect(fast.hashes).toEqual(normal.hashes.slice(0, ticks));
+      // One draw a loop step, whatever the speed; the HUD status reads the speed.
+      expect(fast.statuses.at(-1)).toEqual({ tick: ticks, speed });
+    }
+  });
+
+  it('cycles by keyboard (F), by the button (mouse click or touch tap) and by gamepad RT', async () => {
+    const { booted, body, button, key, setPad, frames, statuses } = await boot();
+    expect(button['textContent']).toBe('1x');
+    expect(button.attrs['aria-label']).toBe('Game speed 1x');
+    expect((body['dataset'] as Record<string, string>)['speed']).toBe('1');
+    key('KeyF');
+    expect(booted.speed!.speed).toBe(2);
+    expect(button['textContent']).toBe('2x');
+    expect((body['dataset'] as Record<string, string>)['speed']).toBe('2');
+    key('KeyG'); // another key does nothing
+    expect(booted.speed!.speed).toBe(2);
+    // A pointer press never takes the focus from the game; the click (mouse or touch) cycles.
+    const prevent = vi.fn();
+    button.listeners['pointerdown']![0]!({ preventDefault: prevent });
+    expect(prevent).toHaveBeenCalled();
+    button.listeners['click']![0]!({});
+    expect(booted.speed!.speed).toBe(3);
+    expect(button['textContent']).toBe('3x');
+    button.listeners['click']![0]!({});
+    expect(booted.speed!.speed).toBe(1);
+    // Gamepad RT: one cycle per press, read on a loop step.
+    setPad(true);
+    frames(3);
+    expect(booted.speed!.speed).toBe(2);
+    setPad(false);
+    frames(1);
+    setPad(true);
+    frames(1);
+    expect(booted.speed!.speed).toBe(3);
+    expect(booted.cycleSpeed()).toBe(1);
+    expect(statuses.at(-1)).toMatchObject({ speed: 3 });
+  });
+
+  it('keeps the speed out of the game: not in its snapshot, not stored', async () => {
+    const { booted, key, frames, storage, game } = await boot();
+    key('KeyF');
+    frames(10);
+    expect(Object.keys(game.snapshot())).toEqual(['tick', 'state']);
+    expect([...storage.keys()].some((k) => k.includes('speed'))).toBe(false);
+    expect([...storage.values()].some((v) => v.includes('speed'))).toBe(false);
+    expect(booted.speed!.speed).toBe(2);
+  });
+
+  it('steps at 1x in manual-loop mode, so __ww.step(n) stays n ticks', async () => {
+    const { booted, hashes, statuses } = await boot({ search: '?debug=step', speed: 3 });
+    const win = globalThis.window as unknown as DebugWindow;
+    expect(win.__ww!.step(30)).toBe(30);
+    expect(hashes).toHaveLength(30);
+    expect(booted.speed!.speed).toBe(3);
+    expect(statuses.at(-1)).toEqual({ tick: 30, speed: 3 });
+    (globalThis.window as unknown as { location: { search: string } }).location.search = '';
+  });
+
+  it('has no control without speeds', async () => {
+    fakeBootPage();
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      displays: { canvas2d: () => display() },
+      scene: () => ({ update() {}, render() {} }),
+    });
+    expect(booted!.speed).toBeNull();
+    expect(booted!.cycleSpeed()).toBe(1);
   });
 });

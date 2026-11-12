@@ -33,17 +33,19 @@ export interface FeatureGameDef {
 export const FEATURE_GAMES: Record<FeatureMap, FeatureGameDef> = {
   rts: {
     dir: 'games/samples/rts-skirmish',
-    run: 'runs/battle.run.json',
-    tick: 120,
+    run: 'runs/fog.run.json',
+    // The hero beside blue's barracks (Engine 0.16 part D, D8): the view is fogged, so the base
+    // frame's units are the ones red sees then.
+    tick: 440,
     units: 500,
     font: 'ford-small',
     title: 'River Ford',
-    unitKinds: ['unit:soldier', 'unit:worker', 'unit:hero', 'unit:soldier:enemy'],
+    unitKinds: ['unit:worker', 'unit:hero', 'unit:soldier:enemy'],
     barKind: 'health-bar',
   },
   td: {
     dir: 'games/samples/tower-defense',
-    run: 'runs/won.run.json',
+    run: 'runs/win.run.json',
     tick: 500,
     units: 300,
     font: 'road-small',

@@ -2,9 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { layoutHud, type HudFrameSize, type PresentEntity, type PresentMap, type SkinFile } from '../present';
 import { buildFont, type FontLookup } from './font';
 import { clockStatus, worldClock } from '../clock';
-import { clockHudText, SkinHud, hudValueText, type SkinHudInput } from './hud';
+import { clockHudText, previewGroups, SkinHud, hudValueText, skinMinimap, type SkinHudInput } from './hud';
 import type { UiDraw } from './paint';
-import { barFill, barRatio, CounterRoll, dayBarDraws, dayBarX, minimapDraws, minimapScale } from './widgets';
+import {
+  barFill,
+  barRatio,
+  CounterRoll,
+  dayBarDraws,
+  dayBarX,
+  minimapDraws,
+  minimapPointToWorld,
+  minimapScale,
+} from './widgets';
 
 /** Every glyph of the test font is a 2x3 block on a 2x4 cell, baseline 3. */
 const DIGITS = '0123456789x';
@@ -231,6 +240,138 @@ describe('SkinHud (Engine 0.16 T6)', () => {
   });
 });
 
+describe('the fuller minimap: fog, team dots, the camera view (Engine 0.16 part D, D3)', () => {
+  // A 4x2 map at 2 px per tile in an 8x4 box at (100, 10).
+  const map: PresentMap = { id: 'm', version: 1, tileSize: 16, cols: 4, rows: 2, tiles: ['####', '####'] };
+  const unit: PresentEntity = {
+    id: 'u1',
+    kind: 'unit',
+    x: 0,
+    y: 0,
+    w: 16,
+    h: 16,
+    facing: 'down',
+    anim: { state: 'idle', t: 0 },
+    tags: ['own'],
+  };
+  const foe = { ...unit, id: 'u2', x: 48, y: 16, tags: ['enemy', 'faction:blue'] };
+  const plain = { ...unit, id: 'u3', x: 16, tags: [] };
+  const base = {
+    box: { x: 100, y: 10, w: 8, h: 4 },
+    tiles: { '#': '#0a0' },
+    dots: [{ kind: 'unit', color: '#fff' }],
+  };
+
+  it('draws exactly as before without the new fields, whatever the extras', () => {
+    const fog = { cols: 4, rows: 2, cells: ['0000', '0000'] };
+    const view = { x: 0, y: 0, w: 32, h: 16 };
+    expect(minimapDraws(base, map, [unit, foe], { fog, view })).toEqual(minimapDraws(base, map, [unit, foe]));
+  });
+
+  it('lays the fog over the tiles in runs, under the dots', () => {
+    const look = {
+      unexplored: { color: '#000000', alpha: 1 },
+      explored: { color: '#101010', alpha: 0.5 },
+      edge: 3,
+    };
+    const fog = { cols: 4, rows: 2, cells: ['0012', '2222'] };
+    const draws = minimapDraws({ ...base, fog: look }, map, [unit], { fog });
+    expect(draws).toEqual([
+      { kind: 'fill', x: 100, y: 10, w: 8, h: 2, color: '#0a0' },
+      { kind: 'fill', x: 100, y: 12, w: 8, h: 2, color: '#0a0' },
+      { kind: 'fill', x: 100, y: 10, w: 4, h: 2, color: '#000000' },
+      { kind: 'fill', x: 104, y: 10, w: 2, h: 2, color: '#101010', alpha: 0.5 },
+      { kind: 'fill', x: 100, y: 10, w: 2, h: 2, color: '#fff' },
+    ]);
+    // A frame without fog draws none.
+    expect(minimapDraws({ ...base, fog: look }, map, [unit], { fog: null })).toEqual(
+      minimapDraws(base, map, [unit]),
+    );
+  });
+
+  it('colours dots by the first team tag in the table, else the dot entry', () => {
+    const teams = { enemy: '#f00', own: '#00f' };
+    const dots = minimapDraws({ ...base, teams }, map, [unit, foe, plain]).slice(2);
+    expect(dots.map((d) => (d.kind === 'fill' ? d.color : ''))).toEqual(['#00f', '#f00', '#fff']);
+  });
+
+  it("outlines the camera's view one px wide, cut to the box", () => {
+    // The world box (16, 0) 32x16 is minimap (2, 0) 4x2.
+    const draws = minimapDraws({ ...base, dots: [], view: '#ff0' }, map, [], {
+      view: { x: 16, y: 0, w: 32, h: 16 },
+    });
+    expect(draws.slice(2)).toEqual([
+      { kind: 'fill', x: 102, y: 10, w: 4, h: 1, color: '#ff0' },
+      { kind: 'fill', x: 102, y: 11, w: 4, h: 1, color: '#ff0' },
+    ]);
+    const big = minimapDraws({ ...base, dots: [], view: '#ff0' }, map, [], {
+      view: { x: -40, y: -40, w: 400, h: 400 },
+    });
+    expect(big.slice(2)).toEqual([
+      { kind: 'fill', x: 100, y: 10, w: 8, h: 1, color: '#ff0' },
+      { kind: 'fill', x: 100, y: 13, w: 8, h: 1, color: '#ff0' },
+      { kind: 'fill', x: 100, y: 11, w: 1, h: 2, color: '#ff0' },
+      { kind: 'fill', x: 107, y: 11, w: 1, h: 2, color: '#ff0' },
+    ]);
+    // Without a view to show, no outline.
+    expect(minimapDraws({ ...base, dots: [], view: '#ff0' }, map, [])).toHaveLength(2);
+  });
+
+  it('maps a minimap point back to the world, null off the box or the map', () => {
+    expect(minimapPointToWorld(base, map, 100, 10)).toEqual({ x: 0, y: 0 });
+    expect(minimapPointToWorld(base, map, 105, 13)).toEqual({ x: 40, y: 24 });
+    expect(minimapPointToWorld(base, map, 105.5, 11)).toEqual({ x: 44, y: 8 });
+    expect(minimapPointToWorld(base, map, 99, 10)).toBeNull();
+    expect(minimapPointToWorld(base, map, 108, 10)).toBeNull();
+    // A map smaller than the box: a point past its drawn tiles is off the map.
+    const box = { box: { x: 0, y: 0, w: 20, h: 20 }, scale: 2 };
+    expect(minimapPointToWorld(box, map, 7.9, 3.9)).toEqual({ x: 63.2, y: 31.2 });
+    expect(minimapPointToWorld(box, map, 8, 0)).toBeNull();
+    // Each tile's minimap px maps back into that tile.
+    for (let c = 0; c < 4; c++) {
+      const p = minimapPointToWorld(base, map, 100 + c * 2 + 1, 10)!;
+      expect(Math.floor(p.x / 16)).toBe(c);
+    }
+  });
+
+  it("lays a skin's minimap out with the skin's fog look, teams and view, and finds it for pages", () => {
+    const s: SkinFile = {
+      ...skin([
+        { status: 'hp', as: 'number', x: 0, y: 0 },
+        {
+          as: 'minimap',
+          x: 100,
+          y: 10,
+          w: 8,
+          h: 4,
+          tiles: { '#': '#0a0' },
+          dots: [{ kind: 'unit', color: '#fff' }],
+          fog: true,
+          teams: { own: '#00f' },
+          view: '#ff0',
+        },
+      ]),
+      fog: { unexplored: { color: '#222222', alpha: 0.75 } },
+    };
+    const draws = new SkinHud(s).layout(
+      input(
+        {},
+        {
+          map,
+          entities: [unit],
+          fog: { cols: 4, rows: 2, cells: ['0222', '2222'] },
+          view: { x: 0, y: 0, w: 16, h: 16 },
+        },
+      ),
+    );
+    expect(draws).toContainEqual({ kind: 'fill', x: 100, y: 10, w: 2, h: 2, color: '#222222', alpha: 0.75 });
+    expect(draws).toContainEqual({ kind: 'fill', x: 100, y: 10, w: 2, h: 2, color: '#00f' });
+    expect(draws.at(-1)).toEqual({ kind: 'fill', x: 100, y: 11, w: 2, h: 1, color: '#ff0' });
+    expect(skinMinimap(s)).toEqual({ box: { x: 100, y: 10, w: 8, h: 4 } });
+    expect(skinMinimap(skin([]))).toBeNull();
+  });
+});
+
 describe('flat panels and shown-when tests (Engine 0.16 F7)', () => {
   it('draws a panel with a colour and no frame as a box at its alpha, then its border', () => {
     const hud = new SkinHud(
@@ -329,5 +470,65 @@ describe('the clock widget (Engine 0.16 F4)', () => {
     expect(fills.at(-1)).toEqual({ kind: 'fill', x: 4 + 12, y: 9, w: 1, h: 4, color: '#fcfcfc' });
     const evening = hud.layout(input(clock(2, 18))).filter((d) => d.kind === 'fill');
     expect(evening.at(-1)).toMatchObject({ x: 4 + 36 });
+  });
+});
+
+describe('the wave preview (Engine 0.16 E6)', () => {
+  it('reads a kind:count list in order, skipping what is not one', () => {
+    expect(previewGroups('runner:6,brute:1')).toEqual([
+      { kind: 'runner', count: 6 },
+      { kind: 'brute', count: 1 },
+    ]);
+    expect(previewGroups('runner, ,boss:0,bat:x,:3,imp')).toEqual([
+      { kind: 'runner', count: 1 },
+      { kind: 'imp', count: 1 },
+    ]);
+    expect(previewGroups(3)).toEqual([]);
+  });
+
+  it("draws each group's icon by kind and its count, left to right", () => {
+    const hud = new SkinHud(
+      skin([
+        {
+          status: 'nextWaveGroups',
+          as: 'preview',
+          x: 4,
+          y: 2,
+          frames: { runner: 'coin' },
+          font: 'small',
+          format: 'x{value}',
+          spacing: 5,
+        },
+      ]),
+      { fonts: FONTS },
+    );
+    expect(hud.usesUi).toBe(true);
+    const draws = hud.layout(input({ nextWaveGroups: 'runner:6,brute:12' }));
+    const icons = draws.filter((d) => d.kind !== 'glyph');
+    const glyphs = draws.filter((d) => d.kind === 'glyph') as { ch: string; x: number; y: number }[];
+    // The runner's 8 px icon, 2 px, "x6" (two 2 px glyphs, 1 px apart), 5 px, then the brute's
+    // stand-in box (no frame for it, and no item `frame`).
+    expect(icons).toEqual([
+      { kind: 'image', sheet: 'ui', frame: 'coin', sx: 0, sy: 0, sw: 8, sh: 8, x: 4, y: 2, w: 8, h: 8 },
+      { kind: 'fill', x: 24, y: 2, w: 8, h: 8, color: '#ff00ff', missing: true },
+    ]);
+    expect(glyphs.map((g) => [g.ch, g.x, g.y])).toEqual([
+      ['x', 14, 4],
+      ['6', 17, 4],
+      ['x', 34, 4],
+      ['1', 37, 4],
+      ['2', 40, 4],
+    ]);
+    expect(hud.layout(input({}))).toEqual([]);
+    expect(hud.layout(input({ nextWaveGroups: '' }))).toEqual([]);
+  });
+
+  it("uses the item's frame for a kind it does not list, and draws icons only without a font", () => {
+    const hud = new SkinHud(skin([{ status: 'q', as: 'preview', x: 0, y: 0, frame: 'coin', gap: 3 }]));
+    const draws = hud.layout(input({ q: 'a:1,b:2' }));
+    expect(draws.map((d) => [d.kind, (d as { x: number }).x])).toEqual([
+      ['image', 0],
+      ['image', 12],
+    ]);
   });
 });

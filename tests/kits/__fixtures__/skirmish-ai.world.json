@@ -1,0 +1,261 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 11,
+  "systems": "rts",
+  "terrain": {
+    "legend": {
+      ".": {
+        "name": "ground",
+        "cost": 1,
+        "passable": true
+      },
+      "#": {
+        "name": "rock",
+        "cost": 1,
+        "passable": false
+      }
+    },
+    "rows": [
+      "....................",
+      "....................",
+      "....................",
+      "....................",
+      "........##..........",
+      "....................",
+      "....................",
+      "....................",
+      "....................",
+      "...................."
+    ],
+    "elevation": [
+      "00000000000000000000",
+      "00000000000000000000",
+      "00000000000000000000",
+      "00000000000000000000",
+      "00000000000000000000",
+      "00000000000000000000",
+      "00000000000000000000",
+      "00000000000000000000",
+      "00000000000000000000",
+      "00000000000000000000"
+    ]
+  },
+  "entities": [
+    {
+      "key": "types",
+      "components": {
+        "RtsTypes": {
+          "units": {
+            "worker": {
+              "health": 20,
+              "speed": 2,
+              "attack": 1,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 4,
+              "cost": {
+                "gold": 50
+              },
+              "trainTicks": 12,
+              "work": 2,
+              "gather": {
+                "capacity": 5,
+                "ticks": 2
+              }
+            },
+            "soldier": {
+              "health": 30,
+              "speed": 2,
+              "attack": 4,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 4,
+              "cost": {
+                "gold": 50
+              },
+              "trainTicks": 16
+            }
+          },
+          "buildings": {
+            "hall": {
+              "health": 120,
+              "size": {
+                "w": 2,
+                "h": 2
+              },
+              "work": 100,
+              "dropoff": true,
+              "trains": ["worker"]
+            },
+            "barracks": {
+              "health": 150,
+              "size": {
+                "w": 2,
+                "h": 2
+              },
+              "work": 20,
+              "cost": {
+                "gold": 100
+              },
+              "trains": ["soldier"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "red-hall",
+      "components": {
+        "Position": {
+          "x": 1,
+          "y": 1
+        },
+        "Owner": {
+          "faction": "red"
+        },
+        "Building": {
+          "kind": "hall",
+          "w": 2,
+          "h": 2,
+          "dropoff": true
+        },
+        "Health": {
+          "hp": 120,
+          "max": 120
+        },
+        "Producer": {
+          "trains": ["worker"],
+          "queue": [],
+          "progress": 0
+        },
+        "Stockpile": {
+          "faction": "red"
+        },
+        "Inventory": {
+          "gold": 0
+        }
+      }
+    },
+    {
+      "key": "blue-hall",
+      "components": {
+        "Position": {
+          "x": 17,
+          "y": 7
+        },
+        "Owner": {
+          "faction": "blue"
+        },
+        "Building": {
+          "kind": "hall",
+          "w": 2,
+          "h": 2,
+          "dropoff": true
+        },
+        "Health": {
+          "hp": 120,
+          "max": 120
+        },
+        "Producer": {
+          "trains": ["worker"],
+          "queue": [],
+          "progress": 0
+        },
+        "Stockpile": {
+          "faction": "blue"
+        },
+        "Inventory": {
+          "gold": 100
+        }
+      }
+    },
+    {
+      "key": "gold",
+      "components": {
+        "Position": {
+          "x": 17,
+          "y": 4
+        },
+        "Resource": {
+          "item": "gold"
+        },
+        "Inventory": {
+          "gold": 400
+        }
+      }
+    },
+    {
+      "key": "w1",
+      "components": {
+        "Position": {
+          "x": 16,
+          "y": 6
+        },
+        "Owner": {
+          "faction": "blue"
+        },
+        "Health": {
+          "hp": 20,
+          "max": 20
+        },
+        "Unit": {
+          "type": "worker",
+          "speed": 2,
+          "attack": 1,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 4
+        },
+        "Worker": {
+          "job": null,
+          "rate": 2
+        },
+        "Gatherer": {
+          "capacity": 5,
+          "ticks": 2,
+          "node": null,
+          "item": null,
+          "carry": 0,
+          "progress": 0
+        }
+      }
+    },
+    {
+      "key": "w2",
+      "components": {
+        "Position": {
+          "x": 15,
+          "y": 7
+        },
+        "Owner": {
+          "faction": "blue"
+        },
+        "Health": {
+          "hp": 20,
+          "max": 20
+        },
+        "Unit": {
+          "type": "worker",
+          "speed": 2,
+          "attack": 1,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 4
+        },
+        "Worker": {
+          "job": null,
+          "rate": 2
+        },
+        "Gatherer": {
+          "capacity": 5,
+          "ticks": 2,
+          "node": null,
+          "item": null,
+          "carry": 0,
+          "progress": 0
+        }
+      }
+    }
+  ]
+}

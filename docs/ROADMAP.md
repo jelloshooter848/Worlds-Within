@@ -971,13 +971,22 @@ A 10-minute skirmish against an AI opponent.
   voice-like sounds or text on orders), and build and train progress shown in the world.
 - Readable at every zoom: unit outlines, team colours and health bars.
 
-**Done when:**
+**Done when:** (checked in the [build log](BUILD-LOG.md#engine-016-part-d), Engine 0.16 part D,
+Done when)
 
-- [ ] A full match plays from the title to a win or a loss in about 10 minutes, with run files for a
-      win and a loss that pass in CI.
-- [ ] Fog of war is presentation and AI knowledge only, and no existing hash moves for it unless a
-      listed rule change needs it.
-- [ ] Owner playtest and screenshot review of the skirmish are accepted.
+- [x] A full match plays from the title to a win or a loss in about 10 minutes, with run files for a
+      win and a loss that pass in CI. (`match-won`, blue's town centre down at tick 5803, 9:40 at
+      the page's 10 ticks a second, and `match-lost`, red's taken at 5681, 9:28, with their golden
+      hashes in `tests/runs`; `tests/browser/rts-skirmish.test.ts` starts from the games index and
+      the title and replays `match-won` through the page to the end screen.)
+- [x] Fog of war is presentation and AI knowledge only, and no existing hash moves for it unless a
+      listed rule change needs it. (Every rts-classic and rts-skirmish run gives its golden hashes
+      with the fog drawn on and off, `tests/runs/rts-fog.test.ts` and `skirmish.test.ts`; the AI's
+      memory is in the kit snapshot only for a plan that keeps one, so no 0.15 hash moved; the
+      sample's hashes moved only for the new map (D8) and the balance (D9), listed in the build
+      log.)
+- [ ] Owner playtest and screenshot review of the skirmish are accepted. (The screenshots are in
+      `docs/reports/screenshots/0.16-D/`; open as items 504 and 505.)
 
 ### 0.16 part E: the tower defense, The Winding Road
 
@@ -996,11 +1005,17 @@ A tower-defense map with 10 waves.
 
 **Done when:**
 
-- [ ] All 10 waves play from the title to the star rating, with run files for a win, a loss and a
-      sped-up run that pass in CI (speed-up gives the same hashes as normal speed).
-- [ ] Every existing tower-defense run file passes, or its hashes were re-recorded for a listed rule
-      change.
-- [ ] Owner playtest and screenshot review of the map are accepted.
+- [x] All 10 waves play from the title to the star rating, with run files for a win, a loss and a
+      sped-up run that pass in CI (speed-up gives the same hashes as normal speed). (`win`,
+      `lost` and `sped-up` in `games/samples/tower-defense/runs/`, in `run-files.test.ts`;
+      `sped-up.hashes.json` equals `win.hashes.json`, `play.test.ts` and `sped-up-shell.test.ts`;
+      `tower-defense-page.test.ts` types the win from the title to the end screen's three stars.)
+- [x] Every existing tower-defense run file passes, or its hashes were re-recorded for a listed rule
+      change. (`games/td-classic` keeps the five 0.15 runs with their hashes; the mini siege's
+      walls runs unchanged; the sample's runs were replaced for its new map, E8, and balance,
+      E9: [BUILD-LOG.md, Engine 0.16 part E](BUILD-LOG.md#engine-016-part-e), "Golden hashes".)
+- [ ] Owner playtest and screenshot review of the map are accepted. (Open: items 586 and 587 in
+      FEEDBACK-LOG.md; ten screenshots in the build log.)
 
 ### 0.16 part F: the mini siege in 3D low-poly
 
@@ -1030,9 +1045,9 @@ is [the chosen mockup](reports/mockups/mini-siege-3d.png) (the 2D pixel mockup,
 - [x] A screenshot of the siege map at the mockup's angle is placed beside the mockup in the build
       log. ([BUILD-LOG.md, Engine 0.16 part F](BUILD-LOG.md#engine-016-part-f-the-mini-siege-in-3d-low-poly),
       `10-siege-mockup-angle.png` shot at the mockup's pitch 42 through a scratch camera override;
-      the page's own camera stays at pitch 60, owner decision F-22.)
-- [ ] Owner playtest and screenshot review are accepted. (Open: decision F-21 in the build log,
-      numbered into FEEDBACK-LOG.md at merge.)
+      the page's own camera stays at pitch 60, owner item 554.)
+- [ ] Owner playtest and screenshot review are accepted. (Open: item 553 in FEEDBACK-LOG.md
+      and the build log.)
 
 ### 0.16 polish P: parts C and F review notes
 

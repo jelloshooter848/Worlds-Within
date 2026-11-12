@@ -678,7 +678,10 @@ function play(
   let lastMatch: number | null = null;
   let next = 0; // the next order entry to hand over
   let nextMission = 0; // the next mission step to hand over
-  let snapshot = stepper.snapshot();
+  // The snapshot of the tick played last, taken only when something reads it (a check, a hash,
+  // `onTick`, the end): a long run that hashes every 100 ticks does not copy the world every tick.
+  let taken: JsonObject | null = null;
+  const snap = (): JsonObject => (taken ??= stepper.snapshot());
   // The world tick at every game tick played (a game run's timeline `clock`, Engine 0.14 T7).
   const sampling = opts.withWorld === true && stepper.gameRun === true && stepper.worldEvents !== undefined;
   const clock: ClockEntry[] = [];
@@ -705,7 +708,7 @@ function play(
           experience.set(step.mission, (experience.get(step.mission) ?? 0) + step.experienceTicks);
       }
       stepper.step();
-      snapshot = stepper.snapshot();
+      taken = null;
       // Refusals that came after their step (gap M5), at the tick they came at.
       for (const r of stepper.lateRefusals?.(tick) ?? [])
         if (r.tick === tick)
@@ -719,10 +722,10 @@ function play(
           });
     }
     if (sampling) clock.push({ game: tick, world: stepper.worldEvents!(Number.MAX_SAFE_INTEGER).tick });
-    opts.onTick?.(tick, snapshot, stepper.keys);
+    if (opts.onTick) opts.onTick(tick, snap(), stepper.keys);
     if (checking) {
       run.invariants.forEach((c, index) => {
-        const failed = failsCheck(snapshot, c, stepper.keys);
+        const failed = failsCheck(snap(), c, stepper.keys);
         if (failed)
           failures.push({
             tick,
@@ -736,7 +739,7 @@ function play(
       });
       run.assertions.forEach((c, index) => {
         if (c.tick !== tick) return;
-        const failed = failsCheck(snapshot, c, stepper.keys);
+        const failed = failsCheck(snap(), c, stepper.keys);
         if (failed)
           failures.push({
             tick,
@@ -771,14 +774,14 @@ function play(
     const want = stored.get(tick);
     let hash: string | null = null;
     if (want !== undefined) {
-      hash = stateHash(snapshot);
+      hash = stateHash(snap());
       hashesChecked++;
       if (hash === want) lastMatch = tick;
       else hashMismatch = { tick, expected: want, actual: hash, lastMatch };
     }
     const end = tick === last || failures.length > 0 || hashMismatch !== null;
     if (tick % run.hashEvery === 0 || end || want !== undefined)
-      hashes.push({ tick, hash: hash ?? stateHash(snapshot) });
+      hashes.push({ tick, hash: hash ?? stateHash(snap()) });
     if (end)
       return {
         loaded,
@@ -789,7 +792,7 @@ function play(
         lastTick: tick,
         hashes,
         failures,
-        snapshot,
+        snapshot: snap(),
         ordersPlayed: next,
         refusedOrders,
         missionsPlayed: nextMission,

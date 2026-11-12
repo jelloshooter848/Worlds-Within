@@ -1,0 +1,237 @@
+{
+  "run": "games/samples/rts-skirmish/runs/match-lost.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "2bcd627b4a3eda65"
+    },
+    {
+      "tick": 100,
+      "hash": "7dc570a3085129c0"
+    },
+    {
+      "tick": 200,
+      "hash": "1d3bf070491c10d8"
+    },
+    {
+      "tick": 300,
+      "hash": "e18ab76d556a3971"
+    },
+    {
+      "tick": 400,
+      "hash": "0122a7d65f5d0a09"
+    },
+    {
+      "tick": 500,
+      "hash": "a21be89680b50ace"
+    },
+    {
+      "tick": 600,
+      "hash": "5034c63e6de890fa"
+    },
+    {
+      "tick": 700,
+      "hash": "b16d07f3f08cbe58"
+    },
+    {
+      "tick": 800,
+      "hash": "14a6859a0966c4db"
+    },
+    {
+      "tick": 900,
+      "hash": "c4aadf2fbaa872bd"
+    },
+    {
+      "tick": 1000,
+      "hash": "5fd730422d8b2781"
+    },
+    {
+      "tick": 1100,
+      "hash": "79a35bd3e331b5f6"
+    },
+    {
+      "tick": 1200,
+      "hash": "97211fb032a16908"
+    },
+    {
+      "tick": 1300,
+      "hash": "b82b3eab8fd4b58a"
+    },
+    {
+      "tick": 1400,
+      "hash": "3373ebbbf8d1e0e3"
+    },
+    {
+      "tick": 1500,
+      "hash": "f440ba5d84446eb9"
+    },
+    {
+      "tick": 1600,
+      "hash": "0bd0df83be167d21"
+    },
+    {
+      "tick": 1700,
+      "hash": "304c747c19e3b1b6"
+    },
+    {
+      "tick": 1800,
+      "hash": "7a1ab61ee32d4eb1"
+    },
+    {
+      "tick": 1900,
+      "hash": "149f3ba19efb6344"
+    },
+    {
+      "tick": 2000,
+      "hash": "5490ecd767fbae55"
+    },
+    {
+      "tick": 2100,
+      "hash": "2ddcf1d5de6f05dd"
+    },
+    {
+      "tick": 2200,
+      "hash": "4005da62a2035869"
+    },
+    {
+      "tick": 2300,
+      "hash": "7c7c667c816ed517"
+    },
+    {
+      "tick": 2400,
+      "hash": "eeec3ac8ea457319"
+    },
+    {
+      "tick": 2500,
+      "hash": "7b094d1bd07206af"
+    },
+    {
+      "tick": 2600,
+      "hash": "6433af27f79da5e7"
+    },
+    {
+      "tick": 2700,
+      "hash": "85e38788e063100e"
+    },
+    {
+      "tick": 2800,
+      "hash": "7f53def2bb342de4"
+    },
+    {
+      "tick": 2900,
+      "hash": "f4509264199d7c02"
+    },
+    {
+      "tick": 3000,
+      "hash": "97185b7aac0d44d3"
+    },
+    {
+      "tick": 3100,
+      "hash": "72c4469098c85040"
+    },
+    {
+      "tick": 3200,
+      "hash": "09f6177d65aec955"
+    },
+    {
+      "tick": 3300,
+      "hash": "e2b48ac74d7e27d3"
+    },
+    {
+      "tick": 3400,
+      "hash": "799f154e8271d278"
+    },
+    {
+      "tick": 3500,
+      "hash": "16f8250b79e4d8bd"
+    },
+    {
+      "tick": 3600,
+      "hash": "6b88b7a88aa022d6"
+    },
+    {
+      "tick": 3700,
+      "hash": "83c1ae6a24079527"
+    },
+    {
+      "tick": 3800,
+      "hash": "4c856a34210ec0d5"
+    },
+    {
+      "tick": 3900,
+      "hash": "943e32209e0eb24d"
+    },
+    {
+      "tick": 4000,
+      "hash": "066d1f60a353d07f"
+    },
+    {
+      "tick": 4100,
+      "hash": "bda22f0ea616feef"
+    },
+    {
+      "tick": 4200,
+      "hash": "98bb2ea13f5b3310"
+    },
+    {
+      "tick": 4300,
+      "hash": "2a7b28634758b8d0"
+    },
+    {
+      "tick": 4400,
+      "hash": "ed3399d15bd55704"
+    },
+    {
+      "tick": 4500,
+      "hash": "e0e7448d80c8d4b2"
+    },
+    {
+      "tick": 4600,
+      "hash": "4adeba6a7465c55d"
+    },
+    {
+      "tick": 4700,
+      "hash": "932ff24338dcf9f5"
+    },
+    {
+      "tick": 4800,
+      "hash": "6f19f0f0ab41a049"
+    },
+    {
+      "tick": 4900,
+      "hash": "be867f2986732f16"
+    },
+    {
+      "tick": 5000,
+      "hash": "d045c2f83bc2dc7d"
+    },
+    {
+      "tick": 5100,
+      "hash": "8395d0b5328680c5"
+    },
+    {
+      "tick": 5200,
+      "hash": "245ef4ec9061eee3"
+    },
+    {
+      "tick": 5300,
+      "hash": "66d6e990ee416147"
+    },
+    {
+      "tick": 5400,
+      "hash": "935910d8e2815e8e"
+    },
+    {
+      "tick": 5500,
+      "hash": "28730ce838049ba0"
+    },
+    {
+      "tick": 5600,
+      "hash": "df39251680e18fcc"
+    },
+    {
+      "tick": 5700,
+      "hash": "02facfba6cc041cc"
+    }
+  ]
+}

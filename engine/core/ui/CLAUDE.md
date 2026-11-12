@@ -245,6 +245,51 @@ Engine 0.16 F7 (the mini siege's 3D HUD):
   (`statusCompareSchema`), `alpha` (a flat panel only, `bad_field` otherwise), a flat panel needs
   no `frame` or `slice`. Tested in `hud.test.ts`.
 
+Engine 0.16 part D (D3), the fuller minimap:
+
+- `widgets.ts`: `MinimapSpec` takes `fog` (a `ResolvedFogLook`), `teams` (tag -> colour) and
+  `view` (a colour); `minimapDraws(spec, map, entities, extras?)` with `MinimapExtras` `{ fog?,
+view? }` (the frame's fog, the world box the picture shows) draws, after the tiles, each
+  unexplored or explored cell's span at its shade (a row's run merged, `alpha` below 1), then the
+  dots (a dot's entity with a `teams` tag, the first in the table, takes that colour over the
+  entry's), then a one-px outline of `view` (floor and ceil of its corners at the minimap's px
+  per world px, cut to the box; top and bottom, then the sides). Without those spec fields, or
+  without the extras, the draws are exactly the old ones. `minimapPointToWorld(spec, map, x, y)`
+  is the inverse of the tile spans: a picture point on the minimap to world px (unrounded), null
+  outside the box or past the map's drawn tiles, for a page's click or tap.
+- `hud.ts`: `SkinHudInput` takes `fog?` and `view?`; a `minimap` item's `fog: true` uses the
+  skin's `fog` look (`resolveFogLook`), `teams` and `view` pass through. `skinMinimap(skin)` is
+  the first minimap item's `{ box, scale? }` (null without one), what `minimapPointToWorld` takes.
+  The 2D walk passes the frame's fog and its framed view box (shake aside); the 3D HUD passes the
+  fog only (no view box: a pitched view is no rectangle).
+- Tested in `hud.test.ts` (unchanged draws without the fields, fog runs under the dots, team
+  colours, the view outline cut to the box, `minimapPointToWorld`, `SkinHud` and `skinMinimap`)
+  and in the browser `tests/browser/fog-parity.test.ts` (both 2D backends).
+
+Engine 0.16 E6 (the tower defense):
+
+- `hud.ts`: the `preview` widget (a wave preview): `previewGroups(value)` reads a `kind:count`
+  status list in order (a part without a count counts 1; an empty part, no kind or a count that is
+  not a whole number above 0 is left out); `SkinHud` lays each group out left to right from the
+  item's `x`/`y`: its kind's icon (`frames.<kind>`, else `frame`, from `sheet`; a
+  `PREVIEW_MISSING_SIDE` (8) box in `sheets.fallbackColor`, else `HUD_FALLBACK_COLOR`, flagged
+  `missing`, when there is none), then with a font `gap` px (default 2) and the count through
+  `format` with its caps centred on the icon, then `spacing` px (`DEFAULT_PREVIEW_SPACING`, 4). No
+  status, no draws.
+- `menus.ts`: `end.stars` (`{ status?, count?, filled, empty, sheet?, palette?, scale?, gap? }`,
+  `EndStars`): a row of `count` (default `DEFAULT_STAR_COUNT`, 3) stars under the credits and over
+  the stat lines, centred on the picture `gap` (`DEFAULT_STAR_GAP`, 4) px apart, the first
+  `starsWon` filled (`starsWon(stars, status)`: the status value (`STARS_STATUS`, `stars`, by
+  default) rounded and held to `0..count`, null for a missing or non-numeric value: no row). With
+  `sheet` each star is an `image` widget of the `filled` or `empty` frame (at `scale`); without,
+  a `text` widget of that text in the title font, filled in the heading colour, empty in the
+  style's `disabledText`, outlined. Widget ids `star-0`, ... An end trigger's `stars: false`
+  leaves the row out (a loss). `checkMenus`: with `sheet` the sheet (`missing_ref`), the frames
+  (`missing_frame` at `end.stars.filled` / `.empty`) and the palette; without, the glyphs of both
+  texts in the title font (`missing_glyph`).
+- Tested in `hud.test.ts` (`the wave preview`) and `menus.test.ts` (`the end screen's stars`,
+  and the stars' checks through `loadContent`).
+
 ## Rules
 
 - Pure: `engine/core/ui/**` is on `PURE_CORE` (`config/layers.js`). No DOM, clock or

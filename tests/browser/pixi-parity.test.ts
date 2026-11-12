@@ -7,7 +7,7 @@ import { parseOverlay } from '../../engine/tools/sheet-overlay';
 import { shotSetup } from '../../engine/tools/shot-job';
 
 // Visual parity of the two 2D backends (Engine 0.16 T13b-5): the same ticks of the fx lab, the RTS
-// skirmish and the tower defense, drawn by `pnpm cli screenshot`'s page through Canvas2D (the
+// skirmish (the 0.15 battle and, from part D's D7, The River Ford on its CC0 pack) and the tower defense, drawn by `pnpm cli screenshot`'s page through Canvas2D (the
 // view's `render`) and through PixiJS (`frame()` and `pixiDisplay`, WebGL on SwiftShader), are
 // compared pixel by pixel. Every presentation effect is on (the presenters' defaults): particles,
 // flashes, tints, shake, parallax, the HUD, the pause menu (the fx lab) and a fade or wipe
@@ -76,17 +76,50 @@ const CASES: Case[] = [
     strictRegion: { x: 0, y: 0, w: 256, h: 120 },
   },
   {
-    name: 'the RTS skirmish',
-    run: 'games/samples/rts-skirmish/runs/battle.run.json',
+    name: 'the RTS skirmish (the 0.15 battle, kept as games/rts-classic)',
+    run: 'games/rts-classic/runs/battle.run.json',
     // A building done (flash), units going down (particles), hits, the battle won (tint, banner).
     tiles: ['19', '124', '127', '141', '148', '160', '127+fade*10', '141+wipe*8'],
     bound: STRICT,
   },
   {
-    name: 'the tower defense',
-    run: 'games/samples/tower-defense/runs/won.run.json',
+    name: 'the RTS skirmish on its CC0 pack at 16:9 (The River Ford, Engine 0.16 part D; the match, D8)',
+    run: 'games/samples/rts-skirmish/runs/fog.run.json',
+    // The pack's sprites with team colours and outlines, the made ground sheet, zoom-stable bars,
+    // fog of war and the minimap; the hero struck (sparks) and falling (particles) by the barracks.
+    tiles: ['20', '300', '444', '466', '444+fade*10'],
+    bound: STRICT,
+  },
+  {
+    name: "the River Ford match (D9: match-won, blue's first wave crossing the centre ford)",
+    run: 'games/samples/rts-skirmish/runs/match-won.run.json',
+    // A match frame: the first wave (six blue units) coming over red's explored ground at the edge of the fog, the minimap
+    // with red's explored half; a fade over it.
+    tiles: ['1920', '1940', '1940+fade*10'],
+    bound: STRICT,
+  },
+  {
+    name: 'the tower defense (the 0.15 Winding Road, kept as games/td-classic)',
+    run: 'games/td-classic/runs/won.run.json',
     // A wave starting (flash), kills (particles), cannon shots (shake), the round won (tint).
     tiles: ['26', '63', '180', '455', '482', '674', '455+fade*10', '300+wipe*8'],
+    bound: STRICT,
+  },
+  {
+    name: "The Winding Road on Kenney's CC0 Tower Defense pack (Engine 0.16 E7)",
+    run: 'games/samples/tower-defense/runs/win.run.json',
+    // The 16:9 map (E8): the three tower types turned to their targets at levels 1-3, the selected
+    // tower's ring, enemies walking with health bars, slowed (ice blue) and struck (white), shells
+    // in flight and landing; from E9 the full game's win: the wave preview and the selected
+    // tower's upgrade and sell in the HUD, the last wave at the gate and the round won.
+    tiles: ['1300', '2400', '2760', '2900', '2900+fade*10', '3100', '3145'],
+    bound: STRICT,
+  },
+  {
+    name: 'The Winding Road lost by a thin defence (Engine 0.16 E9)',
+    run: 'games/samples/tower-defense/runs/lost.run.json',
+    // Leaks at the gate (the breach flash and shake) and the round lost.
+    tiles: ['700', '1300', '1489', '1500'],
     bound: STRICT,
   },
 ];

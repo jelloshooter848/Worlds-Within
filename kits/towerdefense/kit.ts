@@ -27,6 +27,7 @@ export const tdBotPlanSchema = z.array(
       row: z.number().int(),
     }),
     z.strictObject({ do: z.literal('sell'), col: z.number().int(), row: z.number().int() }),
+    z.strictObject({ do: z.literal('upgrade'), col: z.number().int(), row: z.number().int() }),
     z.strictObject({ do: z.literal('wave') }),
     z.strictObject({ do: z.literal('wait'), ticks: z.number().int().min(0) }),
     z.strictObject({ do: z.literal('clear') }),
@@ -49,7 +50,7 @@ export const kit = defineKit({
     {
       game: TD_DEFENCE,
       description:
-        'TdBot over the round\'s game: its steps in order (place, sell, wave, wait, clear), such as [{"do": "place", "tower": "archers", "col": 11, "row": 1}, {"do": "wave"}]',
+        'TdBot over the round\'s game: its steps in order (place, sell, upgrade, wave, wait, clear), such as [{"do": "place", "tower": "archers", "col": 11, "row": 1}, {"do": "wave"}]',
       plan: tdBotPlanSchema,
       create(plan) {
         const bot = new TdBot(plan as TdBotStep[]);

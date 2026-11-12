@@ -1,0 +1,124 @@
+{
+  "game": "..",
+  "ticks": 60,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1,
+        "hold": []
+      },
+      {
+        "frame": 2,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 3,
+        "hold": []
+      },
+      {
+        "frame": 4,
+        "hold": ["right"]
+      },
+      {
+        "frame": 5,
+        "hold": []
+      },
+      {
+        "frame": 6,
+        "hold": ["down"]
+      },
+      {
+        "frame": 7,
+        "hold": []
+      },
+      {
+        "frame": 8,
+        "hold": ["down"]
+      },
+      {
+        "frame": 9,
+        "hold": []
+      },
+      {
+        "frame": 10,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 11,
+        "hold": []
+      },
+      {
+        "frame": 12,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 13,
+        "hold": []
+      },
+      {
+        "frame": 14,
+        "hold": ["start"]
+      },
+      {
+        "frame": 15,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 13,
+      "path": "round.towers.0.level",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 24,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "slowed",
+        "tower": 1,
+        "enemy": 1,
+        "factor": 50,
+        "ticks": 30
+      }
+    },
+    {
+      "tick": 44,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "kill",
+        "enemy": 1,
+        "kind": "runner",
+        "tower": 1,
+        "bounty": 2
+      }
+    }
+  ],
+  "hashEvery": 20,
+  "guards": ["slow-enemies"],
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d02aa6bb19e82982"
+    },
+    {
+      "tick": 20,
+      "hash": "28dc752b5a04496d"
+    },
+    {
+      "tick": 40,
+      "hash": "36177f6a0f85ed47"
+    },
+    {
+      "tick": 60,
+      "hash": "fd706ce773dc9df5"
+    }
+  ]
+}

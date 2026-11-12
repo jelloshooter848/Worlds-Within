@@ -1,3 +1,4 @@
+import { canvasRecolor } from '@engine/core/assets/canvas-recolor';
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import { SkinnedPresenter, type SkinnedPresenterOptions } from '@engine/core/draw';
 import type { DeepReadonly, SkinFile } from '@engine/core/present';
@@ -20,7 +21,9 @@ export interface PixiPresenterOptions extends SkinnedPresenterOptions {
  * copied as a sprite each frame, and each HUD font is drawn once in white and tinted per colour
  * (sprite tint) instead of a strip per colour. The skin's `lighting` (Engine 0.16 part C T4,
  * merged in part D, D1) draws its darkness on a live surface (`PixiSurfaces.makeLive`, rendered
- * every frame) with `PixiRenderer.gradient`'s radial sprites. Every other option and method
+ * every frame) with `PixiRenderer.gradient`'s radial sprites. Its default `recolor` is
+ * `canvasRecolor` (Engine 0.16 part D, D4): a recoloured sheet (an outline's silhouette, a team
+ * colour) is a canvas, wrapped like any sheet image. Every other option and method
  * (`size`/`resize`, `onSound`, `background`, `fonts`/`font`, `clamp`, `reduceFlashing`, `seed`,
  * `shakeScale`, `subPixelShake`, `onHitPause`, `maxParticles`, `particleCount`, `focus()`,
  * `effectSettings`, `showHud`) is the core presenter's.
@@ -42,6 +45,7 @@ export class PixiPresenter extends SkinnedPresenter {
       glyphSurface: rest.glyphSurface ?? surfaces.make,
       lightSurface: rest.lightSurface ?? surfaces.makeLive,
       tintGlyphs: rest.tintGlyphs ?? surfaces.tint,
+      recolor: rest.recolor ?? canvasRecolor,
     });
     this.surfaces = surfaces;
   }

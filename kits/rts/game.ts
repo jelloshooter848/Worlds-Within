@@ -30,8 +30,10 @@ import { readWorld, type RtsView } from './snapshot';
  * - Order ids count up from 1 across both sides in the order they are applied (a recorded order
  *   keeps its id and the counter moves past it), so a battle replayed from the player's recorded
  *   orders gives the enemy the same ids, the same orders and the same hashes.
- * - `snapshot()` is `{ world, kit: { nextOrder, rng, enemy } }`: the world's snapshot plus what
- *   the kit keeps (the next order id, the enemy's RNG state and its plan steps' progress).
+ * - `snapshot()` is `{ world, kit: { nextOrder, rng, enemy, seen? } }`: the world's snapshot plus
+ *   what the kit keeps (the next order id, the enemy's RNG state and its plan steps' progress, and
+ *   since Engine 0.16 part D, D6, `seen`, the enemy's memory, only for a plan that keeps one:
+ *   `knowledge: "fog"` or a `scout` step, so older runs hash as before).
  * - `recorded()` is the player's orders with their ticks (`{ tick, ...order }`, refused ones too:
  *   a replay refuses them the same way), ready for a run file's `orders`; `log()` is every order
  *   of both sides with its tick, `source` and refusal.
@@ -41,6 +43,11 @@ import { readWorld, type RtsView } from './snapshot';
 export interface RtsWorldPort {
   /** `World.snapshot()`: the whole world as plain JSON. */
   snapshot(): unknown;
+  /**
+   * The same snapshot, read-only and not copied (`World.peek()`, Engine 0.16 part D, D9), when the
+   * world can give it: the view reads it once per change, which with copies was most of a tick.
+   */
+  peek?(): unknown;
   /** `applyOrder(world, order)`: applies it between ticks or refuses it with a reason. */
   applyOrder(order: Order): { ok: true } | { ok: false; error: string };
   /** `World.step()`. */
@@ -87,7 +94,7 @@ export class RtsGame implements HeadlessGame {
 
   /** The world as the kit reads it now (read once per change). */
   view(): RtsView {
-    this.cached ??= readWorld(this.world.snapshot());
+    this.cached ??= readWorld(this.world.peek?.() ?? this.world.snapshot());
     return this.cached;
   }
 
@@ -138,14 +145,19 @@ export class RtsGame implements HeadlessGame {
   }
 
   snapshot(): JsonObject {
-    return {
-      world: this.world.snapshot() as JsonObject,
-      kit: {
-        nextOrder: this.nextOrder,
-        rng: this.rng.state(),
-        enemy: this.enemy?.snapshot() ?? {},
-      },
+    const kit: JsonObject = {
+      nextOrder: this.nextOrder,
+      rng: this.rng.state(),
+      enemy: this.enemy?.snapshot() ?? {},
     };
+    const seen = this.enemy?.memorySnapshot() ?? null;
+    if (seen !== null) kit['seen'] = seen;
+    return { world: this.world.snapshot() as JsonObject, kit };
+  }
+
+  /** The scripted enemy (null when the game has none), for its `knowledge()` and an end rule. */
+  scriptedEnemy(): ScriptedEnemy | null {
+    return this.enemy;
   }
 
   /** The player's orders with their ticks, for a run file's `orders` (see the file comment). */

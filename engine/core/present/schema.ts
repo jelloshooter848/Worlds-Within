@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { JsonValue } from '../headless';
 import { SCREEN_MAX, SCREEN_MIN } from '../gfx/screen';
+import { FOG_CELL_CHARS } from './fog';
 import { FACINGS, type Facing, type PresentFrame } from './types';
 
 /**
@@ -114,6 +115,25 @@ const camera = z.strictObject({
   bounds: z.strictObject({ x: finite, y: finite, w: finite.min(0), h: finite.min(0) }).exactOptional(),
 });
 
+const fogCells = new RegExp(`^[${FOG_CELL_CHARS.join('')}]*$`);
+
+const fog = z
+  .strictObject({
+    cols: z.number().int().min(1).describe("cells per row: the map's `cols`"),
+    rows: z.number().int().min(1).describe("rows of cells: the map's `rows`"),
+    cells: z
+      .array(
+        z
+          .string()
+          .regex(fogCells, { message: 'a fog row holds only 0 (unexplored), 1 (explored) and 2 (visible)' }),
+      )
+      .describe(
+        '`rows` strings of `cols` characters, one per map tile: `0` unexplored, `1` explored, `2` visible',
+      ),
+  })
+  .superRefine((f, ctx) => checkGrid(f.cells, f.cols, f.rows, ['cells'], ctx))
+  .describe('fog of war over the map (Engine 0.16 part D), presentation only');
+
 const side = z.number().int().min(SCREEN_MIN).max(SCREEN_MAX);
 
 export const presentFrameSchema: z.ZodType<PresentFrame> = z.strictObject({
@@ -124,4 +144,5 @@ export const presentFrameSchema: z.ZodType<PresentFrame> = z.strictObject({
   events: z.array(event),
   status: z.record(z.string(), z.union([finite, z.string(), z.boolean()])),
   camera: camera.exactOptional(),
+  fog: fog.exactOptional(),
 });

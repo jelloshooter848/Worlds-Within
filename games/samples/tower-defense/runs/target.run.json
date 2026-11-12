@@ -1,47 +1,216 @@
 {
   "game": "..",
-  "ticks": 260,
+  "ticks": 160,
   "input": {
     "steps": [
-      { "frame": 0, "hold": ["attack"] },
-      { "frame": 1, "hold": [] },
-      { "frame": 2, "hold": ["jump"] },
-      { "frame": 3, "hold": [] },
-      { "frame": 4, "hold": ["start"] },
-      { "frame": 5, "hold": [] },
-      { "frame": 208, "hold": ["start"] },
-      { "frame": 209, "hold": [] }
+      {
+        "frame": 0,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1,
+        "hold": []
+      },
+      {
+        "frame": 2,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 3,
+        "hold": []
+      },
+      {
+        "frame": 4,
+        "hold": ["right"]
+      },
+      {
+        "frame": 5,
+        "hold": []
+      },
+      {
+        "frame": 6,
+        "hold": ["down"]
+      },
+      {
+        "frame": 7,
+        "hold": []
+      },
+      {
+        "frame": 8,
+        "hold": ["down"]
+      },
+      {
+        "frame": 9,
+        "hold": []
+      },
+      {
+        "frame": 10,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 11,
+        "hold": []
+      },
+      {
+        "frame": 12,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 13,
+        "hold": []
+      },
+      {
+        "frame": 14,
+        "hold": ["right"]
+      },
+      {
+        "frame": 15,
+        "hold": []
+      },
+      {
+        "frame": 16,
+        "hold": ["right"]
+      },
+      {
+        "frame": 17,
+        "hold": []
+      },
+      {
+        "frame": 18,
+        "hold": ["down"]
+      },
+      {
+        "frame": 19,
+        "hold": []
+      },
+      {
+        "frame": 20,
+        "hold": ["down"]
+      },
+      {
+        "frame": 21,
+        "hold": []
+      },
+      {
+        "frame": 22,
+        "hold": ["down"]
+      },
+      {
+        "frame": 23,
+        "hold": []
+      },
+      {
+        "frame": 24,
+        "hold": ["down"]
+      },
+      {
+        "frame": 25,
+        "hold": []
+      },
+      {
+        "frame": 26,
+        "hold": ["down"]
+      },
+      {
+        "frame": 27,
+        "hold": []
+      },
+      {
+        "frame": 28,
+        "hold": ["down"]
+      },
+      {
+        "frame": 29,
+        "hold": []
+      },
+      {
+        "frame": 30,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 31,
+        "hold": []
+      },
+      {
+        "frame": 32,
+        "hold": ["start"]
+      },
+      {
+        "frame": 33,
+        "hold": []
+      }
     ]
   },
   "assertions": [
-    { "tick": 3, "path": "kit.gold", "op": "eq", "value": 15 },
-    { "tick": 5, "path": "kit.wave", "op": "eq", "value": 1 },
-    { "tick": 85, "path": "kit.killed", "op": "eq", "value": 5 },
-    { "tick": 208, "path": "kit.lives", "op": "eq", "value": 4 },
-    { "tick": 209, "path": "kit.wave", "op": "eq", "value": 2 },
     {
-      "tick": 229,
+      "tick": 150,
       "path": "round.events",
       "op": "contains",
-      "value": { "type": "kill", "enemy": 8, "kind": "runner", "tower": 1, "bounty": 2 }
+      "value": {
+        "type": "fire",
+        "tower": 2,
+        "enemy": 6,
+        "damage": 1,
+        "hp": 1
+      }
     },
-    { "tick": 229, "path": "kit.killed", "op": "eq", "value": 6 },
     {
-      "tick": 249,
+      "tick": 156,
       "path": "round.events",
       "op": "contains",
-      "value": { "type": "kill", "enemy": 10, "kind": "runner", "tower": 1, "bounty": 2 }
+      "value": {
+        "type": "kill",
+        "enemy": 6,
+        "kind": "runner",
+        "tower": 2,
+        "bounty": 2
+      }
     },
-    { "tick": 260, "path": "kit.killed", "op": "eq", "value": 7 },
-    { "tick": 260, "path": "kit.gold", "op": "eq", "value": 29 },
-    { "tick": 260, "path": "kit.towers", "op": "eq", "value": 1 }
+    {
+      "tick": 160,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 6
+    }
   ],
-  "invariants": [{ "path": "kit.towers", "op": "lte", "value": 1 }],
   "hashEvery": 20,
   "guards": ["target-first"],
   "hashes": [
-    { "tick": 0, "hash": "3f3e14aefc1b4bad" },
-    { "tick": 240, "hash": "87af51660c1c3e0f" },
-    { "tick": 260, "hash": "c007de2189d310be" }
+    {
+      "tick": 0,
+      "hash": "d02aa6bb19e82982"
+    },
+    {
+      "tick": 20,
+      "hash": "8ffc9ccc83e2c552"
+    },
+    {
+      "tick": 40,
+      "hash": "0ec16d0e8968a247"
+    },
+    {
+      "tick": 60,
+      "hash": "d6979bed86ff8268"
+    },
+    {
+      "tick": 80,
+      "hash": "7496921f65180980"
+    },
+    {
+      "tick": 100,
+      "hash": "ebf4aaa27f6b93fa"
+    },
+    {
+      "tick": 120,
+      "hash": "e3318bbba2c08754"
+    },
+    {
+      "tick": 140,
+      "hash": "917dd848333e25c5"
+    },
+    {
+      "tick": 160,
+      "hash": "9b36f98409167fb5"
+    }
   ]
 }

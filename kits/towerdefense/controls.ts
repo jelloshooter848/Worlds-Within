@@ -15,17 +15,31 @@ import type { TdCommand, TdWorld } from './world';
  *
  * - `left`, `right`, `up`, `down` move the cursor one cell on the press, then, held, once every
  *   `REPEAT_EVERY` ticks after `REPEAT_DELAY` ticks; it stays on the map.
- * - `jump` places the chosen tower type on the cursor's cell.
+ * - `jump` places the chosen tower type on the cursor's cell; on a cell whose tower can be upgraded
+ *   (its type has `levels`) it upgrades that tower instead (Engine 0.16 E3). The cursor on a tower
+ *   is that tower selected (`selectedTower`).
  * - `attack` cycles the chosen type through the map's `towers` list, in order.
  * - `start` starts the next wave.
  * - `special` sells the tower on the cursor's cell.
  *
  * A pointer tap (`tap`) is mapped to a cell through the frame's camera (`cellAtScreen`): a primary
- * tap moves the cursor there, or on the cursor's own cell places; a secondary tap (right click,
+ * tap moves the cursor there (on a tower: selects it), or on the cursor's own cell places (or
+ * upgrades the selected tower); a secondary tap (right click,
  * long-press) moves the cursor there and sells. From Engine 0.15 (gap D1) taps are frame input
  * (`InputFrame.taps`, game screen pixels): `TdGame.step` reads them and calls `tap`, so a run file's
  * `input.taps` replays a round played by tapping. `screenAtCell` is `cellAtScreen`'s inverse.
  */
+
+/**
+ * The upgrade row of `TD_CONTROLS` (Engine 0.16 E3): `jump` or a second tap on a selected tower
+ * upgrades it. A page whose towers have no `levels` (the classic road, a `td-defence` round
+ * without `upgrades`) leaves it out of its hint (`TD_CONTROLS.filter((c) => c !== TD_UPGRADE_CONTROL)`).
+ */
+export const TD_UPGRADE_CONTROL: MiniGameControl = {
+  actions: ['jump'],
+  tap: 'a second tap on a tower',
+  label: 'upgrade',
+};
 
 /**
  * The controls above as data (Engine 0.15 T10, lesson D14), for a page's key hint
@@ -35,6 +49,7 @@ import type { TdCommand, TdWorld } from './world';
 export const TD_CONTROLS: readonly MiniGameControl[] = [
   { actions: ['left', 'right', 'up', 'down'], tap: 'a tap', label: 'move' },
   { actions: ['jump'], tap: 'a tap on the cursor', label: 'build' },
+  TD_UPGRADE_CONTROL,
   { actions: ['attack'], label: 'next tower' },
   { actions: ['special'], tap: 'a right click', label: 'sell' },
   { actions: ['start'], label: 'send the wave' },
@@ -59,6 +74,11 @@ export interface TdGrid {
   towers: readonly string[];
   /** Where the cursor starts (the first build cell in reading order, else 0, 0). */
   start: Cell;
+  /**
+   * Whether the cell holds a tower that can be upgraded (its type has `levels`, Engine 0.16 E3):
+   * `jump` and a tap on the cursor upgrade it instead of placing. Left out, they always place.
+   */
+  upgradable?: (col: number, row: number) => boolean;
 }
 
 /** The grid of a round: its map's size, tower list and first build cell. */
@@ -70,7 +90,16 @@ export function gridOf(world: TdWorld): TdGrid {
         start = { col, row };
         break search;
       }
-  return { cols: world.kinds[0]?.length ?? 0, rows: world.kinds.length, towers: world.map.towers, start };
+  return {
+    cols: world.kinds[0]?.length ?? 0,
+    rows: world.kinds.length,
+    towers: world.map.towers,
+    start,
+    upgradable: (col, row) => {
+      const t = world.towerAt(col, row);
+      return t !== undefined && (world.towerTypes[t.type]?.levels?.length ?? 0) > 0;
+    },
+  };
 }
 
 /** What `TdControls.snapshot()` gives: JSON-safe, whole numbers. */
@@ -118,7 +147,7 @@ export class TdControls {
     });
     if (frame.pressed('attack')) this.choice = (this.choice + 1) % this.grid.towers.length;
     const out: TdCommand[] = [];
-    if (frame.pressed('jump')) out.push(this.placeHere());
+    if (frame.pressed('jump')) out.push(this.buildHere());
     if (frame.pressed('special')) out.push({ type: 'sell', col: this.col, row: this.row });
     if (frame.pressed('start')) out.push({ type: 'start-wave' });
     return out;
@@ -161,7 +190,7 @@ export class TdControls {
       this.moveTo(cell.col, cell.row);
       return [{ type: 'sell', col: cell.col, row: cell.row }];
     }
-    if (cell.col === this.col && cell.row === this.row) return [this.placeHere()];
+    if (cell.col === this.col && cell.row === this.row) return [this.buildHere()];
     this.moveTo(cell.col, cell.row);
     return [];
   }
@@ -171,7 +200,14 @@ export class TdControls {
     return { col: this.col, row: this.row, tower: this.tower, held: [...this.held] };
   }
 
-  private placeHere(): TdCommand {
+  /** Whether the cursor is on a tower that can be upgraded: that tower is selected. */
+  get onUpgradable(): boolean {
+    return this.grid.upgradable?.(this.col, this.row) ?? false;
+  }
+
+  /** `jump` or a tap on the cursor: upgrade the selected tower, else place the chosen type. */
+  private buildHere(): TdCommand {
+    if (this.onUpgradable) return { type: 'upgrade', col: this.col, row: this.row };
     return { type: 'place', tower: this.tower, col: this.col, row: this.row };
   }
 }

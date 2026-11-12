@@ -67,6 +67,13 @@ export const rtsBuildingTypeSchema = z.strictObject({
   cost: rtsCostSchema.default({}),
   trains: z.array(Id).default([]).describe('the unit types it can train, once finished'),
   dropoff: z.boolean().default(false).describe('whether gatherers can drop resources here, once finished'),
+  sight: z
+    .int()
+    .min(0)
+    .exactOptional()
+    .describe(
+      'how far it sees, in whole cells from its footprint (for the view and fog of war only; left out, the kit uses a value from its size)',
+    ),
 });
 export type RtsBuildingType = z.infer<typeof rtsBuildingTypeSchema>;
 

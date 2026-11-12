@@ -1,0 +1,9 @@
+{
+  "id": "ford-danger",
+  "bpm": 126,
+  "loop": true,
+  "pulse1": "v6 @0 l16 o4 L [g g > d < g a+ g > d < g]4 [f f > c < f a f > c < f]2 [d+ d+ a+ d+ g d+ a+ d+]2 [g g > d < g a+ g > d < g]4 [f f > c < f a f > c < f]2 [d+ d+ a+ d+ f+ d f+ a]2",
+  "pulse2": "v4 @2 l2 o4 L [d a+ > c < a]4",
+  "triangle": "l8 o2 L [g g g g g g g g]2 f f f f f f f f d+ d+ d+ d+ d d d d [g g g g g g g g]2 f f f f f f f f d+ d+ d+ d+ d d d d",
+  "noise": "v6 l16 L [k h h k s h k h]16"
+}

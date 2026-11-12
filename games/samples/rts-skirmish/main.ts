@@ -1,10 +1,12 @@
+import { withContentImages } from '@engine/core/assets/content-images';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
-import { bootBrowserGame } from '@engine/core/shell';
-import { contentFonts } from '@engine/core/ui';
+import { bootBrowserGame, manualFromQuery } from '@engine/core/shell';
+import { contentFonts, skinMinimap } from '@engine/core/ui';
 import { canvasDisplay } from '@engine/backends/canvas2d';
-import { loadSkirmish, PLAYER, SKIRMISH_MUSIC } from './content';
+import { RTS_TILE_SIZE } from '@kits/rts';
+import { loadSkirmish, SKIRMISH_MUSIC } from './content';
 import { skirmishLook, skirmishPicture } from './picture';
-import { SkirmishPlay, type ButtonState, type PageButton } from './play';
+import { SkirmishPlay, TICKS_PER_SECOND, type ButtonState, type MatchStats, type PageButton } from './play';
 import type { RecordedRun } from './recording';
 import type { SideSummary } from './headless';
 import gameFiles from 'virtual:game-files';
@@ -23,6 +25,11 @@ import gameFiles from 'virtual:game-files';
  * the player's volumes (gap M1). When the battle ends the picture shows the skin's banner and
  * `#end` (the result, the tick, and Play again) opens over it; the game keeps stepping, so an
  * export still ends on a hash tick.
+ *
+ * The River Ford (Engine 0.16 part D, D8): the picture is the player's, through fog of war; a
+ * click or tap on the skin's minimap (bottom right) moves the camera there (`skinMinimap`, read by
+ * `SkirmishPlay`); accepted orders show a marker and bark (a sfx per unit type and a short line in
+ * the HUD); and the end screen gives the result and the match's stats (`SkirmishPlay.stats()`).
  */
 
 /** What the page offers scripts (the browser test) on `window.wwSkirmish`. */
@@ -50,14 +57,20 @@ export interface SkirmishHook {
   clientAt(wx: number, wy: number): { x: number; y: number };
   /** The last refused order's reason, or ''. */
   message(): string;
-  /** How the battle has ended: `won`, `lost`, or null while it goes on. */
+  /** How the match has ended: `won`, `lost`, or null while it goes on. */
   result(): 'won' | 'lost' | null;
+  /** The match so far (units trained and lost, enemies slain, buildings, gold). */
+  stats(): MatchStats;
+  /** Where world point (wx, wy) is drawn on the minimap, in client (CSS) px; null without a minimap. */
+  minimapClientAt(wx: number, wy: number): { x: number; y: number } | null;
   /** The battle so far as a run file (null before tick 20). */
   exportRun(game?: string): Promise<RecordedRun | null>;
 }
 
-const content = mustLoad(loadSkirmish(gameFiles), 'the RTS skirmish');
+// The skin's PNG sheets (the CC0 pack, Engine 0.16 part D, D7) decoded before the first frame.
+const content = await withContentImages(mustLoad(loadSkirmish(gameFiles), 'the RTS skirmish'));
 const look = skirmishLook(content);
+const minimap = skinMinimap(look.skin);
 const fonts = contentFonts(content);
 let shift = false;
 window.addEventListener('keydown', (e) => (shift = e.shiftKey));
@@ -65,6 +78,7 @@ window.addEventListener('keyup', (e) => (shift = e.shiftKey));
 window.addEventListener('blur', () => (shift = false));
 
 let play: SkirmishPlay | null = null;
+const manual = manualFromQuery(location.search);
 const bar = document.getElementById('bar') as HTMLElement;
 const status = document.getElementById('status') as HTMLElement;
 const end = document.getElementById('end') as HTMLElement;
@@ -75,7 +89,16 @@ const booted = await bootBrowserGame({
   game: content.manifest.id,
   // The song and the skin's event sounds (Engine 0.15 T14); the shell's volume control keeps the
   // player's volumes (gap M1).
-  audio: { songs: contentSongs(content), sfx: contentSfx(content), music: SKIRMISH_MUSIC },
+  // D9: the music is the skin's layered `ford` (calm, and a danger layer while an enemy the
+  // player sees is near one of its buildings, the frame status `enemyNear`), and every event
+  // sound is varied by the start seed.
+  audio: {
+    songs: contentSongs(content),
+    sfx: contentSfx(content),
+    music: SKIRMISH_MUSIC,
+    mix: look.skin.music,
+    seed: content.manifest.start.seed,
+  },
   // The title, pause and settings screens (Engine 0.16 T9); Back to title reloads the page, whose
   // bar and hook hold on to the first scene.
   menus: { spec: content.manifest.menus, fonts, sheets: look.sheet, restart: 'reload' },
@@ -88,19 +111,27 @@ const booted = await bootBrowserGame({
   // PixiJS by default (Engine 0.16 T13b-8), Canvas2D where WebGL is missing or with
   // `?backend=canvas2d`.
   default2d: 'pixi',
-  pointer: true,
+  // D9: the camera's feel at page scale (4x at 1920x1080): the edge band is 8 picture px (32 CSS
+  // px), scrolled at 6 px a step (the 64x40 map's width in about 3 seconds), and 400 px of wheel
+  // halve or double the zoom (0.5 to 2).
+  pointer: { edgeMargin: 8, edgeSpeed: 6, wheelPerDouble: 400 },
   touchPad: false,
   scene(_stack, display, page) {
     const scene = new SkirmishPlay({
       content,
       seed: content.manifest.start.seed,
       pointer: page.pointer,
-      picture: (_r, ui) => skirmishPicture(display.presenter, look.screen, ui),
+      picture: (_r, opts) => skirmishPicture(display.presenter, look.screen, opts),
+      minimap,
       additive: () => shift,
+      // In manual-loop mode (`?debug=step`) one loop step is one game tick, so the step hook's
+      // `replay` hands a run file's orders over at its ticks and `__ww.hash()` is the run's (D9).
+      ...(manual && { stepsPerTick: 1 }),
     });
     play = scene;
     makeButtons(scene);
     return {
+      headless: () => scene.game,
       update: (input) => scene.update(input),
       render: (r) => {
         scene.render(r);
@@ -139,6 +170,15 @@ if (booted && play) {
     },
     message: () => scene.message,
     result: () => scene.result(),
+    stats: () => scene.stats(),
+    minimapClientAt: (wx, wy) => {
+      const terrain = scene.view().terrain;
+      if (minimap === null || terrain === null) return null;
+      const scale = minimap.scale ?? 1;
+      const x = minimap.box.x + (wx / RTS_TILE_SIZE) * scale;
+      const y = minimap.box.y + (wy / RTS_TILE_SIZE) * scale;
+      return display.toClient!(x, y);
+    },
     exportRun: (game) => scene.exportRun(game),
   };
   (window as unknown as { wwSkirmish: SkirmishHook }).wwSkirmish = hook;
@@ -185,7 +225,7 @@ function showStatus(scene: SkirmishPlay): void {
   const result = scene.result();
   const text = [
     `tick ${scene.tick}`,
-    result === 'won' ? 'the raiders are beaten' : result === 'lost' ? 'your side is beaten' : '',
+    result === 'won' ? 'the far bank is yours' : result === 'lost' ? 'your side is beaten' : '',
     scene.message,
   ]
     .filter((s) => s !== '')
@@ -194,19 +234,22 @@ function showStatus(scene: SkirmishPlay): void {
 }
 
 let ended: string | null = null;
-/** The end screen: opened once when the battle ends, with the result and the tick it ended on. */
+/** The end screen: opened once when the match ends, with the result, the time and the match's stats. */
 function showEnd(scene: SkirmishPlay): void {
   const result = scene.result();
   if (result === null || ended !== null) return;
   ended = result;
   end.dataset['result'] = result;
   (document.getElementById('end-title') as HTMLElement).textContent =
-    result === 'won' ? 'Victory: the ford is held' : 'Defeat: your side has fallen';
-  const own = scene.sides()[PLAYER];
+    result === 'won' ? 'Victory: the far bank is yours' : 'Defeat: your side has fallen';
+  const s = scene.stats();
+  const seconds = Math.floor(scene.tick / TICKS_PER_SECOND);
+  const time = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   (document.getElementById('end-text') as HTMLElement).textContent =
-    result === 'won'
-      ? `The raiders were beaten at tick ${scene.tick} with ${own?.units ?? 0} of your units standing.`
-      : `Your last unit fell at tick ${scene.tick}. Build a barracks and train soldiers before the raid.`;
+    (result === 'won'
+      ? `The enemy town centre fell at ${time} (tick ${scene.tick}).`
+      : `Your side fell at ${time} (tick ${scene.tick}).`) +
+    ` Trained ${s.trained}, lost ${s.lost}, slain ${s.slain}, built ${s.built}, razed ${s.razed}, gold ${s.gold}.`;
   end.hidden = false;
 }
 

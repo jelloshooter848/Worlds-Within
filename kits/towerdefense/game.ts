@@ -26,7 +26,8 @@ import { TdWorld, type TdCommand, type TdEvent, type TdRoundDef, type TdWorldOpt
  * - `snapshot()` is `{ round, controls, kit }`: the round's `TdSnapshot`, the cursor
  *   (`col`, `row`, `tower`, `held`) and `kit`, a short summary for run-file paths (`kit.outcome`,
  *   `kit.gold`, `kit.lives`, `kit.wave`, `kit.waves`, `kit.towers`, `kit.enemies`, `kit.killed`,
- *   `kit.leaked`, `kit.spent`, `kit.earned`).
+ *   `kit.leaked`, `kit.spent`, `kit.earned`, and only when the map has `stars` (Engine 0.16 E4)
+ *   `kit.stars`, the rating: 0 until the round is won, then 1-3; `TdWorld.stars`).
  * - `world` and `events` (the last step's) are what a frame stream shows (`tdFrames`).
  */
 
@@ -82,6 +83,7 @@ export class TdGame implements HeadlessGame {
 
   snapshot(): JsonObject {
     const w = this.world;
+    const stars = w.stars();
     return {
       round: w.snapshot(),
       controls: this.controls.snapshot(),
@@ -97,6 +99,7 @@ export class TdGame implements HeadlessGame {
         leaked: w.stats.leaked,
         spent: w.stats.spent,
         earned: w.stats.earned,
+        ...(stars === null ? {} : { stars }),
       },
     };
   }

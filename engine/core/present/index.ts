@@ -7,6 +7,7 @@ export type {
   PresentEntity,
   PresentEvent,
   PresentFrame,
+  PresentFog,
   PresentFx,
   PresentMap,
   PresentMapLayer,
@@ -53,6 +54,22 @@ export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './st
 export { hostedSource, type HostedPresentState, type HostedSourceOptions } from './hosted';
 export { MapTracker } from './map-tracker';
 export { presentFrameSchema } from './schema';
+export {
+  DEFAULT_FOG_LOOK,
+  FOG_CELL_CHARS,
+  FOG_CELLS,
+  FOG_EDGE_MAX,
+  fogBoxes,
+  fogLookSchema,
+  fogShade,
+  fogState,
+  resolveFogLook,
+  type FogBox,
+  type FogLook,
+  type FogShade,
+  type FogState,
+  type ResolvedFogLook,
+} from './fog';
 export { presenterByStatus } from './switch';
 export {
   checkSkinRefs,
@@ -131,6 +148,23 @@ export {
 } from './skin';
 export type { SoundCue } from '../audio/mix';
 export {
+  DEFAULT_TEAM_PREFIX,
+  OUTLINE_TEAM,
+  SCREEN_SCALE_ANCHORS,
+  outlineSchema,
+  screenScaleAt,
+  screenScalePivot,
+  screenScaleSchema,
+  skinOutlineColor,
+  skinTeamColor,
+  teamSchema,
+  type ReadableEntry,
+  type ScreenScaleAnchor,
+  type SkinOutline,
+  type SkinScreenScale,
+  type SkinTeam,
+} from './readability';
+export {
   MINI_GAME_STATUS,
   mustSkinSet,
   presenterBySkinSet,
@@ -158,6 +192,18 @@ export {
   type HudText,
 } from './hud';
 export { clampBoxInside, LABEL_EDGE_MARGIN, unionBox, type PictureBox } from './label-clamp';
+export {
+  PROJECTILE_DEFAULT_COLOR,
+  PROJECTILE_DEFAULT_SIZE,
+  PROJECTILE_MAX,
+  projectileFlight,
+  projectileImpactSchema,
+  projectilePlace,
+  projectileSchema,
+  type ProjectilePlace,
+  type SkinProjectile,
+  type SkinProjectileImpact,
+} from './projectile';
 export {
   DEFAULT_SHADOW,
   DEFAULT_SUN_DIRECTION,

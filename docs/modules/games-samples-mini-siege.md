@@ -214,7 +214,7 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   `docs/reports/screenshots/0.16-F/` (the siege at the mockup's angle beside the mockup, the title,
   the briefing, the walls' card, both rounds, the evening, the results, the dawn), listed in
   `docs/BUILD-LOG.md`, "Engine 0.16 part F", with the Done when, the outstanding issues and the
-  build decisions F-1 to F-21 (F-21: the owner's playtest and screenshot review, open). No hash
+  build decisions 533 to 553 (553: the owner's playtest and screenshot review, open). No hash
   moved in part F.
 - Engine 0.16 polish P7 (F2, F3): on the 3D page the controls also move to the bottom-right
   corner while a hosted round shows on its 2D layer (`body[data-round='layer']`), in one narrow

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#000000" />
+    <title>RTS classic: the 0.15 River Ford, hold the ford against a raiding party</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
+        user-select: none;
+      }
+      #screen {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: calc(100vh - 40px);
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+      #bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 40px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 6px;
+        overflow-x: auto;
+        background: #181818;
+        color: #eee;
+        font:
+          14px/1.2 system-ui,
+          sans-serif;
+      }
+      #bar button {
+        flex: none;
+        min-height: 30px;
+        padding: 0 10px;
+        border: 1px solid #666;
+        border-radius: 4px;
+        background: #333;
+        color: #fff;
+        font: inherit;
+      }
+      #bar button[hidden] {
+        display: none;
+      }
+      #status {
+        flex: 1;
+        min-width: 8em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #end {
+        position: fixed;
+        left: 50%;
+        bottom: 56px;
+        transform: translateX(-50%);
+        max-width: calc(100vw - 32px);
+        box-sizing: border-box;
+        padding: 10px 16px;
+        border: 2px solid #f8b800;
+        border-radius: 4px;
+        background: #301800;
+        color: #fce0a8;
+        font:
+          15px/1.4 system-ui,
+          sans-serif;
+        text-align: center;
+      }
+      #end[data-result='lost'] {
+        border-color: #f83800;
+      }
+      #end[hidden] {
+        display: none;
+      }
+      #end h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      #end p {
+        margin: 0 0 8px;
+      }
+      #end button {
+        min-height: 30px;
+        padding: 0 12px;
+        border: 1px solid #f8b800;
+        border-radius: 4px;
+        background: #503000;
+        color: #fff;
+        font: inherit;
+      }
+      #message {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        color: #eee;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        text-align: center;
+      }
+      /* The title screen (Engine 0.16 T9) shows the picture alone: the bar waits for Start. */
+      body[data-menu='title'] #bar {
+        visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="screen"></canvas>
+    <!-- The end screen: main.ts fills it in and shows it when the battle is won or lost. -->
+    <div id="end" hidden>
+      <h2 id="end-title"></h2>
+      <p id="end-text"></p>
+      <button id="again" type="button">Play again</button>
+    </div>
+    <!-- The command bar: main.ts adds build, train, stop, hero and cancel buttons before Export. -->
+    <div id="bar">
+      <span id="status"></span>
+      <button id="export" type="button" title="Download the battle so far as a run file">Export</button>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

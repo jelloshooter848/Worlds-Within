@@ -24,6 +24,9 @@ import {
   type SoundCue,
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
+import { fogLookSchema } from './fog';
+import { projectileSchema } from './projectile';
+import { OUTLINE_TEAM, outlineSchema, screenScaleSchema, teamSchema } from './readability';
 import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
 import { checkDecorRefs, decorSchema, placesSchema, tileVarySchema as modelTileVarySchema } from './decor';
 import { checkVaryWeights, tileJoinSchema, tileVaryShape, type TileVary } from './tile-join';
@@ -235,6 +238,9 @@ const SPRITE_FIELDS = [
   'frame',
   'blend',
   'glow',
+  'outline',
+  'team',
+  'screenScale',
   'turnToFacing',
   'ring',
   'hitFlash',
@@ -439,6 +445,7 @@ const tagEntry = z
     fallbackColor: color
       .exactOptional()
       .describe("2D: the box colour when a frame is missing (default the kind's)"),
+    outline: outlineSchema.exactOptional(),
     mesh: meshRef.exactOptional(),
     color: color.exactOptional().describe("3D: the mesh's colour (default the kind's)"),
     model: modelPath
@@ -492,7 +499,7 @@ const tagEntry = z
 const TAG_MATCH_FIELDS = ['tag', 'prefix', 'min', 'max'] as const;
 
 /** The fields a tag entry may give, of each shape. */
-const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor'] as const;
+const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor', 'outline'] as const;
 const TAG_MESH_FIELDS = [
   'mesh',
   'color',
@@ -595,6 +602,9 @@ const kindEntry = z.strictObject({
     })
     .exactOptional()
     .describe('2D: a soft glow round the sprite'),
+  outline: outlineSchema.exactOptional(),
+  team: teamSchema.exactOptional(),
+  screenScale: screenScaleSchema.exactOptional(),
   turnToFacing: z
     .union([z.boolean(), z.enum(['up', 'right', 'down', 'left'])])
     .exactOptional()
@@ -618,14 +628,32 @@ const kindEntry = z.strictObject({
     ),
   ring: z
     .strictObject({
-      radius: z.number().positive().describe('the radius in world px from the box centre'),
+      radius: z
+        .number()
+        .positive()
+        .exactOptional()
+        .describe('the radius in world px from the box centre (with `tag`: when the entity has no such tag)'),
+      tag: id
+        .exactOptional()
+        .describe(
+          "a tag prefix (`range:`): the radius is the number after it times `per` (an upgraded tower's range; Engine 0.16 E6); an entity without the tag draws `radius`, or no ring",
+        ),
+      per: z
+        .number()
+        .positive()
+        .exactOptional()
+        .describe("world px per unit of the tag's number (default the shown map's tile size, else 16)"),
       color: color.describe('the fill colour'),
       alpha: z.number().min(0).max(1).exactOptional().describe('the fill opacity (default 0.25)'),
       edge: color.exactOptional().describe('an opaque one-pixel rim in this colour'),
     })
+    .refine((r) => r.radius !== undefined || r.tag !== undefined, {
+      message: 'a ring needs "radius", "tag" or both',
+      params: { code: 'missing_field' },
+    })
     .exactOptional()
     .describe(
-      "2D: a flat disc under the sprite, centred on the box (a tower's range while it is placed, Engine 0.16 F8)",
+      "2D: a flat disc under the sprite, centred on the box (a tower's range while it is placed, Engine 0.16 F8; from a `range:` tag, E6)",
     ),
   byTag: z
     .array(tagEntry)
@@ -767,13 +795,14 @@ const eventEntry = z.strictObject({
     .describe(
       "a hit-pause, `{ ticks }`: the browser shell holds the game's ticks that many display frames (Engine 0.16)",
     ),
+  projectile: projectileSchema.exactOptional(),
 });
 
 /** The HUD item types drawn before Engine 0.16 T6, exactly as they were (`layoutHud`). */
 export const HUD_CLASSIC_TYPES = ['hearts', 'number', 'text', 'icon'] as const;
 
-/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`), and F4's world `clock`. */
-export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap', 'clock'] as const;
+/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`), F4's world `clock` and E6's wave `preview`. */
+export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap', 'clock', 'preview'] as const;
 
 /**
  * The tokens a `clock` HUD item's `format` replaces (Engine 0.16 F4), each with the clock status
@@ -862,7 +891,7 @@ const hudItem = z
     as: z
       .enum([...HUD_CLASSIC_TYPES, ...HUD_WIDGET_TYPES])
       .describe(
-        "how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice), `minimap` and (F4) `clock` (the world clock's text and a day bar; `status` is its prefix, default `clock`)",
+        "how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice), `minimap`, (F4) `clock` (the world clock's text and a day bar; `status` is its prefix, default `clock`) and (E6) `preview` (a row of icons with counts from a `kind:count,...` status list, such as the next wave's groups)",
       ),
     x: z.number().int().describe('left edge, screen pixels'),
     y: z.number().int().describe('top edge, screen pixels'),
@@ -881,7 +910,7 @@ const hudItem = z
       .record(z.string().min(1), id)
       .exactOptional()
       .describe(
-        'an icon\'s frame per status value (`{ "bomb": "bomb", "dash": "boots" }`; a value not listed shows `frame`), such as the selected item (Engine 0.16 part C T9)',
+        'an icon\'s frame per status value (`{ "bomb": "bomb", "dash": "boots" }`; a value not listed shows `frame`), such as the selected item (Engine 0.16 part C T9); a `preview`\'s frame per kind (Engine 0.16 E6)',
       ),
     half: id
       .exactOptional()
@@ -920,7 +949,13 @@ const hudItem = z
       .int()
       .min(0)
       .exactOptional()
-      .describe("px between a counter's icon and its number (default 2)"),
+      .describe("px between a counter's (or a preview group's) icon and its number (default 2)"),
+    spacing: z
+      .number()
+      .int()
+      .min(0)
+      .exactOptional()
+      .describe('a `preview`: px between one group and the next (default 4; Engine 0.16 E6)'),
     tween: z
       .strictObject({
         ticks: z.number().int().min(1).describe('display frames a change rolls over'),
@@ -962,6 +997,23 @@ const hudItem = z
       .array(minimapDot)
       .exactOptional()
       .describe("a minimap's entity dots, drawn in order over the tiles"),
+    fog: z
+      .boolean()
+      .exactOptional()
+      .describe(
+        "a minimap: show the frame's fog of war over its tiles, in the skin's `fog` colours (Engine 0.16 part D)",
+      ),
+    teams: z
+      .record(id, color)
+      .exactOptional()
+      .describe(
+        'a minimap: tag -> dot colour (`{ "own": "#3cbcfc", "enemy": "#f83800" }`); a dot\'s entity with one of these tags (the first in the table) takes its colour over the dot entry\'s (Engine 0.16 part D)',
+      ),
+    view: color
+      .exactOptional()
+      .describe(
+        "a minimap: the one-px outline, in this colour, of the world box the picture shows (the camera's view; Engine 0.16 part D)",
+      ),
     dayBar: dayBar
       .exactOptional()
       .describe(
@@ -993,8 +1045,19 @@ const hudItem = z
     if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined && !flatPanel) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
     }
-    if (v.frames !== undefined && v.as !== 'icon')
-      ctx.addIssue({ code: 'custom', path: ['frames'], message: '`frames` is for "icon" only' });
+    if (v.frames !== undefined && v.as !== 'icon' && v.as !== 'preview')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['frames'],
+        message: '`frames` is for "icon" and "preview" only',
+      });
+    if (v.spacing !== undefined && v.as !== 'preview')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['spacing'],
+        message: '"spacing" goes with a "preview" item only',
+        params: { code: 'bad_field' },
+      });
     if (v.half !== undefined && v.as !== 'hearts')
       ctx.addIssue({ code: 'custom', path: ['half'], message: '`half` is for "hearts" only' });
     const statusFree =
@@ -1011,6 +1074,14 @@ const hudItem = z
         message: '"dayBar" goes with a "clock" item only',
         params: { code: 'bad_field' },
       });
+    for (const field of ['fog', 'teams', 'view'] as const)
+      if (v[field] !== undefined && v.as !== 'minimap')
+        ctx.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `"${field}" goes with a "minimap" item only`,
+          params: { code: 'bad_field' },
+        });
     if (v.as === 'bar' || v.as === 'panel' || v.as === 'minimap' || v.as === 'clock') {
       if (v.w === undefined) need('w', 'a width');
       if (v.h === undefined) need('h', 'a height');
@@ -1248,7 +1319,10 @@ function checkEventKeys(events: Record<string, unknown>, ctx: z.RefinementCtx): 
 function checkEmitRefs(
   skin: {
     emitters?: Record<string, unknown>;
-    events?: Record<string, { emit?: string | string[] }>;
+    events?: Record<
+      string,
+      { emit?: string | string[]; projectile?: { impact?: { emit?: string | string[] } } }
+    >;
     kinds: Record<string, { emit?: string | string[] }>;
     decor?: Record<string, { legend: Record<string, { emit?: string | string[] }> }>;
   },
@@ -1269,7 +1343,10 @@ function checkEmitRefs(
       });
     });
   };
-  for (const [type, entry] of Object.entries(skin.events ?? {})) check(['events', type], entry.emit);
+  for (const [type, entry] of Object.entries(skin.events ?? {})) {
+    check(['events', type], entry.emit);
+    check(['events', type, 'projectile', 'impact'], entry.projectile?.impact?.emit);
+  }
   for (const [kind, entry] of Object.entries(skin.kinds)) check(['kinds', kind], entry.emit);
   for (const [map, decor] of Object.entries(skin.decor ?? {}))
     for (const [ch, entry] of Object.entries(decor.legend)) check(['decor', map, 'legend', ch], entry.emit);
@@ -1454,6 +1531,11 @@ export const skinSchema = z
       .describe(
         '2D lighting and mood (Engine 0.16 part C): `{ ambient?, tags?, maps?: { id: { ambient?, lights? } }, kinds?, tiles?, events?, vignette?, bands?, dither?, particles? }`: darkness per map tag or id, lights per kind and state, tile, place and event (radius, colour, intensity, glow, flicker), a vignette, banded or dithered falloffs and room-wide particles',
       ),
+    fog: fogLookSchema
+      .exactOptional()
+      .describe(
+        "fog of war's look (Engine 0.16 part D): `{ unexplored?: { color?, alpha? }, explored?: { color?, alpha? }, edge? }`, laid over a frame's `fog` cells by the 2D backends and on a minimap with `fog: true`; a frame without `fog` draws none",
+      ),
     themes: z
       .record(id, themeSchema)
       .exactOptional()
@@ -1475,6 +1557,16 @@ export const skinSchema = z
     checkMusicLayers(skin.music, ctx);
     checkEmitRefs(skin, ctx);
     checkLighting(skin, ctx);
+    // A projectile (Engine 0.16 E6) is drawn by the 2D walk only.
+    if (MESH_BACKENDS.includes(skin.backend))
+      for (const [key, entry] of Object.entries(skin.events ?? {}))
+        if (entry.projectile !== undefined)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['events', key, 'projectile'],
+            message: `"projectile" is a 2D field; backend "${skin.backend}" takes meshes`,
+            params: { code: 'wrong_backend_field' },
+          });
     checkMeshes(skin, ctx);
     checkShapes(skin.backend, skin.sheets, skin.kinds, ['kinds'], ['sheet', 'frames', 'fallbackColor'], ctx);
     checkShapes(
@@ -1490,7 +1582,36 @@ export const skinSchema = z
       checkShapes(skin.backend, skin.sheets, theme.tiles ?? {}, at, ['sheet', 'frame', 'fallbackColor'], ctx);
     }
     checkJoinTiles(skin, ctx);
+    checkTeamOutlines(skin, ctx);
   });
+
+/**
+ * An `outline: "team"` (on a kind or one of its looks) needs the kind's `team`, which gives the
+ * colour (Engine 0.16 part D, D4): `missing_field` at the outline otherwise. 2D skins only (on a
+ * 3D skin both are `wrong_backend_field` already).
+ */
+function checkTeamOutlines(
+  skin: { backend: string; kinds: Record<string, SkinKindEntry> },
+  ctx: z.RefinementCtx,
+): void {
+  if (MESH_BACKENDS.includes(skin.backend)) return;
+  for (const [kind, entry] of Object.entries(skin.kinds)) {
+    if (entry.team !== undefined) continue;
+    const at: (string | number)[][] = [];
+    if (entry.outline === OUTLINE_TEAM) at.push(['kinds', kind, 'outline']);
+    (entry.byTag ?? []).forEach((look, i) => {
+      if (look.outline === OUTLINE_TEAM) at.push(['kinds', kind, 'byTag', i, 'outline']);
+    });
+    for (const path of at) {
+      ctx.addIssue({
+        code: 'custom',
+        path,
+        message: '"outline": "team" needs the kind\'s "team" (its colours)',
+        params: { code: 'missing_field' },
+      });
+    }
+  }
+}
 
 /**
  * In a 3D skin a tile's `join` picks another `tiles` entry by key (Engine 0.16 part B, T10: a
@@ -1672,6 +1793,23 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     if (entry.sound !== undefined && !sounds.has(entry.sound)) {
       missing(['events', type, 'sound'], 'song or sfx', entry.sound);
     }
+    // A projectile (Engine 0.16 E6): its frame like any frame, its impact's sound like any sound.
+    const shot = entry.projectile;
+    if (shot === undefined) continue;
+    const at: FieldPath = ['events', type, 'projectile'];
+    if (shot.impact?.sound !== undefined && !sounds.has(shot.impact.sound))
+      missing([...at, 'impact', 'sound'], 'song or sfx', shot.impact.sound);
+    if (shot.palette !== undefined && !palettes.has(shot.palette))
+      missing([...at, 'palette'], 'palette', shot.palette);
+    if (shot.frame === undefined) continue;
+    if (shot.sheet === undefined && skin.sheets?.sheet === undefined)
+      issues.push({
+        name,
+        path: [...at, 'sheet'],
+        code: 'missing_field',
+        message: 'a projectile frame needs "sheet" (or sheets.sheet)',
+      });
+    else sheetAt(at, shot.sheet, one(shot.frame));
   }
   issues.push(...checkMusicSongs(name, skin, others));
   issues.push(...checkHudFonts(name, skin, others, sprites));
@@ -1824,7 +1962,10 @@ function checkHudFonts(
     if (font === undefined) {
       // Classic items keep their old reading (a sprite font, unchecked); a counter or styled text
       // must name a font file or a sprite.
-      const styled = item.as === 'counter' || HUD_TEXT_STYLE_FIELDS.some((f) => item[f] !== undefined);
+      const styled =
+        item.as === 'counter' ||
+        item.as === 'preview' ||
+        HUD_TEXT_STYLE_FIELDS.some((f) => item[f] !== undefined);
       if (styled && !sprites.has(item.font))
         issues.push({
           name,
@@ -1859,7 +2000,7 @@ function checkHudFonts(
         missingGlyphs(glyphs, item.format.split(HUD_VALUE_TOKEN).join('')),
         'used in this format',
       );
-    if (item.as === 'number' || item.as === 'counter')
+    if (item.as === 'number' || item.as === 'counter' || item.as === 'preview')
       report('font', missingGlyphs(glyphs, HUD_DIGITS), 'a number shows every digit');
   });
   return issues;

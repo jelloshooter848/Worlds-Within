@@ -1,8 +1,10 @@
 # Build log
 
 This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A (with part A2, the
-PixiJS backend), B, C, F (the mini siege in 3D) and polish P (the review notes on C and F) on
-branch `engine/build-0.15`, for the owner's review. Nothing in it is merged to `master`, tagged or published.
+PixiJS backend), B, C, D, E (the tower defense) and F (the mini siege in 3D), and the polish
+pass P (the review notes on C and F; P1-P3 merged in E, P4-P11 on track 2), on
+branch `engine/build-0.15`, for the owner's review. Nothing in it is merged to `master`, tagged or
+published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
@@ -94,19 +96,42 @@ the API review listed (`1.0-1` to `1.0-11`).
   `docs/reports/screenshots/0.16-C/`. Hashes re-recorded only for T1's new Hopper's Way enemies
   and the part's own new runs (listed in its section). Not met: the owner's playtest (item 455)
   and screenshot review (item 456).
-- **0.16 part F The mini siege in 3D low-poly: built, awaiting review.** The siege, the dawn and
-  the ridge in 3D after the mockup (CC0 Kenney and Quaternius packs, a ground view, decor, the
-  time of day by the world clock), the 3D page with its HUD and the mission flow in the picture
-  (briefing, Play or Delegate, results), the hosted rounds in 2D over it; no hash moved. Not
-  met: the owner's playtest and screenshot review (decision F-21; ten screenshots and the
-  mockup comparison in its section).
-- **0.16 polish P Parts C and F review notes: done, awaiting review.** The crypt's and the
-  warden hall's lights fall off smoothly (dithered, both 2D backends; item 436 revisited, P-5);
+- **0.16 part D The RTS skirmish, The River Ford: built, awaiting review.** The PixiJS track
+  merged (D1); the 0.15 battle kept as `games/rts-classic`; engine fog layer, minimap and
+  readability fields (outlines, team colours, zoom-stable bars); the RTS kit's fog of war, order
+  markers, path dots, barks and train progress, a fog-aware AI and a data end rule; the sample
+  rebuilt on Kenney's CC0 Medieval RTS at 16:9 as a ten-minute match against an AI base across a
+  river, balanced in data, with `match-won` (9:40) and `match-lost` (9:28) and four guard runs,
+  a danger music layer and sounds; ten review screenshots in
+  `docs/reports/screenshots/0.16-D/`. Hashes moved only for the sample's new map and balance
+  (listed in its section). Not met: the owner's playtest (item 504) and screenshot review (item
+  505).
+- **0.16 part E The tower defense, The Winding Road: built, awaiting review.** Track 2's part
+  F and P1-P3 merged (E1); the 0.15 round kept as `games/td-classic`; the tower-defense kit's
+  upgrades, splash and slow towers, wave preview, health-bar and range data and star rating; the
+  engine's speed-up control (the same hashes at 2x and 3x), projectiles with impacts, the HUD's
+  wave preview and stars on the end screen; the sample rebuilt on Kenney's CC0 Tower Defense art
+  at 16:9 as ten waves on one winding road with three towers and two upgrades each, tuned in data
+  so three stars take a strong defence, with `win`, `lost` and `sped-up` runs and seven guard
+  runs, layered music and an end screen; ten review screenshots in
+  `docs/reports/screenshots/0.16-E/`. Hashes moved only for the sample's new map and balance
+  (listed in its section). Not met: the owner's playtest (item 586) and screenshot review (item
+  587).
+- **0.16 part F The mini siege in 3D low-poly: built, awaiting review.** Built on the track
+  branch `engine/0.16-track2` (F1-F7 merged in part D, D1; F8-F10 and the review fixes merged in
+  part E, E1): the siege, the dawn and the ridge in 3D after the mockup (CC0 Kenney and
+  Quaternius packs, a ground view, decor, the time of day by the world clock), the 3D page with
+  its HUD and the mission flow in the picture (briefing, Play or Delegate, results), the hosted
+  rounds in 2D over it on the Kenney Tower Defense pack, with 2D looks (`ring`, world labels,
+  `hitFlash`, `turnToFacing`); no hash moved. Not met: the owner's playtest and screenshot
+  review (item 553; ten screenshots and the mockup comparison in its section).
+- **0.16 polish P Parts C and F review notes: done, awaiting review.** Built on the track branch `engine/0.16-track2` (P1-P3 and P4's first step merged in part E, E1; P4-P11 merged here). The crypt's and the
+  warden hall's lights fall off smoothly (dithered, both 2D backends; item 436 revisited, 584);
   The Old Crypt's eight rooms dressed from per-room decor grids (a new top-down kit option);
   world labels kept inside the picture (M45 closed); the mini siege page's controls clear of a
   round; a gentle mission-open flash; plurals in the losses; the dawn skirt matching the map;
   fuller siege fields from decor data. Fifteen before and after shot pairs in its section; no hash or run
-  file moved. Not met: the owner's review of the shots and of decisions P-1 to P-14.
+  file moved. Not met: the owner's review of the shots and of decisions 580-584 and P-6 to P-15.
 
 ### How to try each sample
 
@@ -119,10 +144,12 @@ the same paths are served from `dist/`; each page takes `?debug=step` for the st
 | The Old Crypt (dungeon)       | `/games/samples/dungeon/`                              | arrows move, X or Z the sword, C the item; Z or X after the end starts a new run        |
 | Hopper's Way (platformer)     | `/games/samples/platformer/` (3D: `?backend=three`)    | arrows move, Z jumps (hold for higher), X runs; Esc or P pauses                         |
 | The River Ford (RTS)          | `/games/samples/rts-skirmish/`                         | mouse or touch: click selects, drag boxes, right click commands, wheel zooms            |
-| The Winding Road (TD)         | `/games/samples/tower-defense/`                        | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends            |
+| The Winding Road (TD)         | `/games/samples/tower-defense/`                        | arrows or taps pick a pad, Z builds or upgrades, X tower, C sells, Enter sends, F speed |
 | The mini siege (3D)           | `/games/samples/mini-siege/` (2D: `?backend=canvas2d`) | Begin, then Play or Delegate on the card; mouse pans and orders; rounds by keys or taps |
 | Platformer lab (not a sample) | `/games/platformer-lab/` (3D: `?backend=three`)        | arrows move, Z jumps, X runs                                                            |
 | Platformer classic (test)     | `/games/platformer-classic/` (3D: `?backend=three`)    | arrows move, Z jumps, X runs; in the rooms arrows walk and X stabs                      |
+| RTS classic (test)            | `/games/rts-classic/`                                  | mouse or touch: click selects, drag boxes, right click commands, wheel zooms            |
+| TD classic (test)             | `/games/td-classic/`                                   | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends            |
 | FX lab (not a sample)         | `/games/fx-lab/` (3D: `?backend=three`)                | arrows move, Z jumps, X runs                                                            |
 
 Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSON result):
@@ -130,12 +157,14 @@ Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSO
 ```sh
 pnpm -s cli run games/samples/dungeon/runs/escape.run.json --json          # also walk-east, lost-in-the-guard-room
 pnpm -s cli run games/samples/platformer/runs/full-game.run.json --json    # also level-1..3, boss, each *-lost, level-1-hurt
-pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json     # also commands, economy, hold, lost
-pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json       # also build, leaked, tapped, target
+pnpm -s cli run games/samples/rts-skirmish/runs/match-won.run.json --json  # also match-lost, opening, ai-barracks, fog, razed
+pnpm -s cli run games/samples/tower-defense/runs/win.run.json --json       # also lost, sped-up, build, upgrade, splash, slow, target, timer, leak
 pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json       # also delegated, quit, fortify-*, dawn-*, ridge-raid
 pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json    # also mini-game, mini-game-start, moves, objects, shells, walkers
 pnpm -s cli run games/fx-lab/runs/level-1.run.json --json                  # also level-2, level-3
 pnpm -s cli run games/platformer-classic/runs/level-4.run.json --json      # also level-1..3, level-2..5-start
+pnpm -s cli run games/rts-classic/runs/battle.run.json --json              # also commands, hold, economy, lost
+pnpm -s cli run games/td-classic/runs/won.run.json --json                  # also build, leaked, tapped, target
 for f in $(git ls-files '*.run.json'); do pnpm -s cli run "$f" > /dev/null && echo "ok $f"; done
 pnpm -s cli validate games/samples/mini-siege --json                         # any game folder
 pnpm -s cli mutants games/samples/dungeon --json                             # which kit rules the runs guard
@@ -150,7 +179,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 488** (next unused 489). Awaiting the owner's answer, by release (an answer by number is
+used is 617** (next unused 618). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -179,11 +208,22 @@ enough; silence so far has meant the build kept its default):
   **448-454** (T10, the combat feel and polish); **455** (the owner's playtest), **456** (the
   owner's screenshot review), **457-462** (T11: the item panel fix, two looks left, and the
   smaller choices of T5-T7), **463-467** (the final review's five more build choices).
-- Engine 0.16 part F: **F-1 to F-22** and **T2-18 to T2-42** in its section (F-21 the owner's
-  playtest and screenshot review), to be numbered into FEEDBACK-LOG.md at merge.
-- Engine 0.16 polish P: **P-1 to P-15** and **T2-43 to T2-65** in its section (with two
-  questions on P-5, the light's look, and P-6, the flash), to be numbered into FEEDBACK-LOG.md at
-  merge.
+- Engine 0.16 part D: **489** (D2, `games/rts-classic`), **490-503** (D9, balance and feel),
+  **504** (the owner's playtest), **505** (the owner's screenshot review), **506-508** (D10: the
+  screenshot view, the stale victory line, waves unseen at the fords), **509-514** (smaller build
+  choices of D3-D8), **515** (looks left in the screenshots), **516-532** (more build choices of
+  D1-D8 and the D6 review fix, added by the finalize pass).
+- Engine 0.16 part F (merged in part E, E1; `F-n` and `T2-n` on the track): **533-554** (part
+  F's build decisions; **553** the owner's playtest and screenshot review), **555-579** (the
+  smaller build choices of F1-F10).
+- Engine 0.16 polish P (P1-P3 merged in part E, E1; `P-n` on the track): **580-584** (the before
+  shots and the crypt's dithered light); **P-6 to P-15** and **T2-43 to T2-65** in its section
+  (with a question on P-6, the flash, and one on 584, the light's look), not yet numbered into
+  FEEDBACK-LOG.md.
+- Engine 0.16 part E: **585** (E2, `games/td-classic`), **586** (the owner's playtest), **587**
+  (the owner's screenshot review), **588** (the walls round's looks), **589-613** (build choices
+  of E3-E9), **614-617** (E10: the HUD fixes, the page shot, the looks left, how 589-613 were
+  written).
 
 ### Items not met, and where they went
 
@@ -208,6 +248,244 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
 
+## Engine 0.16 part E
+
+The tower defense, **The Winding Road** (docs/ROADMAP.md, 0.16 part E), built on branch
+`engine/build-0.15` in ten tasks (E1-E10; not tagged, nothing published). E1 first merged track
+2's part F (F8-F10) and polish P1-P3 into the build branch. The tower-defense sample became a
+ten-wave map on Kenney's CC0 Tower Defense art at 16:9 (480x270; 4x is 1920x1080): one winding
+road, eighteen stone pads, arrow, cannon (splash) and frost (slow) towers with two upgrades
+each, a wave preview, range rings, projectiles and impacts, health bars, a speed-up control
+that never moves a hash, layered music and an end screen with a one- to three-star rating. Its
+0.15 round is the test game `games/td-classic`. **Open for the owner:** the playtest (item 586)
+and the screenshot review (item 587), the walls round's looks (588), then the build choices 585
+and 589-617.
+
+### What was built
+
+- **E1 the track merged** (`engine/0.16-track2` into `engine/build-0.15`): part F's F8-F10 (the
+  hosted rounds in 2D over the 3D siege, the mission flow in the picture, the close-out) and the
+  polish pass's P1-P3 (the before shots, The Old Crypt's dithered light) and P4's first step; the
+  track's items renumbered 533-584. No hash moved.
+- **E2 the 0.15 round kept as `games/td-classic`**: its map, towers, waves, text art, skin, songs,
+  page and five run files copied with every golden hash unchanged, with its own mutants test
+  (an `UNGUARDED` list for the rules E3 and E4 add), agent docs and index link. Item 585.
+- **E3 tower-defense kit: tower upgrades**: a type's optional `levels` (cost, range, damage,
+  cooldown, sell), the `upgrade` command and its refusals (`no_tower`, `max_level`, `too_poor`,
+  `round_over`), the rules `upgrade-costs-gold` and `upgrade-improves`, the `td-upgrade` event,
+  a bot step; Z or a second tap on a selected tower upgrades it. Items 589-591.
+- **E4 kit: splash and slow, preview, bar and range data, stars**: `splash` and `slow` on types
+  and levels (rules `splash-damage`, `slow-enemies`), the map's `stars`, frame tags `maxhp:`,
+  `slow`, `splash:`, `slows`, `range:`, and the status's `nextWaveKinds`/`nextWaveGroups` and
+  `stars`. Items 592-594.
+- **E5 engine: a speed-up control that never changes hashes**: `menus.speeds`, F, gamepad RT and
+  the `#ww-speed` button; `SceneStack.advance` steps n ticks a loop step with fresh input each;
+  every run file sped up through the shell's loop gives its golden hashes
+  (`tests/runs/sped-up-shell.test.ts`). Items 595-596.
+- **E6 engine: projectiles, a wave-preview widget and stars on the end screen**: an event's
+  `projectile` (frame or square, arc, turn, impact emitters, sound, shake) on Canvas2D and
+  PixiJS, rings from a `range:` tag, bars against `maxhp:`, the HUD's `preview` widget and
+  `menus.end.stars`; `validate` checks them; a browser parity test. Items 597-599.
+- **E7 the CC0 art pack and the skin**: Kenney's Tower Defense (top-down) in the sample's
+  `assets/` (credited), a cut sheet made by `tools/road-art.ts` (checked byte for byte), towers at
+  three levels turned to their targets, walking enemies with hit flashes, slowed looks and health
+  bars, range rings on the ghost and the selected tower, projectiles and impacts per tower, a
+  sound for every event. No hash moved. Items 600-603.
+- **E8 the map**: 480x270 over a 30 x 16 road with ten bends and eighteen pads, three towers with
+  two upgrades each, ten waves on a 500-tick timer, stars at 18 and 10 lives; the old runs
+  replaced by nine TdBot-made guard runs, every kit rule guarded (strict). Items 604-607.
+- **E9 the full game**: waves 9 and 10 tuned in data; the `win`, `lost` and `sped-up` runs; the
+  danger music layer; the HUD's preview, upgrade cost, sell value and speed; the Build/Upgrade
+  button; the end trigger and end screen with the stars and a jingle; the kit's status `killed`,
+  `wavesHeld`, `nearGate`. Items 608-613.
+- **E10 close-out**: the ten review screenshots (below) and the HUD fixes they showed (item 614,
+  skin only), the page shot script `tests/browser/td-review-shots.ts` (615), this section, the
+  roadmap's Done when, the feedback items 586-588 and 589-617, the README's sample list and the
+  module page.
+
+### Choices made
+
+Each is built and kept unless the owner says otherwise; the full text is in
+[FEEDBACK-LOG.md](FEEDBACK-LOG.md) ("Engine 0.16 part E").
+
+1. The 0.15 round copied to its own test game rather than kept as a second map (585).
+2. Upgrades through selection with no extra state (589), levels and slows in the snapshot only
+   when present so older rounds hash as before (590, 592), mission rounds without levels unless
+   asked (591).
+3. Stars by lives left on the map (593); the wave preview as status strings (594).
+4. The speed-up as more ticks a loop step, never stored, 1x under menus and in manual mode (595);
+   one sound per drawn frame sped up (596).
+5. Projectiles, rings and bars as presentation read from events and tags (597, 598); stars on
+   the end screen, none on a loss (599).
+6. The art: the pack copied and cut by a checked script (600), 16 px cells with 24 px sprites
+   (601), the selected tower ringed through a ghost tag (602), the text art cut down (603).
+7. The map, towers, waves and stars (604, 605); every sample run replaced for the new map (606);
+   the menus (607).
+8. The balance (three stars only just, 608), the full-game runs (609), music (610), the kit's
+   status additions (611), the end screen and the bar (612), the page's recording (613).
+9. The close-out: the HUD fixes (614), the page shot (615), the looks left (616), how 589-613
+   were written (617).
+
+### Golden hashes
+
+Re-recorded with the repo's tools (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`), never by hand:
+
+- **Copied to `games/td-classic` unchanged (E2):** the 0.15 runs `build`, `won`, `target`,
+  `leaked` and `tapped`, with the same hashes (only each `.hashes.json`'s `run` path differs).
+- **New on the old map (E3, E4), removed with it (E8):** `upgrade` (E3, last hash
+  `da8f8fdbead2cdae` at 160) and `shells` (E4, `376468edf365a2e4` at 300); E3 and E4 moved no
+  existing hash (the new fields are in the snapshot only when used).
+- **Removed from the sample with its 0.15 map (E8; final hashes):** `build` `c0f414299bc01881`
+  (40), `leaked` `48e726691354fd14` (1340), `tapped` `9bbdc8413bc8a0e2` (700), `target`
+  `c007de2189d310be` (260), `won` `9bbdc8413bc8a0e2` (700) (the same files and hashes live on in
+  `games/td-classic`, except `upgrade` and `shells`, which only the 0.16 kit plays).
+- **New on the new map (E8; a rule change for every run: the map they played is gone):**
+  `build`, `upgrade`, `splash`, `slow`, `target`, `timer`, `leak`, `lost` and `won`, all starting
+  from `d02aa6bb19e82982` at tick 0.
+- **Moved or replaced (E9, the balance of waves 9 and 10 and the new plans):** `won` (E8, last
+  `e2afb4d53558d4e8` at 3100) replaced by `win` (`da6e7f7dbfc333a1` at 3150); `lost` (E8, no
+  towers and three waves at once, last `c8b5c8eeefa80859` at 480) re-made as the thin defence
+  (`d72fe702a1473afd` at 1500); new `sped-up`, whose golden file equals `win.hashes.json` at every
+  hashed tick.
+- **Unchanged since E8:** `build` (`afa55e4dbf52d2e8` at 120), `upgrade` (`cea0ca5b42f7d9e9` at
+  120), `splash` (`8067adb2ff4c5297` at 180), `slow` (`fd706ce773dc9df5` at 60), `target`
+  (`9b36f98409167fb5` at 160), `timer` (`def7cd7ce4233091` at 520) and `leak`
+  (`997d10fe38255c01` at 360): they end before wave 9.
+- **Unchanged through the whole part:** every other game's run files (the mini siege's walls
+  rounds `fortify-played` and `fortify-delegated` included) and the world fixtures; E1, E5, E6,
+  E7 and E10 are presentation only (`presentation-invariance.test.ts`,
+  `stepped-shell-invariance.test.ts` and `sped-up-shell.test.ts` pass), and E9's kit status
+  fields are never in a snapshot.
+
+### How to try it
+
+```sh
+pnpm dev   # then http://localhost:5173/games/samples/tower-defense/
+           # arrows or a tap pick a pad, Z builds (on a tower: upgrades), X picks the tower,
+           # C sells, Enter sends the wave, F or the speed button cycles 1x/2x/3x
+pnpm -s cli run games/samples/tower-defense/runs/win.run.json --json      # all ten waves, three stars
+pnpm -s cli run games/samples/tower-defense/runs/lost.run.json --json     # also sped-up, build, upgrade, splash, slow, target, timer, leak
+pnpm -s cli mutants games/samples/tower-defense --json                    # strict, all 18 kit rules guarded
+pnpm -s cli validate games/samples/tower-defense --json
+pnpm -s cli screenshot games/samples/tower-defense/runs/win.run.json --tick 3150 --overlay end --scale 4 --json
+pnpm test games/samples/tower-defense tests/runs/sped-up-shell.test.ts tests/browser/tower-defense-page.test.ts
+```
+
+### Done when
+
+- **All 10 waves play from the title to the star rating, with run files for a win, a loss and a
+  sped-up run that pass in CI (speed-up gives the same hashes as normal speed): met.** `win`
+  holds all ten waves and wins at tick 3141 with 18 lives (three stars, 138 killed); `lost` loses
+  in wave 6 at tick 1489; `sped-up` (the win's defence played on the page's scene at 2x and 3x)
+  has the same input and the same golden hashes as `win` (tested in `tower-defense.test.ts` and
+  `play.test.ts`); all three exit 0 through `pnpm -s cli run` and match their golden files in
+  `tests/runs/run-files.test.ts`; `tests/runs/sped-up-shell.test.ts` plays every run file in the
+  repo through the shell's loop at 2x and 3x with its golden hashes;
+  `tests/browser/tower-defense-page.test.ts` starts from the games index and the title, cycles
+  the speed on the live loop and types the `win` input to the end screen's three stars.
+- **Every existing tower-defense run file passes, or its hashes were re-recorded for a listed rule
+  change: met.** The five 0.15 runs pass unchanged in `games/td-classic`; the mini siege's walls
+  rounds pass unchanged; the sample's runs were replaced for its new map (E8) and balance (E9),
+  listed above. `pnpm -s cli mutants` exits 0 for the sample (strict, 18 rules) and for
+  `games/td-classic` exits 4 naming only the rules on its `UNGUARDED` list, as
+  `td-classic-mutants.test.ts` expects.
+- **Owner playtest and screenshot review of the map: open (items 586 and 587).** The
+  screenshots are below.
+
+### Review screenshots (item 587)
+
+Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-E/`](reports/screenshots/0.16-E/). 01-05
+and 07-10 are 480x270 drawn by the **Canvas2D** backend (the CLI's default; the page plays on
+PixiJS, which `pixi-parity.test.ts` holds to the same picture) at `--scale 4`, each reporting
+`matchesHeadless: true`. 06 is the built page itself (PixiJS, a 1920x1080 window, manual-loop
+mode), made by the committed script `tests/browser/td-review-shots.ts` (item 615): the speed-up
+control is page UI the CLI does not draw.
+
+| File                                                                            | What it shows                                                                                                                       |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [01-title.png](reports/screenshots/0.16-E/01-title.png)                         | The title over the dimmed road: name, subtitle, the level-3 arrow and cannon art, Start, Controls, Settings                         |
+| [02-placing-range.png](reports/screenshots/0.16-E/02-placing-range.png)         | `win`, tick 33: the cannon's ghost on a pad with its range ring, two arrows built, the timer, the first wave's preview              |
+| [03-mid-wave.png](reports/screenshots/0.16-E/03-mid-wave.png)                   | `win`, tick 2450: wave 9 on the road, shots and impact sparks, health bars, slowed (ice-blue) runners, wave 10 previewed (8 and 16) |
+| [04-upgraded-selected.png](reports/screenshots/0.16-E/04-upgraded-selected.png) | `win`, tick 1402: the cannon just upgraded to level 3, selected and ringed, `sell 37` (no upgrade cost: top level)                  |
+| [05-wave-preview.png](reports/screenshots/0.16-E/05-wave-preview.png)           | `win`, tick 2702: between waves, the timer and `next` 8 brutes and 16 runners, the arrow just upgraded selected with its prices     |
+| [06-speed-up.png](reports/screenshots/0.16-E/06-speed-up.png)                   | The page at the `win` run's tick 2450 with the speed button at `3x` and the HUD's `3x`, the bar's `Upgrade 12` and `Sell 9`         |
+| [07-wave-ten.png](reports/screenshots/0.16-E/07-wave-ten.png)                   | `win`, tick 2900: wave 10's brutes and fast runners, hit flashes, a splash, the frost turret slowing, health bars                   |
+| [08-leak-danger.png](reports/screenshots/0.16-E/08-leak-danger.png)             | `lost`, tick 1308: a runner leaks at 3 lives left, the red leak flash and breach over the road                                      |
+| [09-loss-end.png](reports/screenshots/0.16-E/09-loss-end.png)                   | `lost`, tick 1500: The gate has fallen, waves held 5/10, lives 0, gold 109, 36 stopped, no stars                                    |
+| [10-win-end-stars.png](reports/screenshots/0.16-E/10-win-end-stars.png)         | `win`, tick 3150: The road is held!, three stars, waves held 10/10, 18 lives, 120 gold, 138 stopped                                 |
+
+Made with (from the repo root). The CLI shots repeat byte for byte when rerun (01 was taken twice
+with the same sha256):
+
+```sh
+R=games/samples/tower-defense/runs; O=docs/reports/screenshots/0.16-E
+pnpm -s cli screenshot $R/win.run.json --tick 0 --overlay title --scale 4 --out $O/01-title.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 33 --scale 4 --out $O/02-placing-range.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 2450 --scale 4 --out $O/03-mid-wave.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1402 --scale 4 --out $O/04-upgraded-selected.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 2702 --scale 4 --out $O/05-wave-preview.png --json
+pnpm exec tsx tests/browser/td-review-shots.ts /tmp/td-shots && cp /tmp/td-shots/shot-06-speed-up.png $O/06-speed-up.png
+pnpm -s cli screenshot $R/win.run.json --tick 2900 --scale 4 --out $O/07-wave-ten.png --json
+pnpm -s cli screenshot $R/lost.run.json --tick 1308 --scale 4 --out $O/08-leak-danger.png --json
+pnpm -s cli screenshot $R/lost.run.json --tick 1500 --overlay end --scale 4 --out $O/09-loss-end.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 3150 --overlay end --scale 4 --out $O/10-win-end-stars.png --json
+```
+
+Each was looked at in full. **Fixed** (item 614, skin only, no hash moved): a bare `next` label
+after the last wave (07, 09, 10) and a bare `sell` with the cursor off a tower (02) now show only
+with their values; the HUD's `3x` sat under the page's sound control (06) and moved left.
+**Recorded, not fixed** (item 616): the lives heart is gone at 0 lives (09); level-1 towers are
+grey and alike (02, 03); a hit brute flashes as a full white 24 px silhouette (07); on the page
+the pause and speed buttons sit over the picture's right edge by the gate (06; polish P's F2
+for the mini siege) and the page scales by a non-whole factor at 1920x1080. `pnpm cli
+screenshot` draws only the effects alive at the shot tick, so a projectile shows at one place
+on its way.
+
+### The mini siege's walls round
+
+The hosted walls round (`td-defence`, part F, drawn by `canvas2d-td-defence.json` on the same
+Kenney pack) still passes: `fortify-played` (376 ticks, 102 assertions) and `fortify-delegated`
+(260 ticks) exit 0 with their hashes unchanged, and `tests/browser/mini-siege-page.test.ts` plays
+the round on the page. It keeps part F's looks: `shot:<type>` sprites over the target, no flying
+projectiles, impact emitters or health bars. Whether it should adopt part E's projectiles and
+bars (skin only) is item 588.
+
+### Deviations from the roadmap
+
+- **Assets:** Kenney Tower Defense, the named pack, copied from the mini siege's copy (fetched
+  from its OpenGameArt mirror in part F; item 600); text art only for the cursor, HUD icons and
+  the stars.
+- **Binary files:** the CC0 pack in the sample's `assets/` (allowed by item 322) and the ten
+  review screenshots (allowed since part B, item 395).
+- **The speed-up shot** is a page shot in manual-loop mode (item 615), where the scene steps at
+  1x; its pace is checked on the live loop by the page test.
+
+### Finalize pass (checks)
+
+Run on the E10 tree before committing: `pnpm typecheck`, `pnpm docs:check` and `pnpm build`
+pass; `pnpm test` ran 311 files, 3946 tests passed and 1 skipped (the opt-in every-tick save
+check of 0.8), and its one failure, `no-content.test.ts`'s binary-file check, listed only the
+PNGs of two other agents' git worktrees left inside the repo folder (`wt/`,
+`e9rev-wt-57252a3/`, not tracked, not part of this commit); the same test passes on a clean
+checkout of the commit (below). `pnpm lint` was run with those two folders ignored (ESLint
+refuses a second `tsconfig` root) and passes. All 91 run files in the repo (`git ls-files
+'*.run.json'`) exit 0 through `pnpm -s cli run`; `pnpm -s cli validate` passes for all ten game
+folders; `pnpm -s cli mutants games/samples/tower-defense` exits 0 (strict, 18 rules guarded, no
+run weak); every CLI screenshot above reported `matchesHeadless: true` at 1920x1080. The
+agent-docs test passes: the touched module (the tower-defense sample) keeps its `CLAUDE.md`,
+`AGENTS.md` and `llms.txt` page, both updated.
+
+### Outstanding issues
+
+- **The owner's playtest and screenshot review:** items 586 and 587; the walls round's looks,
+  item 588.
+- The build choices of part E (items 585, 589-617) wait for the owner's answers; 589-613 were
+  written from E3-E9's commit messages and module docs (617).
+- The looks left in the screenshots (616), among them the page controls over the picture's
+  right edge, which polish P's F2 is to fix for the mini siege (P4-P11 not built yet).
+- From parts B, C, D and F: the owner's playtests and screenshot reviews (393, 394, 455, 456,
+  504, 505, 553).
+
 ## Engine 0.16 polish P
 
 A polish pass on the orchestrator's review notes on parts C and F (the roadmap's "0.16 polish P:
@@ -227,7 +505,7 @@ owner's playtest.
 - **P3, C1, dithered light falloff** (`engine/core/fx/dither.ts`, both 2D backends): a skin's
   `lighting.dither` (4 or 8) draws each light's falloff smooth and ordered-dithers it by picture
   pixel with a Bayer matrix, no RNG, the same bytes in Canvas2D and PixiJS. The Old Crypt goes
-  from `bands: 6` to `bands: 0, dither: 8` (P-5, revisits item 436).
+  from `bands: 6` to `bands: 0, dither: 8` (584, revisits item 436).
 - **P4, a decoration grid per top-down room** (`kits/topdown`): an optional
   `rooms/<id>.decor.txt` grid, checked by the schema (`unknown_char`, `ragged_row`,
   `size_mismatch`) and presented as the map layer `decor`; no rule reads it, so no hash moves.
@@ -330,7 +608,7 @@ What each pair shows (`before-<nn>` / `after-<nn>`):
 
 From the repo root. The CLI shots (01-10) repeat byte for byte (01 and 09 were rerun at P11 and
 compared by their sha256); the page shots (11-15) are not checked to repeat byte for byte (the
-page's loop steps, not run ticks; P-2). For the before shots, `before` in place of `after`:
+page's loop steps, not run ticks; 581). For the before shots, `before` in place of `after`:
 
 ```sh
 D=games/samples/dungeon/runs; S=games/samples/mini-siege/runs; O=docs/reports/screenshots/0.16-P
@@ -402,22 +680,24 @@ run`; `pnpm -s cli mutants games/samples/dungeon` and `games/samples/mini-siege`
 
 ### Build decisions to review (polish P)
 
-Numbered `P-n` on this track; the orchestrator copies them into FEEDBACK-LOG.md with owner
-numbers at merge (this track does not edit it).
+Labelled `P-1` to `P-5` on the track; the merge into `engine/build-0.15` (Engine 0.16 part E, E1)
+copied them into FEEDBACK-LOG.md as items 580-584 (`P-n` is item 579+n); P-6 to P-15, built after that merge, keep their `P-n` labels until the
+next numbering. The merge itself is described under part F
+([The merge into engine/build-0.15 (Engine 0.16 part E, E1)](#the-merge-into-enginebuild-015-engine-016-part-e-e1)).
 
-- **P-1.** The dawn skirt's before shot is a page shot, not a CLI one: `pnpm cli screenshot
+- **580.** The dawn skirt's before shot is a page shot, not a CLI one: `pnpm cli screenshot
 dawn-fresh.run.json --tick 30 --backend three` draws the dawn at 06:00 but lit and framed
   nearly as the afternoon (a closer camera than the page's, the map running past the picture), so
   the darkened map and the lighter skirt do not show in it. P9's after shot uses the page too.
-- **P-2.** The page shots come from a committed script, `tests/browser/siege-review-shots.ts`
-  (run with `pnpm exec tsx`, not a test), not a scratch one as in F10 (F-19), so P11 retakes the
+- **581.** The page shots come from a committed script, `tests/browser/siege-review-shots.ts`
+  (run with `pnpm exec tsx`, not a test), not a scratch one as in F10 (551), so P11 retakes the
   after shots with the same steps.
-- **P-3.** The flash shot (F3) is the first loop step of world tick 41 after Delegate at 40: the
+- **582.** The flash shot (F3) is the first loop step of world tick 41 after Delegate at 40: the
   white `mission-open` flash lasts 12 loop steps (ticks 41 and 42), not one frame as part F's
   notes say.
-- **P-4.** C2's shots cover all six rooms other than the crypt and the warden hall (01 and 02
+- **583.** C2's shots cover all six rooms other than the crypt and the warden hall (01 and 02
   show those two), more than the four the task asked for.
-- **P-5 (revisits item 436).** C1: The Old Crypt's skin goes from `lighting.bands: 6` (item 436's
+- **584 (revisits item 436).** C1: The Old Crypt's skin goes from `lighting.bands: 6` (item 436's
   stepped pixel-art falloff, which showed as hard rings round every torch) to `bands: 0` with
   the new `lighting.dither: 8`: each light's falloff is drawn smooth (32 stops) and quantized by
   picture pixel to 64 alpha steps with an 8x8 Bayer matrix (`LIGHT_DITHER_LEVELS`), no RNG, the
@@ -500,7 +780,7 @@ word, plural?)`), used by `lossText` and so by the mission card's foes. No unit 
 
 Questions for the owner (answer by number once numbered into FEEDBACK-LOG.md):
 
-- On **P-5** (item 436 revisited): keep the smooth, dithered falloff, or bring back item 436's
+- On **584** (item 436 revisited): keep the smooth, dithered falloff, or bring back item 436's
   stepped look with soft edges (`bands` with `dither`)?
 - On **P-6** (the flash): keep the warm, low-alpha `mission-open` flash, dim it further, or drop
   it (and should the 2D skin's white flash follow)?
@@ -512,7 +792,7 @@ Questions for the owner (answer by number once numbered into FEEDBACK-LOG.md):
 - F5 is fixed in the skirt's material, not by matching its colour per time of day (P-9).
 - F4 also widens the wide results panel from 304 to 312 px so the longer losses line fits (P-8),
   a shell layout change beyond the plural text.
-- C2's shots cover all eight rooms, not four (P-4).
+- C2's shots cover all eight rooms, not four (583).
 - The rule "`games/rts` and `games/rts-classic` are not touched" holds trivially: neither folder
   exists in this repo.
 
@@ -591,7 +871,7 @@ Those already covered by a `P-n` item are not repeated.
 ### Outstanding issues
 
 - **The owner's review of polish P**: the thirty shots above, with part F's playtest and
-  screenshot review (F-21) and part C's (items 455, 456).
+  screenshot review (item 553) and part C's (items 455, 456).
 - The results' losses still wrap "Vosk" onto its own line in the left column (15, before and
   after).
 - At the dawn an empty black bar floats over a soldier by the hall (11, before and after).
@@ -614,8 +894,8 @@ outcome and the results) is drawn in the picture, the world clock moves the ligh
 day, and the hosted rounds are drawn in 2D over the 3D picture. **Presentation only: no golden
 hash, save code or run file moved** in part F (`git diff 0311d86^ 04f496a -- '*.hashes.json'
 '*.run.json'` is empty). **Open for the owner:** the playtest and the screenshot review below
-(the "owner review" item of the decisions list), the build decisions F-1 to F-22 and T2-18 to
-T2-42.
+(item 553), the build decisions 533 to 554 and 555 to 579 (`F-n` and `T2-n` on the track,
+numbered at the merge, E1).
 
 ### What was built
 
@@ -669,16 +949,16 @@ T2-42.
 - **F10, this write-up**: nine full-HD screenshots, this section, the roadmap's Done when and the
   agent docs. `tests/architecture/no-content.test.ts` and DESIGN.md now allow a part's review
   screenshots, `docs/reports/screenshots/<part>/*.png`, as review pictures beside the mockups and
-  sheets (decision F-20).
+  sheets (item 552).
 
 ### Choices made
 
-Each is a build decision for the owner (F-1 to F-22 below, and the smaller ones T2-18 to
-T2-42). The main ones: the picture is 320x180 so it scales whole to 1920x1080 (F-1); the
-hosted rounds stay 2D on a layer over the 3D world rather than getting 3D skins (F-8); since parts C and E are not on this branch, the rounds
-were brought to their bar with the same CC0 packs (F-9); the people and sheep come from two
-Quaternius packs the roadmap does not name (F-2); the 3D page has no text box, so a save code
-goes in the link (F-14).
+Each is a build decision for the owner (533 to 554 below, and the smaller ones 555 to
+579). The main ones: the picture is 320x180 so it scales whole to 1920x1080 (533); the
+hosted rounds stay 2D on a layer over the 3D world rather than getting 3D skins (540); since parts C and E are not on this branch, the rounds
+were brought to their bar with the same CC0 packs (541); the people and sheep come from two
+Quaternius packs the roadmap does not name (534); the 3D page has no text box, so a save code
+goes in the link (546).
 
 ### How to try it
 
@@ -725,7 +1005,7 @@ serif; the camera is farther out (the skin's zoom), so the hall is cut at the le
 units read small; the grass is a flatter, brighter green with fewer props; no unit is selected,
 so the bottom panel is empty; the page's own camera stays at the skin's pitch 60
 (`01-siege-skin-camera.png`, the whole map in view, the raiders' camp mostly past the right edge):
-whether to lower it to the mockup's pitch is decision F-22.
+whether to lower it to the mockup's pitch is item 554.
 
 | File                        | What it shows                                                                                           |
 | --------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -759,8 +1039,8 @@ Checked against "0.16 part F: the mini siege in 3D low-poly" in the roadmap.
   with their golden hashes; **no hash was re-recorded** in part F.
 - **A screenshot of the siege map at the mockup's angle is placed beside the mockup in the build
   log: met** (the table above: `10-siege-mockup-angle.png`, taken at the mockup's pitch with a
-  scratch camera override; the page's own camera is higher, decision F-22).
-- **Owner playtest and screenshot review are accepted: not met.** Waiting for the owner (F-21
+  scratch camera override; the page's own camera is higher, item 554).
+- **Owner playtest and screenshot review are accepted: not met.** Waiting for the owner (553
   below).
 - **The release's Done when** (parts A to F done, the checks pass, the owner has playtested every
   sample): not met; parts B to E are other tracks', and the owner's playtest is open.
@@ -769,11 +1049,11 @@ Checked against "0.16 part F: the mini siege in 3D low-poly" in the roadmap.
 
 - **The hosted rounds use parts C and E's presentation**: parts C and E are not on this branch,
   so the rounds use the same CC0 packs and part A's features to their bar, to be re-pointed at C
-  and E's skins when those merge (F-9).
+  and E's skins when those merge (541).
 - **Two CC0 packs beyond the roadmap's three**: Quaternius Ultimate Animated Character Pack and
-  Farm Animals, for the people and the sheep the named packs lack (F-2).
+  Farm Animals, for the people and the sheep the named packs lack (534).
 - **The rounds are 2D on the 3D page**, not 3D: the first 3D round skins of F6 were removed in F8
-  (F-8).
+  (540).
 
 ### Outstanding issues
 
@@ -801,148 +1081,433 @@ Checked against "0.16 part F: the mini siege in 3D low-poly" in the roadmap.
 3288 passed, 1 skipped (the browser tests included, on a machine at load 15-20). All 55 game run
 files and the 13 `engine/sim` fixtures exit 0 through `pnpm -s cli run` (the loop under "How to try each
 sample"). The screenshots were taken with a scratch script on the repo's browser helpers (not
-committed; F-19); `WW_SHOTS_DIR=<dir> pnpm vitest run tests/browser/mini-siege-page.test.ts`
+committed; 551); `WW_SHOTS_DIR=<dir> pnpm vitest run tests/browser/mini-siege-page.test.ts`
 shoots the same screens at the test's 640x520.
 
 ### Build decisions to review (part F)
 
-Numbered `F-n` on this track; the orchestrator copies them into FEEDBACK-LOG.md with owner
-numbers at merge (this track does not edit it, as for T2-17).
+Labelled `F-1` to `F-22` on the track; the merge into `engine/build-0.15` (Engine 0.16 part E,
+E1) copied them into FEEDBACK-LOG.md as items 533-554 (`F-n` is item 532+n).
 
-- **F-1.** The mini siege's picture is 320x180 (16:9; 256x240 before), so six times is
+- **533.** The mini siege's picture is 320x180 (16:9; 256x240 before), so six times is
   1920x1080; the Canvas2D skins and the tests' sizes moved with it (F6).
-- **F-2.** The people and the sheep come from Quaternius Ultimate Animated Character Pack and
+- **534.** The people and the sheep come from Quaternius Ultimate Animated Character Pack and
   Farm Animals (CC0), not named by the roadmap, with `Defeat` as the death clip (the pack has no
   death) and `Punch` as the attack; the Quaternius village pack is the 2020 OBJ "Medieval Village
   Pack", not the newer textured MegaKit (the model check refuses textures in other files); FBX
   and OBJ converted to GLB, the Castle Kit's colour map baked into vertex colours (F1).
-- **F-3.** The 3D packs are about 8.7 MB of GLB in the game's `assets/`, all 221 files kept
+- **535.** The 3D packs are about 8.7 MB of GLB in the game's `assets/`, all 221 files kept
   (F1).
-- **F-4.** The ground view's camera maths is one core function shared by drawing and picking
+- **536.** The ground view's camera maths is one core function shared by drawing and picking
   (`groundProjection`); side-view skins are unchanged (F2).
-- **F-5.** Decor is presentation: drawn from the presentation RNG, never in the sim, so a decor
+- **537.** Decor is presentation: drawn from the presentation RNG, never in the sim, so a decor
   grid can change without moving a hash (F3).
-- **F-6.** The world clock: 60 ticks an hour, the siege from day 2, 14:00, the dawn day 3, 05:30,
+- **538.** The world clock: 60 ticks an hour, the siege from day 2, 14:00, the dawn day 3, 05:30,
   the ridge day 3, 10:00; the sabotage's 120 ticks read as two hours (F4).
-- **F-7.** A mission's `text` (the card's description) is presentation only, never stored, so no
+- **539.** A mission's `text` (the card's description) is presentation only, never stored, so no
   save code moved (F5).
-- **F-8.** The hosted rounds are drawn in 2D on a layer over the 3D picture (the shell's
+- **540.** The hosted rounds are drawn in 2D on a layer over the 3D picture (the shell's
   `roundLayerDisplay`, the game's 2D backend) with an iris, not with 3D round skins; F6's 3D
   round skins were removed (F8).
-- **F-9.** Parts C and E are not on this branch: the rounds were brought to their bar with the
+- **541.** Parts C and E are not on this branch: the rounds were brought to their bar with the
   0x72 DungeonTileset II and Kenney Tower Defense packs; re-point them at C and E's skins when
   those merge (F8).
-- **F-10.** The ground camera: pitch 60, yaw -8, fov 35, zoom 0.42 (the whole village, river and
+- **542.** The ground camera: pitch 60, yaw -8, fov 35, zoom 0.42 (the whole village, river and
   camp in view), render scale 6 (F6).
-- **F-11.** Health and progress bars are world labels, not 3D meshes (F6).
-- **F-12.** The 3D page is the default; 2D only where WebGL 2 is missing or by the query (F7).
-- **F-13.** The HUD is the UI kit's in a new 3x5 pixel font (`siege-tiny`), not the mockup's
+- **543.** Health and progress bars are world labels, not 3D meshes (F6).
+- **544.** The 3D page is the default; 2D only where WebGL 2 is missing or by the query (F7).
+- **545.** The HUD is the UI kit's in a new 3x5 pixel font (`siege-tiny`), not the mockup's
   serif (F7).
-- **F-14.** The 3D page has no text box: a save code goes in the link, `?code=<code>` (gap M42;
+- **546.** The 3D page has no text box: a save code goes in the link, `?code=<code>` (gap M42;
   F9).
-- **F-15.** The title hides the HUD and the world labels; labels that would cover a HUD panel
+- **547.** The title hides the HUD and the world labels; labels that would cover a HUD panel
   are left out (gap M40; F9).
-- **F-16.** The page's controls move to the bottom-right corner over a centred screen and the
+- **548.** The page's controls move to the bottom-right corner over a centred screen and the
   title (gap M41; F9), but not over the rounds (outstanding above; over the rounds too since
   polish P, P7).
-- **F-17.** A skirt of grass is laid past the map's edges (`scene3d.skirt`), and the night keys
+- **549.** A skirt of grass is laid past the map's edges (`scene3d.skirt`), and the night keys
   of the time of day were lightened so the dawn's start reads (gaps M43, M44; F9).
-- **F-18.** M45 (labels cut at the picture's edge) was left open for the owner's review (F9).
+- **550.** M45 (labels cut at the picture's edge) was left open for the owner's review (F9).
   Since fixed in polish P, with the controls over the rounds, the flash, the plurals and the
   skirt (P6-P9; decisions P-6 to P-9 and P-12).
-- **F-19.** The F10 screenshots were taken with a scratch script on `tests/browser/serve.ts` and
+- **551.** The F10 screenshots were taken with a scratch script on `tests/browser/serve.ts` and
   the page's hooks, not a committed tool; the page test's `WW_SHOTS_DIR` shoots the same screens
   at 640x520.
-- **F-20.** Review screenshots may be committed as PNGs in `docs/reports/screenshots/<part>/`
+- **552.** Review screenshots may be committed as PNGs in `docs/reports/screenshots/<part>/`
   (4.3 MB for these ten); `no-content.test.ts` and DESIGN.md allow that folder. OK, or keep
   them out of git?
-- **F-21 (owner review).** Playtest the mini siege in 3D from the title through the dawn, and
+- **553 (owner review).** Playtest the mini siege in 3D from the title through the dawn, and
   review the ten screenshots and the mockup comparison above: accept, or list what to change.
-- **F-22.** The page's 3D camera is the skin's pitch 60 (the whole map in view, flatter than the
+- **554.** The page's 3D camera is the skin's pitch 60 (the whole map in view, flatter than the
   mockup); the mockup comparison (`10-siege-mockup-angle.png`) was shot at pitch 42 through a
   scratch override. Keep pitch 60 for play, or lower the page's camera to the mockup's angle
   (`three.json`'s `camera3d.pitch`, with the zoom brought closer)?
 
 ### Build decisions to review (track 2)
 
-Smaller choices the F1-F10 builders reported, for the owner to check; labelled `T2-n` after
-T2-17 and, like F-1 to F-22, numbered into FEEDBACK-LOG.md by the orchestrator at merge. Those
-already covered by an `F-n` item above are not repeated.
+Smaller choices the F1-F10 builders reported, for the owner to check; labelled `T2-18` to
+`T2-42` on the track (after `T2-17`, item 484) and copied into FEEDBACK-LOG.md at the merge (E1)
+as items 555-579 (`T2-n` is item 537+n). Those already covered by an item 533-554 above are not
+repeated.
 
-- **T2-18.** Google Drive refused the pack downloads (quota) and poly.pizza is behind Cloudflare,
+- **555.** Google Drive refused the pack downloads (quota) and poly.pizza is behind Cloudflare,
   so every pack came from OpenGameArt mirrors; no pack was left out.
-- **T2-19.** The OBJ, FBX and colour-map conversions to GLB were done by scratch scripts that are
+- **556.** The OBJ, FBX and colour-map conversions to GLB were done by scratch scripts that are
   not in the repo (a prebuilt FBX2glTF was blocked); `assets/CREDITS.md` describes each change.
   Re-converting a pack needs those scripts rewritten.
-- **T2-20.** Characters: `knight-male` soldiers, `knight-golden-male` Captain Hale, `viking-male`
+- **557.** Characters: `knight-male` soldiers, `knight-golden-male` Captain Hale, `viking-male`
   raiders and guards, `worker-male` workers; `Soldier_Male` dropped (looks modern). Quaternius
   files renamed lower-case with hyphens; Kenney names kept. The windmill's sails are part of its
   one mesh and do not turn.
-- **T2-21.** Ground view conventions (engine): zoom is camera distance (straight down shows
+- **558.** Ground view conventions (engine): zoom is camera distance (straight down shows
   height/zoom world px, as in 2D); yaw 0 looks north; pitch is degrees below the horizon (10 to
   90); a mesh part's `at.z` is the height of its bottom and `d` its height.
-- **T2-22.** In ground view the map clamp is done by `RtsCamera` (the picture's four ground
+- **559.** In ground view the map clamp is done by `RtsCamera` (the picture's four ground
   corners kept inside the map), not by the scene's follower; a game that follows an entity in
   ground view without `RtsCamera` is not clamped.
-- **T2-23.** Clicks and box select pick the ground cell under the pointer, not the upright unit
+- **560.** Clicks and box select pick the ground cell under the pointer, not the upright unit
   body drawn above it.
-- **T2-24.** 2D particles have no height, so in ground view they sit on the ground 8 px up (a
+- **561.** 2D particles have no height, so in ground view they sit on the ground 8 px up (a
   burst spreads over the ground, a rising flame drifts north).
-- **T2-25.** Decor is a new engine content kind `decor` (text rows) with its legend in the skin.
+- **562.** Decor is a new engine content kind `decor` (text rows) with its legend in the skin.
   The RTS kit gives every map the id `rts`, so a decor entry names its map with `map`.
-- **T2-26.** Per-cell tile variation is opt-in (a tile's `vary`), so no existing picture moved;
+- **563.** Per-cell tile variation is opt-in (a tile's `vary`), so no existing picture moved;
   its stream is `fxRng(seed, 0, ...)` (frame fixed at 0).
-- **T2-27.** Render scale is a whole number 1-8 so pixel fonts stay sharp; the CLI's new
+- **564.** Render scale is a whole number 1-8 so pixel fonts stay sharp; the CLI's new
   `--render-scale` is separate from `--scale` (a nearest-neighbour upscale on top). The page's
   render scale is the skin's 6, capped to the window; `?scale=<n>` overrides it.
-- **T2-28.** A clock is allowed on scenario entries only; the game puts it on frames through a
+- **565.** A clock is allowed on scenario entries only; the game puts it on frames through a
   new `hostedSource` `status(world)` option, so no RTS kit rule changed. The day's parts start at
   5, 7, 12, 15, 18 and 21 o'clock.
-- **T2-29.** Time of day: the sky is one colour per key, not a gradient; a clock jump of more
+- **566.** Time of day: the sky is one colour per key, not a gradient; a clock jump of more
   than half an hour eases over 45 display frames (through the night for an overnight gap). The
   optional Canvas2D/PixiJS evening tint was not done: the 2D page does not darken.
-- **T2-30.** On the mission card, choosing Play or Delegate on an offer (or picking one of several
+- **567.** On the mission card, choosing Play or Delegate on an offer (or picking one of several
   offers) launches it at once; there is no cancel. A small "mission result" card follows each
   mission while the world keeps running.
-- **T2-31.** The results' change lists (`worldChanges`) count a named death both as a loss and a
+- **568.** The results' change lists (`worldChanges`) count a named death both as a loss and a
   fate change and leave out scenario, carry and load changes; the card's hero and foes read only
   the rooms' selector params (fortify's card shows none).
-- **T2-32.** The scenery (decor) cannot change paths, so it is kept off the roads, every starting
+- **569.** The scenery (decor) cannot change paths, so it is kept off the roads, every starting
   cell and the battle rows; the castle ring is open to the east. `three.test.ts` checks this.
-- **T2-33.** Engine features added that the tasks did not list: model recolour and tint, tag
+- **570.** Engine features added that the tasks did not list: model recolour and tint, tag
   looks that swap the model, decor stack, light and emit, `hitFlash`, HUD items shown by a
   `when` test, and a presentation-only RTS status `key.<key>.hp|maxHp|progress|fate|name|alive`.
   All optional.
-- **T2-34.** The gem and the red banner are this build's own CC0 models
+- **571.** The gem and the red banner are this build's own CC0 models
   (`assets/mini-siege-marks`, text glTF from a script): the packs have no gem and their banners
   are blue. `*.gltf` in games' assets is in `.prettierignore`, so the text stays as written.
-- **T2-35.** The results screen's layout changed for every 16:9 picture in the engine (first
+- **572.** The results screen's layout changed for every 16:9 picture in the engine (first
   section full width, the code beside its label, two columns); at 320x180 the overflow still
   reads "and N more".
-- **T2-36.** No gold income is shown (the RTS kit has none; gold changes only through missions);
+- **573.** No gold income is shown (the RTS kit has none; gold changes only through missions);
   no new world-event sounds (no offer event to hang one on); no line from the offer marker to the
   card (it needs 3D-to-UI projection).
-- **T2-37.** Music: a `siege-danger` layer while a mission is open or raiders are within 3 cells
+- **574.** Music: a `siege-danger` layer while a mission is open or raiders are within 3 cells
   of a building, and a `siege-round` layer under the rounds (calm 0.35, danger 0.7, round 1). The
   title plays the calm layer.
-- **T2-38.** The title drifts by zooming in 1.9 times and circling, because at the start zoom the
+- **575.** The title drifts by zooming in 1.9 times and circling, because at the start zoom the
   whole map shows and the clamp leaves no room to move. The menus were restyled to the HUD's
   colours and the title's 2D pixel art removed, which also changes the 2D page.
-- **T2-39.** Kenney Tower Defense ships only 64/128 px tiles; they were scaled down to 16, 24 and
+- **576.** Kenney Tower Defense ships only 64/128 px tiles; they were scaled down to 16, 24 and
   32 px with a box filter. The rooms' siege engines and the walls' gate and camp keep the game's
   own text sprites; the old NES-style round art is kept but unused until C and E merge. Both
   rooms use the `knight_m` hero, so Sergeant Mara Venn looks like the sabotage hero.
-- **T2-40.** The iris into a round is started by the game's `main.ts` when `launch.playing()`
+- **577.** The iris into a round is started by the game's `main.ts` when `launch.playing()`
   changes (the shell's push/pop transition does not fire under the 3D page's screens); an
   engine-level fix could come later.
-- **T2-41.** Changes outside part F's modules: `vite.config.ts` sets a global `testTimeout` of
+- **578.** Changes outside part F's modules: `vite.config.ts` sets a global `testTimeout` of
   20 s (CLI-heavy mini-siege tests sat just over 5 s under the full suite);
   `engine/tools/main.test.ts` deletes the fx lab's `ground.json` from its copy;
   `tests/build/game-files.test.ts` leaves `assets/` out of its glob comparison; `clock.ts` and
   `round-layer.ts` joined `PURE_CORE` in `config/layers.js`.
-- **T2-42.** F-1 to F-18 were written from F1-F9's commit messages and module docs, not from
+- **579.** 533 to 550 were written from F1-F9's commit messages and module docs, not from
   those tasks' own decision lists; the orchestrator should check them against what F1-F9
   reported.
+
+### The merge into engine/build-0.15 (Engine 0.16 part E, E1)
+
+The track's twelve commits after part D's D1 merge base (`22e7706`) were merged into the build
+branch with a merge commit, no rebase: F8-F10, the four review fixes, part F's finalize pass,
+and polish P's P1-P3 with P4's room decoration grid (the track's P1 had already merged D1 back,
+so parts B and C came in unchanged). Part D (D2-D10) had changed the same files. What the merge
+had to decide:
+
+- **The shared 2D walk** (`engine/core/draw/skinned-presenter.ts`) keeps both parts: part D's
+  `outline`, `team` and `screenScale` and F8's `turnToFacing`, `ring` and `hitFlash` in
+  `drawEntity`; after the lighting the world labels (F8) are drawn, then part D's fog, so fog of
+  war covers labels as it covers the entities (nothing unseen is named). A hit flash's silhouette
+  is not recoloured by a kind's `team`. No skin uses both `team` and `hitFlash` today.
+- **Skin fields** (`engine/core/present/skin.ts`): the sprite-only list and the kind entry take
+  both sets of fields; `docs/reference/schemas.md` was regenerated with `pnpm docs:gen`.
+- **Agent docs and the cheat sheet**: the canvas2d and draw module pages and `CLAUDE.md`s, the
+  tools' `CLAUDE.md` (F8's `rounds2d` rule beside D9's 600-tick presented runs) and `llms.txt`
+  (part D's River Ford and `games/rts-classic` lines with part F's mini siege line) say both; the
+  cheat sheet's `room` row is the track's (with `.decor.txt`) beside part D's `rts-end`.
+- **Merged without conflicts**: the shell's boot and round layer, `vite.config.ts` (the track's
+  30 s `testTimeout`, the larger), `config/layers.js` (`clock.ts` and `round-layer.ts` on
+  `PURE_CORE` beside part D's entries) and the roadmap.
+- **Numbering.** Every track label in the merged docs became a feedback item from 533 on and
+  was copied into FEEDBACK-LOG.md (next unused 585); `T2-17`, already numbered, is item 484.
+  The labels were replaced by their numbers in this log, the roadmap, the mini siege's
+  `CLAUDE.md`, `assets/CREDITS.md`, module page and `tests/browser/siege-review-shots.ts`:
+
+  | Track labels       | Items   | Rule                 |
+  | ------------------ | ------- | -------------------- |
+  | `F-1` to `F-22`    | 533-554 | `F-n` is item 532+n  |
+  | `T2-18` to `T2-42` | 555-579 | `T2-n` is item 537+n |
+  | `P-1` to `P-5`     | 580-584 | `P-n` is item 579+n  |
+
+No golden hash moved in the merge: no `*.hashes.json` or `*.run.json` differs from either
+parent's copy (none differs from part D's at all), all 81 run files exit 0 through
+`pnpm -s cli run`, every game folder passes `pnpm -s cli validate`, and the checks were run on
+the merged tree. In the full `pnpm test` (303 files, 3695 passed, 1 skipped, on a machine at
+load 15-17) one case timed out, the dungeon's `boss-lost` presentation invariance (120 s); it
+passes alone.
+
+## Engine 0.16 part D
+
+The RTS skirmish, **The River Ford** (docs/ROADMAP.md, 0.16 part D), built on branch
+`engine/build-0.15` in ten tasks (D1-D10; not tagged, nothing published). D1 first merged the
+PixiJS track (part A2, and part F up to F7) into the build branch. The RTS sample became a
+ten-minute match against an AI base across a river with three fords, on Kenney's CC0 Medieval
+RTS art at 16:9 (480x270; 4x is 1920x1080), under fog of war, with a clickable minimap, order
+markers, path dots, unit barks, build and train progress in the world, an AI that plays by what
+its side has seen, a data-driven end rule and a layered score. Its 0.15 battle is the test game
+`games/rts-classic`. **Open for the owner:** the playtest (item 504) and the screenshot review
+(item 505), then the build choices 489-503 and 506-532.
+
+### What was built
+
+- **D1 the PixiJS track merged** (`engine/0.16-track2` into `engine/build-0.15`): the PixiJS v8
+  2D backend (part A2, T13b-1..9; its own section below) and part F's F1-F7; part C's lighting,
+  `showHud` and decoration moved into the shared core walk so PixiJS draws them too. The track's
+  decisions became items 468-488. No hash moved.
+- **D2 the 0.15 skirmish kept as `games/rts-classic`**: its map, raiders plan, art, page and five
+  run files copied with every golden hash unchanged, with its own mutants test, agent docs and
+  index link. Item 489.
+- **D3 engine: a fog layer and a fuller minimap for 2D frames**: a frame's `fog` (string rows,
+  one cell per tile: unexplored, explored, seen) and a skin's `fog` look, drawn by the shared 2D
+  walk over the map, entities and lighting and under the HUD on both 2D backends; the UI kit's
+  minimap with fog, team-coloured dots and the camera's box, and `minimapPointToWorld`. Item 509.
+- **D4 engine: readable at every zoom**: the skin kind fields `outline` (a colour or "team"),
+  `team` (a recolour by tag prefix) and `screenScale` (zoom-stable bars and rings), default off,
+  recoloured sheets made once (`engine/core/draw/recolor.ts`), a Canvas2D/PixiJS parity test at
+  zoom 0.5, 1 and 2. Item 510.
+- **D5 RTS kit: fog of war and in-world feedback**: `visibility(view, faction)` from units' and
+  buildings' sight, explored cells and last-seen buildings in `RtsPresentState`, `presentWorld`'s
+  `fog`; order markers and `bark` events from `RtsControls.feedback`, path dots for selected own
+  units, a train progress bar; every rts-classic and rts-skirmish run hashing the same with fog
+  off and on (`tests/runs/rts-fog.test.ts`). Item 511.
+- **D6 RTS kit: an AI that plays under fog and a data-driven end rule**: the enemy plan's
+  `knowledge: "fog"` (`RtsKnowledge`, rule `enemy-knows-only-what-it-saw`), `scout`, `enemy-base`
+  and `last-seen-building` targets, a selector's `min`, `build` at the first free of `cells`,
+  `train` `upTo`; the `rts-end` kind and `matchResult`; a kit-over-sim match test. Item 512.
+- **D7 the CC0 art pack and a 16:9 skin**: Kenney's Medieval RTS in
+  `games/samples/rts-skirmish/assets/kenney-medieval-rts/` (credited), the units and buildings in
+  team colours with team outlines, ground, roads, river banks and fords cut for 16 px cells by
+  `tools/ford-tiles.ts` (checked byte for byte), zoom-stable bars, path dots, markers, fog colours
+  and the minimap; the menus at 16:9. No hash moved. Item 513.
+- **D8 the match**: a 64x40 point-symmetric map with three fords, red (three workers, a town
+  centre, the hero Wren) against blue (the kit's fog AI in `content/enemy/blue.json`), archers,
+  the end rule `content/end/ford.json`, the page with fog, the clickable minimap, markers, path
+  dots, barks (a sound and a HUD line) and an end screen with the match's stats; four guard runs.
+  Item 514.
+- **D9 the ten-minute win and loss, balance and feel**: balance in data only, `match-won` (9:40)
+  and `match-lost` (9:28) recorded with a throwaway bot, the danger music layer, a varied sound
+  for every event, the selected-unit panel, the camera's edge band and wheel, the page's step mode
+  replaying a run tick for tick, speed-ups with no hash moved (a match in about 9 s headless).
+  Items 490-503.
+- **D10 close-out**: the ten review screenshots (below), the view changes they needed (the run's
+  selection, its interface commands' markers and barks, the HUD's fonts and a director's camera,
+  item 506; presentation only), this section, the roadmap's Done when, the feedback items 504-515,
+  the README's sample list.
+
+### Choices made
+
+Each is built and kept unless the owner says otherwise; the full text is in
+[FEEDBACK-LOG.md](FEEDBACK-LOG.md) ("Engine 0.16 part D").
+
+1. The 0.15 battle copied to its own test game rather than kept as a second map in the sample
+   (489).
+2. Balance in data only: three one-shot waves and a push, a 1600 hp town centre costing 300 gold,
+   more gold (490, 491); the matches recorded by a throwaway bot, not kept (492); their hashes
+   every 100 ticks and an opening that guards every kit rule by tick 2 (493).
+3. Long runs presented for their first 600 ticks in the presentation tests (494); speed-ups with
+   no hash moved (495); the page's step mode a tick per step and exports that keep `ui` entries
+   (496, 497).
+4. Feel: the danger layer (498), sounds (499), the selected-unit panel and the population counter
+   (500), the camera's edge band and wheel (501), PixiJS parity on match frames (502), the HUD
+   tuned on CLI pictures and reviewed here (503).
+5. The close-out: the screenshot view (506); the stale victory line (507); waves never seen at the
+   fords under fog (508); the looks left (515).
+
+### Smaller build choices
+
+Recorded by this close-out for D3-D8, which had no items of their own: the fog layer and the
+minimap (509), the readability fields and units scaling with the zoom (510), the kit's fog,
+markers, barks and path dots (511), the AI's memory only in plans that keep one and a loss
+checked first (512), the art pack and the tiles made from it (513), the map and the guard runs
+(514). The finalize pass added the build choices that still had no number: the D1 merge
+(shared lighting and PixiJS lighting, item 434's follow-up delivered early, 516; one `vary` and
+one HUD `when` for two shapes, 517; time of day over themes in 3D, 518), the copy's names and
+backend (519), rts-classic's one unguarded rule (520), the fog's format, default look, edge and
+order (521), the minimap's camera box and team dots (522), recolouring needing a canvas (523),
+parity at zoom 0.5 (524), the sight rule and HUD reads under fog (525), the queue tag, train bar
+and heard events (526), the AI's memory with `scout` and its rules under fog (527), the end rule
+needing the enemy seen first (528, the D6 review fix below), cell and sprite sizes and the derived
+tile sheet (529), the AI's `defend` and `rally` steps (530), the minimap's size (531) and
+"expand" as the far gold node (532).
+
+**After D10 (D6 review fix, commit `dd491de`):** `matchResult` read through a side's knowledge no
+longer counts an unscouted enemy base as beaten: an enemy-side "at most N" condition on units or
+buildings holds only once that side has seen an enemy thing of that type
+(`RtsKnowledge.hasSeen`). Tests in `tests/kits/rts-ai.test.ts`; no hash moved. Item 528.
+
+### Golden hashes
+
+Re-recorded with the repo's tools (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`), never by hand:
+
+- **Moved to `games/rts-classic` unchanged (D2):** the 0.15 sample runs `battle`, `commands`,
+  `hold`, `economy` and `lost`, with the same hashes (only each `.hashes.json`'s `run` path
+  differs).
+- **Removed from the sample with its 0.15 map (D8; final hashes):** `battle` `588fe33bb3ecfcfd`,
+  `commands` `9f8fc0dc11549b95`, `hold` `dcf2c02f2cb6d266`, `economy` `34bf04d6b067075d`, `lost`
+  `2cc7b6a08b67cdfd` (the same files and hashes live on in `games/rts-classic`).
+- **New (D8):** `opening` (200 ticks), `ai-barracks` (400), `fog` (480) and `razed` (160), first
+  recorded as `ba3cccd15c1aa5de`, `c5f146d0b4836da5`, `82fc61891e2e80b8` and `3c8ae6c8450507ff`.
+- **Moved (D9, the balance: the types, the map's gold and the plan's steps are world and kit
+  state):** `opening` to `5f5724b4b03cbf28`, `ai-barracks` to `19b073e4e362ab13`, `fog` to
+  `606269cfac74a8bb`, `razed` to `bf1f52ad343cbbe3`; every assertion of the four held unchanged.
+- **New (D9):** `match-won` `b55be4ea560a4f79` (5900 ticks), `match-lost` `02facfba6cc041cc`
+  (5700).
+- **Unchanged through the whole part:** every other game's run files and the world fixtures; D1
+  (the merge), D3-D5, D7 and D10 are presentation only (fog on and off give the same hashes,
+  `rts-fog.test.ts`; `presentation-invariance.test.ts` and `stepped-shell-invariance.test.ts`
+  pass unchanged), and D6's AI additions are optional, so no older plan's orders or snapshot
+  changed. D9's speed-ups (`World.peek()`, cached view parsing, the attack system's candidate
+  list, lazy snapshots in `pnpm cli run`) give the same states.
+
+### How to try it
+
+```sh
+pnpm dev   # then http://localhost:5173/games/samples/rts-skirmish/
+           # click selects, drag boxes, right click commands, the wheel zooms, the minimap jumps
+pnpm -s cli run games/samples/rts-skirmish/runs/match-won.run.json --json   # the win, 5900 ticks
+pnpm -s cli run games/samples/rts-skirmish/runs/match-lost.run.json --json  # also opening, ai-barracks, fog, razed
+pnpm -s cli mutants games/samples/rts-skirmish --json                       # all six kit rules guarded
+pnpm -s cli validate games/samples/rts-skirmish --json
+pnpm -s cli screenshot games/samples/rts-skirmish/runs/match-won.run.json --tick 4535 --scale 4 --json
+pnpm test games/samples/rts-skirmish tests/runs/rts-fog.test.ts tests/browser/rts-skirmish.test.ts
+```
+
+### Done when
+
+- **A full match plays from the title to a win or a loss in about 10 minutes, with run files for
+  a win and a loss that pass in CI: met.** `match-won` takes blue's town centre at tick 5803
+  (9:40 at the page's 10 ticks a second) and `match-lost` loses red's at 5681 (9:28); both exit 0
+  through `pnpm -s cli run` and match their golden hashes in `tests/runs/run-files.test.ts`;
+  `tests/browser/rts-skirmish.test.ts` starts from the games index and the title, plays the
+  opening by mouse and touch and replays `match-won` through the page's step hook to the end
+  screen, its export replaying headless with no mismatch. A passive player loses at 2025 (3:22).
+- **Fog of war is presentation and AI knowledge only, and no existing hash moves for it unless a
+  listed rule change needs it: met.** Every rts-classic and rts-skirmish run gives its golden
+  hashes with the page's fog drawn on and off (`tests/runs/rts-fog.test.ts`, `skirmish.test.ts`);
+  the AI's knowledge is the kit's `RtsKnowledge`, in the kit snapshot only for a plan with
+  `knowledge: "fog"` or `scout`, so no 0.15 hash moved; the sample's hashes moved only for the new
+  map (D8) and the balance (D9), listed above. `mutants` guards `enemy-knows-only-what-it-saw`
+  through the AI's `scout` step.
+- **Owner playtest and screenshot review of the skirmish: open (items 504 and 505).** The
+  screenshots are below.
+
+### Review screenshots (item 505)
+
+Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-D/`](reports/screenshots/0.16-D/), each
+480x270 drawn by the **Canvas2D** backend (the CLI's default; the page plays on PixiJS, item
+485, which `pixi-parity.test.ts` holds to the same picture) at `--scale 4`, the picture's state
+hashes matching the headless run's (`matchesHeadless: true`). The camera is the view's director
+(item 506): it frames the fight, else the run's selection, else red's units.
+
+| File                                                                                  | What it shows                                                                                                                           |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| [01-title.png](reports/screenshots/0.16-D/01-title.png)                               | The title: name, subtitle, Wren and a worker against two blue soldiers, the menu over the dimmed opening                                |
+| [02-orders-and-bark.png](reports/screenshots/0.16-D/02-orders-and-bark.png)           | Tick 4: the gather marker on the northern gold, the town centre selected and training (panel and bar), the bark line "Training begins." |
+| [03-building-site.png](reports/screenshots/0.16-D/03-building-site.png)               | Tick 164: the barracks half built (the pack's fresh boards) with its progress bar, two workers building, Wren back from the scout       |
+| [04-fog-and-minimap.png](reports/screenshots/0.16-D/04-fog-and-minimap.png)           | `fog`, tick 420: Wren alone on blue's bank, the explored road behind him dimmed, unexplored dark, the minimap's explored trail          |
+| [05-attack-marker-path.png](reports/screenshots/0.16-D/05-attack-marker-path.png)     | `fog`, tick 436: the attack marker on the sentry, Wren's path dots, "To arms!", the Wren panel                                          |
+| [06-wave-from-the-ford.png](reports/screenshots/0.16-D/06-wave-from-the-ford.png)     | `match-lost`, tick 4270: the AI's third wave on the road from the centre ford, met by red's first soldier                               |
+| [07-defending-home.png](reports/screenshots/0.16-D/07-defending-home.png)             | `match-won`, tick 4535: red's army and barracks holding the third wave at home, health bars on the hurt                                 |
+| [08-big-fight-zoomed-out.png](reports/screenshots/0.16-D/08-big-fight-zoomed-out.png) | `match-won`, tick 5790, zoomed out (about 0.6): red's assault on blue's town centre across the centre ford, a raider at home            |
+| [09-victory.png](reports/screenshots/0.16-D/09-victory.png)                           | `match-won`, tick 5806: blue's town centre down, the gold tint and the VICTORY banner                                                   |
+| [10-defeat.png](reports/screenshots/0.16-D/10-defeat.png)                             | `match-lost`, tick 5690: red's town centre taken by the push, the red tint and the DEFEAT banner                                        |
+
+Made with (from the repo root):
+
+```sh
+R=games/samples/rts-skirmish/runs; O=docs/reports/screenshots/0.16-D
+pnpm -s cli screenshot $R/match-won.run.json --tick 0 --overlay title --scale 4 --out $O/01-title.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 4 --scale 4 --out $O/02-orders-and-bark.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 164 --scale 4 --out $O/03-building-site.png --json
+pnpm -s cli screenshot $R/fog.run.json --tick 420 --scale 4 --out $O/04-fog-and-minimap.png --json
+pnpm -s cli screenshot $R/fog.run.json --tick 436 --scale 4 --out $O/05-attack-marker-path.png --json
+pnpm -s cli screenshot $R/match-lost.run.json --tick 4270 --scale 4 --out $O/06-wave-from-the-ford.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 4535 --scale 4 --out $O/07-defending-home.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 5790 --scale 4 --out $O/08-big-fight-zoomed-out.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 5806 --scale 4 --out $O/09-victory.png --json
+pnpm -s cli screenshot $R/match-lost.run.json --tick 5690 --scale 4 --out $O/10-defeat.png --json
+```
+
+Each was looked at in full. **Fixed:** before D10 the CLI's view sat on the map's centre (neither
+base, mostly fog), showed no selection, markers or barks, and drew no HUD text (no fonts); it
+now does all of these (item 506). **Recorded, not fixed:** the victory banner's second line
+still reads "THE RAIDERS ARE BEATEN" (09; item 507); under red's fog no wave is ever seen at a
+ford, only on the road near red's base (06; item 508); the gold counter is gone once red's town
+centre falls (10), the held army stands in one blob (07) and the matches keep the town centre
+selected all match, and a finished building flashes the whole picture white for 2 ticks (seen
+at tick 168 while choosing the shots; item 515). `pnpm cli screenshot` draws only the effects alive at the shot tick, so a
+hit's sparks show only as their first frame.
+
+### Deviations from the roadmap
+
+- **Assets:** Kenney Medieval RTS, one of the two named packs, fetched from its OpenGameArt mirror
+  (item 513); text sprites where it has nothing (rings, bars, markers, banners).
+- **Binary files:** the CC0 pack in the sample's `assets/` (allowed by item 322) and the ten
+  review screenshots (allowed since part B, item 395).
+- **The CLI's view** changed for the screenshots (item 506), presentation only.
+
+### Finalize pass (checks)
+
+Run on the D10 tree before committing: `pnpm lint`, `pnpm typecheck`, `pnpm docs:check`,
+`pnpm test` (300 files, 3648 tests passed and 1 skipped: the opt-in every-tick save check of
+0.8; it includes the two new view tests in `skirmish.test.ts`) and `pnpm build` all pass; all 81
+run files in the repo (`git ls-files '*.run.json'`) exit 0 through `pnpm -s cli run`;
+`pnpm -s cli validate` passes for all nine game folders; `pnpm -s cli mutants
+games/samples/rts-skirmish` exits 0 (all six kit rules guarded, no run weak); every screenshot
+above reported `matchesHeadless: true` at 1920x1080. The agent-docs test passes: the touched
+module (the RTS sample) keeps its `CLAUDE.md`, `AGENTS.md` and `llms.txt` page, both updated for
+the view.
+
+**Second finalize pass** (after the D6 review fix `dd491de`, on the committed tree, nothing red,
+no code changed): `pnpm lint`, `pnpm typecheck`, `pnpm docs:check`, `pnpm test` (300 files, 3649
+tests passed and 1 skipped) and `pnpm build` pass; all 81 run files exit 0 through
+`pnpm -s cli run`; `pnpm -s cli validate` passes for all nine game folders (only the tower-defense
+kit's deliberately bad fixture fails, as it should); `pnpm -s cli mutants
+games/samples/rts-skirmish` exits 0 with no unguarded rule. Each Done when was rechecked (above).
+This pass added items 516-532 to the feedback log.
+
+### Outstanding issues
+
+- **The owner's playtest and screenshot review:** items 504 and 505.
+- The build choices of part D (items 489-503, 506-532) wait for the owner's answers.
+- Item 434 (PixiJS lighting) is done by D1's merge but left open for the owner to close (516).
+- `games/rts-classic` cannot guard `enemy-knows-only-what-it-saw` with its frozen runs (520).
+- Under heavy machine load (load average about 12) one `pnpm test` run of this pass failed
+  `presentation-invariance.test.ts`'s platformer `full-game` case on its timeout (121 s); the rerun
+  passed. The long presentation tests are slow on a busy container.
+- The victory banner's stale line (507) and waves unseen at the fords (508).
+- Part F (the mini siege in 3D) from F8 on was not on the build branch at part D's close; it was
+  merged in part E, E1.
+- From parts B and C: the owner's playtests and screenshot reviews (393, 394, 455, 456).
 
 ## Engine 0.16 part C
 
@@ -1041,7 +1606,7 @@ Each is built and kept unless the owner says otherwise; the full text is in
    lines gone (431, 432); no step sound (433).
 4. Lighting: PixiJS left for later (434), the torches placed by the skin rather than the rooms
    (435), the darkness levels and banded falloff (436; the banded look showed as hard rings and
-   was replaced in polish P by a smooth, dithered falloff, P-5).
+   was replaced in polish P by a smooth, dithered falloff, 584).
 5. The wing: two ways through and counted keys (437), `beat-the-warden` re-recorded then replaced
    (438, 442), props as placed lights (439), the item icon per value (440, 446).
 6. The Warden's fight and look (441), three ends (443), Sir Edrin (444), per-ending music (445),
@@ -1197,7 +1762,7 @@ only the build log and the feedback log changed.
 - From part B: the owner's playtest and screenshot review (393, 394), which parts C-F wait for,
   and the looks recorded there (398, 399).
 - From the orchestrator's review: the lights' hard rings (436's banding) and the bare rooms.
-  **Fixed in polish P** (P3, P5; decisions P-5, P-10 and P-11).
+  **Fixed in polish P** (P3, P5; decisions 584, P-10 and P-11).
 
 ## Engine 0.16 part B
 

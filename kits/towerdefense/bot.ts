@@ -7,13 +7,15 @@ import type { TdGame } from './game';
  * round it plays is plain frame input (`ScriptedInput.setHeld`) and replays as a run file would.
  *
  * Steps, in order: `place` (cycle to the tower type with `attack`, walk the cursor to the cell,
- * then `jump`), `sell` (walk there, then `special`), `wave` (`start`), `wait` (do nothing for
+ * then `jump`), `sell` (walk there, then `special`), `upgrade` (walk there, then `jump`, which
+ * upgrades the tower there; Engine 0.16 E3), `wave` (`start`), `wait` (do nothing for
  * `ticks` steps) and `clear` (wait until no enemy of a started wave is left). After the last step
  * it holds nothing.
  */
 export type TdBotStep =
   | { do: 'place'; tower: string; col: number; row: number }
   | { do: 'sell'; col: number; row: number }
+  | { do: 'upgrade'; col: number; row: number }
   | { do: 'wave' }
   | { do: 'wait'; ticks: number }
   | { do: 'clear' };
@@ -55,6 +57,10 @@ export class TdBot {
       case 'sell': {
         const dir = walk(step.col, step.row);
         return dir === null ? press('special', true) : press(dir);
+      }
+      case 'upgrade': {
+        const dir = walk(step.col, step.row);
+        return dir === null ? press('jump', true) : press(dir);
       }
       case 'wave':
         return press('start', true);

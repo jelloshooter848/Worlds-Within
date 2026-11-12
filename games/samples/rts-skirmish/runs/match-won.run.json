@@ -1,0 +1,4972 @@
+{
+  "game": "..",
+  "seed": 9,
+  "ticks": 5900,
+  "orders": [
+    {
+      "tick": 0,
+      "ui": "box",
+      "box": {
+        "x": 128,
+        "y": 256,
+        "w": 32,
+        "h": 112
+      }
+    },
+    {
+      "tick": 0,
+      "ui": "command",
+      "at": {
+        "x": 168,
+        "y": 232
+      }
+    },
+    {
+      "tick": 0,
+      "ui": "click",
+      "at": {
+        "x": 104,
+        "y": 360
+      }
+    },
+    {
+      "tick": 0,
+      "ui": "command",
+      "at": {
+        "x": 920,
+        "y": 280
+      }
+    },
+    {
+      "tick": 0,
+      "ui": "box",
+      "box": {
+        "x": 896,
+        "y": 256,
+        "w": 48,
+        "h": 48
+      }
+    },
+    {
+      "tick": 1,
+      "ui": "click",
+      "at": {
+        "x": 88,
+        "y": 312
+      }
+    },
+    {
+      "tick": 1,
+      "ui": "train",
+      "unit": "worker"
+    },
+    {
+      "tick": 20,
+      "id": 7,
+      "faction": "red",
+      "type": "move",
+      "units": [19],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 60,
+      "id": 10,
+      "faction": "red",
+      "type": "gather",
+      "units": [21],
+      "target": 6
+    },
+    {
+      "tick": 60,
+      "id": 11,
+      "faction": "red",
+      "type": "train",
+      "units": [3],
+      "target": "worker"
+    },
+    {
+      "tick": 110,
+      "id": 16,
+      "faction": "red",
+      "type": "gather",
+      "units": [24],
+      "target": 6
+    },
+    {
+      "tick": 110,
+      "id": 17,
+      "faction": "red",
+      "type": "train",
+      "units": [3],
+      "target": "worker"
+    },
+    {
+      "tick": 110,
+      "id": 18,
+      "faction": "red",
+      "type": "build",
+      "units": [13],
+      "target": {
+        "x": 9,
+        "y": 21
+      },
+      "building": "barracks"
+    },
+    {
+      "tick": 120,
+      "id": 20,
+      "faction": "red",
+      "type": "build",
+      "units": [11],
+      "target": {
+        "x": 9,
+        "y": 21
+      },
+      "building": "barracks"
+    },
+    {
+      "tick": 130,
+      "id": 26,
+      "faction": "red",
+      "type": "attack",
+      "units": [19],
+      "target": 17
+    },
+    {
+      "tick": 160,
+      "id": 37,
+      "faction": "red",
+      "type": "gather",
+      "units": [26],
+      "target": 6
+    },
+    {
+      "tick": 170,
+      "id": 42,
+      "faction": "red",
+      "type": "gather",
+      "units": [11],
+      "target": 6
+    },
+    {
+      "tick": 180,
+      "id": 45,
+      "faction": "red",
+      "type": "train",
+      "units": [3],
+      "target": "worker"
+    },
+    {
+      "tick": 200,
+      "id": 51,
+      "faction": "red",
+      "type": "move",
+      "units": [19],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 230,
+      "id": 62,
+      "faction": "red",
+      "type": "gather",
+      "units": [28],
+      "target": 6
+    },
+    {
+      "tick": 230,
+      "id": 63,
+      "faction": "red",
+      "type": "train",
+      "units": [3],
+      "target": "worker"
+    },
+    {
+      "tick": 280,
+      "id": 76,
+      "faction": "red",
+      "type": "gather",
+      "units": [30],
+      "target": 6
+    },
+    {
+      "tick": 280,
+      "id": 77,
+      "faction": "red",
+      "type": "train",
+      "units": [3],
+      "target": "worker"
+    },
+    {
+      "tick": 330,
+      "id": 80,
+      "faction": "red",
+      "type": "gather",
+      "units": [31],
+      "target": 6
+    },
+    {
+      "tick": 330,
+      "id": 81,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 390,
+      "id": 87,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 400,
+      "id": 91,
+      "faction": "red",
+      "type": "move",
+      "units": [33],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 440,
+      "id": 95,
+      "faction": "red",
+      "type": "build",
+      "units": [11],
+      "target": {
+        "x": 12,
+        "y": 16
+      },
+      "building": "barracks"
+    },
+    {
+      "tick": 440,
+      "id": 96,
+      "faction": "red",
+      "type": "attack",
+      "units": [19],
+      "target": 32
+    },
+    {
+      "tick": 440,
+      "id": 97,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 32
+    },
+    {
+      "tick": 480,
+      "id": 102,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 500,
+      "id": 105,
+      "faction": "red",
+      "type": "gather",
+      "units": [11],
+      "target": 5
+    },
+    {
+      "tick": 500,
+      "id": 106,
+      "faction": "red",
+      "type": "move",
+      "units": [19],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 500,
+      "id": 107,
+      "faction": "red",
+      "type": "move",
+      "units": [33],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 500,
+      "id": 108,
+      "faction": "red",
+      "type": "move",
+      "units": [37],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 520,
+      "id": 111,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "soldier"
+    },
+    {
+      "tick": 550,
+      "id": 114,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 550,
+      "id": 115,
+      "faction": "red",
+      "type": "move",
+      "units": [39],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 600,
+      "id": 121,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "archer"
+    },
+    {
+      "tick": 640,
+      "id": 126,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 650,
+      "id": 129,
+      "faction": "red",
+      "type": "move",
+      "units": [42],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 670,
+      "id": 130,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "soldier"
+    },
+    {
+      "tick": 710,
+      "id": 136,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 750,
+      "id": 139,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "soldier"
+    },
+    {
+      "tick": 750,
+      "id": 140,
+      "faction": "red",
+      "type": "move",
+      "units": [46],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 780,
+      "id": 145,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 800,
+      "id": 147,
+      "faction": "red",
+      "type": "move",
+      "units": [49],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 830,
+      "id": 152,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "archer"
+    },
+    {
+      "tick": 850,
+      "id": 154,
+      "faction": "red",
+      "type": "move",
+      "units": [52],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 870,
+      "id": 156,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 900,
+      "id": 161,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "soldier"
+    },
+    {
+      "tick": 940,
+      "id": 166,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 950,
+      "id": 168,
+      "faction": "red",
+      "type": "move",
+      "units": [56],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 980,
+      "id": 171,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "soldier"
+    },
+    {
+      "tick": 1000,
+      "id": 172,
+      "faction": "red",
+      "type": "move",
+      "units": [59],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1010,
+      "id": 175,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 1060,
+      "id": 178,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "archer"
+    },
+    {
+      "tick": 1100,
+      "id": 184,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 1100,
+      "id": 185,
+      "faction": "red",
+      "type": "move",
+      "units": [62],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1130,
+      "id": 190,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "soldier"
+    },
+    {
+      "tick": 1180,
+      "id": 204,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 1200,
+      "id": 209,
+      "faction": "red",
+      "type": "move",
+      "units": [66],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1210,
+      "id": 213,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "soldier"
+    },
+    {
+      "tick": 1240,
+      "id": 216,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 1250,
+      "id": 218,
+      "faction": "red",
+      "type": "move",
+      "units": [68],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1280,
+      "id": 221,
+      "faction": "red",
+      "type": "train",
+      "units": [35],
+      "target": "archer"
+    },
+    {
+      "tick": 1300,
+      "id": 227,
+      "faction": "red",
+      "type": "move",
+      "units": [72],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1310,
+      "id": 230,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 1400,
+      "id": 237,
+      "faction": "red",
+      "type": "move",
+      "units": [76],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1430,
+      "id": 242,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 1500,
+      "id": 246,
+      "faction": "red",
+      "type": "move",
+      "units": [77],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1540,
+      "id": 252,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 1600,
+      "id": 254,
+      "faction": "red",
+      "type": "move",
+      "units": [80],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1640,
+      "id": 260,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 1700,
+      "id": 264,
+      "faction": "red",
+      "type": "move",
+      "units": [83],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1840,
+      "id": 271,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 1860,
+      "id": 274,
+      "faction": "red",
+      "type": "attack",
+      "units": [19],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 275,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 276,
+      "faction": "red",
+      "type": "attack",
+      "units": [37],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 277,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 278,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 279,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 280,
+      "faction": "red",
+      "type": "attack",
+      "units": [44],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 281,
+      "faction": "red",
+      "type": "attack",
+      "units": [46],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 282,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 283,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 284,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 285,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 286,
+      "faction": "red",
+      "type": "attack",
+      "units": [54],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 287,
+      "faction": "red",
+      "type": "attack",
+      "units": [56],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 288,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 289,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 290,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 291,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 292,
+      "faction": "red",
+      "type": "attack",
+      "units": [65],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 293,
+      "faction": "red",
+      "type": "attack",
+      "units": [66],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 294,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 295,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 296,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 297,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 298,
+      "faction": "red",
+      "type": "attack",
+      "units": [73],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 299,
+      "faction": "red",
+      "type": "attack",
+      "units": [76],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 300,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 301,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 34
+    },
+    {
+      "tick": 1860,
+      "id": 302,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 34
+    },
+    {
+      "tick": 1870,
+      "id": 304,
+      "faction": "red",
+      "type": "attack",
+      "units": [19],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 305,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 306,
+      "faction": "red",
+      "type": "attack",
+      "units": [37],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 307,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 308,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 309,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 310,
+      "faction": "red",
+      "type": "attack",
+      "units": [44],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 311,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 312,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 313,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 314,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 315,
+      "faction": "red",
+      "type": "attack",
+      "units": [54],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 316,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 317,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 318,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 319,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 320,
+      "faction": "red",
+      "type": "attack",
+      "units": [65],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 321,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 322,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 323,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 324,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 325,
+      "faction": "red",
+      "type": "attack",
+      "units": [73],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 326,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 327,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 40
+    },
+    {
+      "tick": 1870,
+      "id": 328,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 40
+    },
+    {
+      "tick": 1920,
+      "id": 332,
+      "faction": "red",
+      "type": "attack",
+      "units": [19],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 333,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 334,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 335,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 336,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 337,
+      "faction": "red",
+      "type": "attack",
+      "units": [44],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 338,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 339,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 340,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 341,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 342,
+      "faction": "red",
+      "type": "attack",
+      "units": [54],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 343,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 344,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 345,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 346,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 347,
+      "faction": "red",
+      "type": "attack",
+      "units": [65],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 348,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 349,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 350,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 351,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 352,
+      "faction": "red",
+      "type": "attack",
+      "units": [73],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 353,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 354,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 355,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 45
+    },
+    {
+      "tick": 1920,
+      "id": 356,
+      "faction": "red",
+      "type": "attack",
+      "units": [87],
+      "target": 45
+    },
+    {
+      "tick": 1950,
+      "id": 364,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 1950,
+      "id": 365,
+      "faction": "red",
+      "type": "move",
+      "units": [87],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 1980,
+      "id": 374,
+      "faction": "red",
+      "type": "attack",
+      "units": [19],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 375,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 376,
+      "faction": "red",
+      "type": "attack",
+      "units": [37],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 377,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 378,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 379,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 380,
+      "faction": "red",
+      "type": "attack",
+      "units": [44],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 381,
+      "faction": "red",
+      "type": "attack",
+      "units": [46],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 382,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 383,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 384,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 385,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 386,
+      "faction": "red",
+      "type": "attack",
+      "units": [54],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 387,
+      "faction": "red",
+      "type": "attack",
+      "units": [56],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 388,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 389,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 390,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 391,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 392,
+      "faction": "red",
+      "type": "attack",
+      "units": [65],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 393,
+      "faction": "red",
+      "type": "attack",
+      "units": [66],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 394,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 395,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 396,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 397,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 398,
+      "faction": "red",
+      "type": "attack",
+      "units": [73],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 399,
+      "faction": "red",
+      "type": "attack",
+      "units": [76],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 400,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 401,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 71
+    },
+    {
+      "tick": 1980,
+      "id": 402,
+      "faction": "red",
+      "type": "attack",
+      "units": [87],
+      "target": 71
+    },
+    {
+      "tick": 2050,
+      "id": 419,
+      "faction": "red",
+      "type": "move",
+      "units": [91],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 2150,
+      "id": 442,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 2250,
+      "id": 466,
+      "faction": "red",
+      "type": "move",
+      "units": [92],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 2260,
+      "id": 469,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 2350,
+      "id": 480,
+      "faction": "red",
+      "type": "move",
+      "units": [93],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 2380,
+      "id": 488,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 2450,
+      "id": 505,
+      "faction": "red",
+      "type": "move",
+      "units": [96],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 2560,
+      "id": 530,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 2650,
+      "id": 542,
+      "faction": "red",
+      "type": "move",
+      "units": [97],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 2670,
+      "id": 547,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 2750,
+      "id": 566,
+      "faction": "red",
+      "type": "move",
+      "units": [100],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 2870,
+      "id": 594,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 2950,
+      "id": 613,
+      "faction": "red",
+      "type": "move",
+      "units": [101],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 2980,
+      "id": 621,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 3050,
+      "id": 633,
+      "faction": "red",
+      "type": "move",
+      "units": [102],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3070,
+      "id": 635,
+      "faction": "red",
+      "type": "attack",
+      "units": [19],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 636,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 637,
+      "faction": "red",
+      "type": "attack",
+      "units": [37],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 638,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 639,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 640,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 641,
+      "faction": "red",
+      "type": "attack",
+      "units": [44],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 642,
+      "faction": "red",
+      "type": "attack",
+      "units": [46],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 643,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 644,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 645,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 646,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 647,
+      "faction": "red",
+      "type": "attack",
+      "units": [54],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 648,
+      "faction": "red",
+      "type": "attack",
+      "units": [56],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 649,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 650,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 651,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 652,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 653,
+      "faction": "red",
+      "type": "attack",
+      "units": [65],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 654,
+      "faction": "red",
+      "type": "attack",
+      "units": [66],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 655,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 656,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 657,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 658,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 659,
+      "faction": "red",
+      "type": "attack",
+      "units": [73],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 660,
+      "faction": "red",
+      "type": "attack",
+      "units": [76],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 661,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 662,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 663,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 664,
+      "faction": "red",
+      "type": "attack",
+      "units": [87],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 665,
+      "faction": "red",
+      "type": "attack",
+      "units": [91],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 666,
+      "faction": "red",
+      "type": "attack",
+      "units": [92],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 667,
+      "faction": "red",
+      "type": "attack",
+      "units": [93],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 668,
+      "faction": "red",
+      "type": "attack",
+      "units": [96],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 669,
+      "faction": "red",
+      "type": "attack",
+      "units": [97],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 670,
+      "faction": "red",
+      "type": "attack",
+      "units": [100],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 671,
+      "faction": "red",
+      "type": "attack",
+      "units": [101],
+      "target": 82
+    },
+    {
+      "tick": 3070,
+      "id": 672,
+      "faction": "red",
+      "type": "attack",
+      "units": [102],
+      "target": 82
+    },
+    {
+      "tick": 3120,
+      "id": 685,
+      "faction": "red",
+      "type": "attack",
+      "units": [19],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 686,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 687,
+      "faction": "red",
+      "type": "attack",
+      "units": [37],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 688,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 689,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 690,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 691,
+      "faction": "red",
+      "type": "attack",
+      "units": [46],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 692,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 693,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 694,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 695,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 696,
+      "faction": "red",
+      "type": "attack",
+      "units": [56],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 697,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 698,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 699,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 700,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 701,
+      "faction": "red",
+      "type": "attack",
+      "units": [66],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 702,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 703,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 704,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 705,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 706,
+      "faction": "red",
+      "type": "attack",
+      "units": [76],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 707,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 708,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 709,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 710,
+      "faction": "red",
+      "type": "attack",
+      "units": [87],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 711,
+      "faction": "red",
+      "type": "attack",
+      "units": [91],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 712,
+      "faction": "red",
+      "type": "attack",
+      "units": [92],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 713,
+      "faction": "red",
+      "type": "attack",
+      "units": [93],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 714,
+      "faction": "red",
+      "type": "attack",
+      "units": [96],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 715,
+      "faction": "red",
+      "type": "attack",
+      "units": [97],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 716,
+      "faction": "red",
+      "type": "attack",
+      "units": [100],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 717,
+      "faction": "red",
+      "type": "attack",
+      "units": [101],
+      "target": 90
+    },
+    {
+      "tick": 3120,
+      "id": 718,
+      "faction": "red",
+      "type": "attack",
+      "units": [102],
+      "target": 90
+    },
+    {
+      "tick": 3150,
+      "id": 726,
+      "faction": "red",
+      "type": "move",
+      "units": [33],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 727,
+      "faction": "red",
+      "type": "move",
+      "units": [39],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 728,
+      "faction": "red",
+      "type": "move",
+      "units": [41],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 729,
+      "faction": "red",
+      "type": "move",
+      "units": [42],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 730,
+      "faction": "red",
+      "type": "move",
+      "units": [47],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 731,
+      "faction": "red",
+      "type": "move",
+      "units": [49],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 732,
+      "faction": "red",
+      "type": "move",
+      "units": [50],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 733,
+      "faction": "red",
+      "type": "move",
+      "units": [52],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 734,
+      "faction": "red",
+      "type": "move",
+      "units": [57],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 735,
+      "faction": "red",
+      "type": "move",
+      "units": [59],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 736,
+      "faction": "red",
+      "type": "move",
+      "units": [60],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 737,
+      "faction": "red",
+      "type": "move",
+      "units": [62],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 738,
+      "faction": "red",
+      "type": "move",
+      "units": [67],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 739,
+      "faction": "red",
+      "type": "move",
+      "units": [68],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 740,
+      "faction": "red",
+      "type": "move",
+      "units": [69],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 741,
+      "faction": "red",
+      "type": "move",
+      "units": [72],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 742,
+      "faction": "red",
+      "type": "move",
+      "units": [77],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 743,
+      "faction": "red",
+      "type": "move",
+      "units": [80],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3150,
+      "id": 744,
+      "faction": "red",
+      "type": "move",
+      "units": [83],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3180,
+      "id": 751,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 3250,
+      "id": 766,
+      "faction": "red",
+      "type": "move",
+      "units": [105],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3280,
+      "id": 773,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 3350,
+      "id": 788,
+      "faction": "red",
+      "type": "move",
+      "units": [106],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3390,
+      "id": 789,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 3450,
+      "id": 802,
+      "faction": "red",
+      "type": "move",
+      "units": [109],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3590,
+      "id": 834,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 3700,
+      "id": 860,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 3700,
+      "id": 861,
+      "faction": "red",
+      "type": "move",
+      "units": [110],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3800,
+      "id": 878,
+      "faction": "red",
+      "type": "move",
+      "units": [111],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 3820,
+      "id": 880,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 3900,
+      "id": 899,
+      "faction": "red",
+      "type": "move",
+      "units": [114],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 4010,
+      "id": 925,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 4100,
+      "id": 946,
+      "faction": "red",
+      "type": "move",
+      "units": [115],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 4120,
+      "id": 947,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 4200,
+      "id": 960,
+      "faction": "red",
+      "type": "move",
+      "units": [118],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 4310,
+      "id": 986,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 4400,
+      "id": 1007,
+      "faction": "red",
+      "type": "move",
+      "units": [119],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 4420,
+      "id": 1013,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 4500,
+      "id": 1022,
+      "faction": "red",
+      "type": "move",
+      "units": [122],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 4540,
+      "id": 1031,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1032,
+      "faction": "red",
+      "type": "attack",
+      "units": [37],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1033,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1034,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1035,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1036,
+      "faction": "red",
+      "type": "attack",
+      "units": [44],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1037,
+      "faction": "red",
+      "type": "attack",
+      "units": [46],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1038,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1039,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1040,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1041,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1042,
+      "faction": "red",
+      "type": "attack",
+      "units": [54],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1043,
+      "faction": "red",
+      "type": "attack",
+      "units": [56],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1044,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1045,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1046,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1047,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1048,
+      "faction": "red",
+      "type": "attack",
+      "units": [65],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1049,
+      "faction": "red",
+      "type": "attack",
+      "units": [66],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1050,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1051,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1052,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1053,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1054,
+      "faction": "red",
+      "type": "attack",
+      "units": [73],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1055,
+      "faction": "red",
+      "type": "attack",
+      "units": [76],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1056,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1057,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1058,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1059,
+      "faction": "red",
+      "type": "attack",
+      "units": [87],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1060,
+      "faction": "red",
+      "type": "attack",
+      "units": [91],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1061,
+      "faction": "red",
+      "type": "attack",
+      "units": [93],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1062,
+      "faction": "red",
+      "type": "attack",
+      "units": [100],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1063,
+      "faction": "red",
+      "type": "attack",
+      "units": [105],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1064,
+      "faction": "red",
+      "type": "attack",
+      "units": [106],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1065,
+      "faction": "red",
+      "type": "attack",
+      "units": [109],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1066,
+      "faction": "red",
+      "type": "attack",
+      "units": [110],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1067,
+      "faction": "red",
+      "type": "attack",
+      "units": [111],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1068,
+      "faction": "red",
+      "type": "attack",
+      "units": [114],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1069,
+      "faction": "red",
+      "type": "attack",
+      "units": [115],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1070,
+      "faction": "red",
+      "type": "attack",
+      "units": [118],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1071,
+      "faction": "red",
+      "type": "attack",
+      "units": [119],
+      "target": 113
+    },
+    {
+      "tick": 4540,
+      "id": 1072,
+      "faction": "red",
+      "type": "attack",
+      "units": [122],
+      "target": 113
+    },
+    {
+      "tick": 4620,
+      "id": 1089,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 4700,
+      "id": 1106,
+      "faction": "red",
+      "type": "move",
+      "units": [123],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 4730,
+      "id": 1113,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 4800,
+      "id": 1128,
+      "faction": "red",
+      "type": "move",
+      "units": [124],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 4850,
+      "id": 1137,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 4950,
+      "id": 1152,
+      "faction": "red",
+      "type": "move",
+      "units": [127],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5030,
+      "id": 1171,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 5100,
+      "id": 1188,
+      "faction": "red",
+      "type": "move",
+      "units": [128],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5140,
+      "id": 1198,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 5200,
+      "id": 1206,
+      "faction": "red",
+      "type": "move",
+      "units": [129],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5340,
+      "id": 1235,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    },
+    {
+      "tick": 5450,
+      "id": 1261,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 5450,
+      "id": 1262,
+      "faction": "red",
+      "type": "move",
+      "units": [132],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5460,
+      "id": 1265,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1266,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1267,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1268,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1269,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1270,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1271,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1272,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1273,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1274,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1275,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1276,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1277,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1278,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1279,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1280,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1281,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1282,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1283,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1284,
+      "faction": "red",
+      "type": "attack",
+      "units": [91],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1285,
+      "faction": "red",
+      "type": "attack",
+      "units": [92],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1286,
+      "faction": "red",
+      "type": "attack",
+      "units": [96],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1287,
+      "faction": "red",
+      "type": "attack",
+      "units": [97],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1288,
+      "faction": "red",
+      "type": "attack",
+      "units": [101],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1289,
+      "faction": "red",
+      "type": "attack",
+      "units": [102],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1290,
+      "faction": "red",
+      "type": "attack",
+      "units": [105],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1291,
+      "faction": "red",
+      "type": "attack",
+      "units": [106],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1292,
+      "faction": "red",
+      "type": "attack",
+      "units": [109],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1293,
+      "faction": "red",
+      "type": "attack",
+      "units": [110],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1294,
+      "faction": "red",
+      "type": "attack",
+      "units": [111],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1295,
+      "faction": "red",
+      "type": "attack",
+      "units": [114],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1296,
+      "faction": "red",
+      "type": "attack",
+      "units": [115],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1297,
+      "faction": "red",
+      "type": "attack",
+      "units": [118],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1298,
+      "faction": "red",
+      "type": "attack",
+      "units": [119],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1299,
+      "faction": "red",
+      "type": "attack",
+      "units": [122],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1300,
+      "faction": "red",
+      "type": "attack",
+      "units": [123],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1301,
+      "faction": "red",
+      "type": "attack",
+      "units": [124],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1302,
+      "faction": "red",
+      "type": "attack",
+      "units": [127],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1303,
+      "faction": "red",
+      "type": "attack",
+      "units": [128],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1304,
+      "faction": "red",
+      "type": "attack",
+      "units": [129],
+      "target": 125
+    },
+    {
+      "tick": 5460,
+      "id": 1305,
+      "faction": "red",
+      "type": "attack",
+      "units": [132],
+      "target": 125
+    },
+    {
+      "tick": 5470,
+      "id": 1308,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1309,
+      "faction": "red",
+      "type": "attack",
+      "units": [37],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1310,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1311,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1312,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1313,
+      "faction": "red",
+      "type": "attack",
+      "units": [44],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1314,
+      "faction": "red",
+      "type": "attack",
+      "units": [46],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1315,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1316,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1317,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1318,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1319,
+      "faction": "red",
+      "type": "attack",
+      "units": [54],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1320,
+      "faction": "red",
+      "type": "attack",
+      "units": [56],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1321,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1322,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1323,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1324,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1325,
+      "faction": "red",
+      "type": "attack",
+      "units": [65],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1326,
+      "faction": "red",
+      "type": "attack",
+      "units": [66],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1327,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1328,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1329,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1330,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1331,
+      "faction": "red",
+      "type": "attack",
+      "units": [73],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1332,
+      "faction": "red",
+      "type": "attack",
+      "units": [76],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1333,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1334,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1335,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1336,
+      "faction": "red",
+      "type": "attack",
+      "units": [87],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1337,
+      "faction": "red",
+      "type": "attack",
+      "units": [91],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1338,
+      "faction": "red",
+      "type": "attack",
+      "units": [92],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1339,
+      "faction": "red",
+      "type": "attack",
+      "units": [93],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1340,
+      "faction": "red",
+      "type": "attack",
+      "units": [96],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1341,
+      "faction": "red",
+      "type": "attack",
+      "units": [97],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1342,
+      "faction": "red",
+      "type": "attack",
+      "units": [100],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1343,
+      "faction": "red",
+      "type": "attack",
+      "units": [101],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1344,
+      "faction": "red",
+      "type": "attack",
+      "units": [102],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1345,
+      "faction": "red",
+      "type": "attack",
+      "units": [105],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1346,
+      "faction": "red",
+      "type": "attack",
+      "units": [106],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1347,
+      "faction": "red",
+      "type": "attack",
+      "units": [109],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1348,
+      "faction": "red",
+      "type": "attack",
+      "units": [110],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1349,
+      "faction": "red",
+      "type": "attack",
+      "units": [111],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1350,
+      "faction": "red",
+      "type": "attack",
+      "units": [114],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1351,
+      "faction": "red",
+      "type": "attack",
+      "units": [115],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1352,
+      "faction": "red",
+      "type": "attack",
+      "units": [118],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1353,
+      "faction": "red",
+      "type": "attack",
+      "units": [119],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1354,
+      "faction": "red",
+      "type": "attack",
+      "units": [122],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1355,
+      "faction": "red",
+      "type": "attack",
+      "units": [123],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1356,
+      "faction": "red",
+      "type": "attack",
+      "units": [124],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1357,
+      "faction": "red",
+      "type": "attack",
+      "units": [127],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1358,
+      "faction": "red",
+      "type": "attack",
+      "units": [128],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1359,
+      "faction": "red",
+      "type": "attack",
+      "units": [129],
+      "target": 84
+    },
+    {
+      "tick": 5470,
+      "id": 1360,
+      "faction": "red",
+      "type": "attack",
+      "units": [132],
+      "target": 84
+    },
+    {
+      "tick": 5500,
+      "id": 1367,
+      "faction": "red",
+      "type": "move",
+      "units": [91],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5500,
+      "id": 1368,
+      "faction": "red",
+      "type": "move",
+      "units": [92],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5500,
+      "id": 1369,
+      "faction": "red",
+      "type": "move",
+      "units": [96],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5500,
+      "id": 1370,
+      "faction": "red",
+      "type": "move",
+      "units": [97],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5500,
+      "id": 1371,
+      "faction": "red",
+      "type": "move",
+      "units": [101],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5500,
+      "id": 1372,
+      "faction": "red",
+      "type": "move",
+      "units": [102],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5550,
+      "id": 1383,
+      "faction": "red",
+      "type": "move",
+      "units": [133],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5560,
+      "id": 1386,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "soldier"
+    },
+    {
+      "tick": 5650,
+      "id": 1397,
+      "faction": "red",
+      "type": "move",
+      "units": [134],
+      "target": {
+        "x": 13,
+        "y": 19
+      }
+    },
+    {
+      "tick": 5700,
+      "id": 1408,
+      "faction": "red",
+      "type": "attack",
+      "units": [33],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1409,
+      "faction": "red",
+      "type": "attack",
+      "units": [37],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1410,
+      "faction": "red",
+      "type": "attack",
+      "units": [39],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1411,
+      "faction": "red",
+      "type": "attack",
+      "units": [41],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1412,
+      "faction": "red",
+      "type": "attack",
+      "units": [42],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1413,
+      "faction": "red",
+      "type": "attack",
+      "units": [44],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1414,
+      "faction": "red",
+      "type": "attack",
+      "units": [46],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1415,
+      "faction": "red",
+      "type": "attack",
+      "units": [47],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1416,
+      "faction": "red",
+      "type": "attack",
+      "units": [49],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1417,
+      "faction": "red",
+      "type": "attack",
+      "units": [50],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1418,
+      "faction": "red",
+      "type": "attack",
+      "units": [52],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1419,
+      "faction": "red",
+      "type": "attack",
+      "units": [54],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1420,
+      "faction": "red",
+      "type": "attack",
+      "units": [56],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1421,
+      "faction": "red",
+      "type": "attack",
+      "units": [57],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1422,
+      "faction": "red",
+      "type": "attack",
+      "units": [59],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1423,
+      "faction": "red",
+      "type": "attack",
+      "units": [60],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1424,
+      "faction": "red",
+      "type": "attack",
+      "units": [62],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1425,
+      "faction": "red",
+      "type": "attack",
+      "units": [65],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1426,
+      "faction": "red",
+      "type": "attack",
+      "units": [66],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1427,
+      "faction": "red",
+      "type": "attack",
+      "units": [67],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1428,
+      "faction": "red",
+      "type": "attack",
+      "units": [68],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1429,
+      "faction": "red",
+      "type": "attack",
+      "units": [69],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1430,
+      "faction": "red",
+      "type": "attack",
+      "units": [72],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1431,
+      "faction": "red",
+      "type": "attack",
+      "units": [73],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1432,
+      "faction": "red",
+      "type": "attack",
+      "units": [76],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1433,
+      "faction": "red",
+      "type": "attack",
+      "units": [77],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1434,
+      "faction": "red",
+      "type": "attack",
+      "units": [80],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1435,
+      "faction": "red",
+      "type": "attack",
+      "units": [83],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1436,
+      "faction": "red",
+      "type": "attack",
+      "units": [87],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1437,
+      "faction": "red",
+      "type": "attack",
+      "units": [91],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1438,
+      "faction": "red",
+      "type": "attack",
+      "units": [92],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1439,
+      "faction": "red",
+      "type": "attack",
+      "units": [93],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1440,
+      "faction": "red",
+      "type": "attack",
+      "units": [96],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1441,
+      "faction": "red",
+      "type": "attack",
+      "units": [97],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1442,
+      "faction": "red",
+      "type": "attack",
+      "units": [100],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1443,
+      "faction": "red",
+      "type": "attack",
+      "units": [101],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1444,
+      "faction": "red",
+      "type": "attack",
+      "units": [102],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1445,
+      "faction": "red",
+      "type": "attack",
+      "units": [105],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1446,
+      "faction": "red",
+      "type": "attack",
+      "units": [106],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1447,
+      "faction": "red",
+      "type": "attack",
+      "units": [109],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1448,
+      "faction": "red",
+      "type": "attack",
+      "units": [110],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1449,
+      "faction": "red",
+      "type": "attack",
+      "units": [111],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1450,
+      "faction": "red",
+      "type": "attack",
+      "units": [114],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1451,
+      "faction": "red",
+      "type": "attack",
+      "units": [115],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1452,
+      "faction": "red",
+      "type": "attack",
+      "units": [118],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1453,
+      "faction": "red",
+      "type": "attack",
+      "units": [119],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1454,
+      "faction": "red",
+      "type": "attack",
+      "units": [122],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1455,
+      "faction": "red",
+      "type": "attack",
+      "units": [123],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1456,
+      "faction": "red",
+      "type": "attack",
+      "units": [124],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1457,
+      "faction": "red",
+      "type": "attack",
+      "units": [127],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1458,
+      "faction": "red",
+      "type": "attack",
+      "units": [128],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1459,
+      "faction": "red",
+      "type": "attack",
+      "units": [129],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1460,
+      "faction": "red",
+      "type": "attack",
+      "units": [132],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1461,
+      "faction": "red",
+      "type": "attack",
+      "units": [133],
+      "target": 4
+    },
+    {
+      "tick": 5700,
+      "id": 1462,
+      "faction": "red",
+      "type": "attack",
+      "units": [134],
+      "target": 4
+    },
+    {
+      "tick": 5760,
+      "id": 1477,
+      "faction": "red",
+      "type": "train",
+      "units": [25],
+      "target": "archer"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 1,
+      "path": "ui.selection",
+      "op": "eq",
+      "value": []
+    },
+    {
+      "tick": 1,
+      "path": "world.key.worker-1.Gatherer.node",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 1,
+      "path": "world.key.hero.Target.entity",
+      "op": "eq",
+      "value": 17
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.gold.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.barracks.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.scout.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 2,
+      "path": "ui.selection",
+      "op": "eq",
+      "value": [3]
+    },
+    {
+      "tick": 600,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1200,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1800,
+      "path": "sides.red.buildings",
+      "op": "eq",
+      "value": {
+        "town-centre": 1,
+        "barracks": 2
+      }
+    },
+    {
+      "tick": 1800,
+      "path": "sides.red.unitTypes",
+      "op": "eq",
+      "value": {
+        "worker": 9,
+        "hero": 1,
+        "soldier": 19,
+        "archer": 9
+      }
+    },
+    {
+      "tick": 1800,
+      "path": "kit.enemy.wave-1.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 1800,
+      "path": "kit.enemy.wave-2.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 1800,
+      "path": "kit.enemy.wave-3.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 1800,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 2400,
+      "path": "sides.red.buildings",
+      "op": "eq",
+      "value": {
+        "town-centre": 1,
+        "barracks": 2
+      }
+    },
+    {
+      "tick": 2400,
+      "path": "sides.red.unitTypes",
+      "op": "eq",
+      "value": {
+        "worker": 9,
+        "hero": 1,
+        "soldier": 21,
+        "archer": 11
+      }
+    },
+    {
+      "tick": 2400,
+      "path": "kit.enemy.wave-1.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 2400,
+      "path": "kit.enemy.wave-2.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 2400,
+      "path": "kit.enemy.wave-3.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 2400,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 3000,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 3600,
+      "path": "sides.red.buildings",
+      "op": "eq",
+      "value": {
+        "town-centre": 1,
+        "barracks": 2
+      }
+    },
+    {
+      "tick": 3600,
+      "path": "sides.red.unitTypes",
+      "op": "eq",
+      "value": {
+        "worker": 9,
+        "soldier": 27,
+        "archer": 13
+      }
+    },
+    {
+      "tick": 3600,
+      "path": "kit.enemy.wave-1.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 3600,
+      "path": "kit.enemy.wave-2.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 3600,
+      "path": "kit.enemy.wave-3.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 3600,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 4200,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 4800,
+      "path": "sides.red.buildings",
+      "op": "eq",
+      "value": {
+        "town-centre": 1,
+        "barracks": 2
+      }
+    },
+    {
+      "tick": 4800,
+      "path": "sides.red.unitTypes",
+      "op": "eq",
+      "value": {
+        "worker": 9,
+        "soldier": 33,
+        "archer": 16
+      }
+    },
+    {
+      "tick": 4800,
+      "path": "kit.enemy.wave-1.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 4800,
+      "path": "kit.enemy.wave-2.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 4800,
+      "path": "kit.enemy.wave-3.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 4800,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 5400,
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 5800,
+      "path": "world.key.blue-town-centre.Health.hp",
+      "op": "eq",
+      "value": 136
+    },
+    {
+      "tick": 5810,
+      "path": "sides.blue.buildings",
+      "op": "eq",
+      "value": {
+        "barracks": 2
+      }
+    },
+    {
+      "tick": 5810,
+      "path": "sides.red.units",
+      "op": "eq",
+      "value": 64
+    },
+    {
+      "tick": 5900,
+      "path": "kit.enemy.push.fired",
+      "op": "eq",
+      "value": 4
+    }
+  ],
+  "hashEvery": 100,
+  "guards": [
+    "enemy-follows-plan",
+    "enemy-waits-for-trigger",
+    "enemy-knows-only-what-it-saw",
+    "box-selects-own-units",
+    "command-attacks-enemies",
+    "command-gathers-resources"
+  ],
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "2bcd627b4a3eda65"
+    },
+    {
+      "tick": 100,
+      "hash": "f651c3f7de3631e3"
+    },
+    {
+      "tick": 200,
+      "hash": "6edbe4b16ec1ef5a"
+    },
+    {
+      "tick": 300,
+      "hash": "384637cd829de1bd"
+    },
+    {
+      "tick": 400,
+      "hash": "6cc4846636345cf8"
+    },
+    {
+      "tick": 500,
+      "hash": "066dfdc3abd2fa2e"
+    },
+    {
+      "tick": 600,
+      "hash": "1159942c82429ce6"
+    },
+    {
+      "tick": 700,
+      "hash": "0f1b9b7ffc63b51b"
+    },
+    {
+      "tick": 800,
+      "hash": "ba25f7b09cdcbf08"
+    },
+    {
+      "tick": 900,
+      "hash": "19aed4ee3fd6e900"
+    },
+    {
+      "tick": 1000,
+      "hash": "ea7339e17cf01c14"
+    },
+    {
+      "tick": 1100,
+      "hash": "cc320312c720de1c"
+    },
+    {
+      "tick": 1200,
+      "hash": "373504aa55e759b4"
+    },
+    {
+      "tick": 1300,
+      "hash": "264baa969efc8c86"
+    },
+    {
+      "tick": 1400,
+      "hash": "bb2544e2cb09e545"
+    },
+    {
+      "tick": 1500,
+      "hash": "854649a326f0d5a2"
+    },
+    {
+      "tick": 1600,
+      "hash": "755f7eb3b31beafd"
+    },
+    {
+      "tick": 1700,
+      "hash": "841c174daff93878"
+    },
+    {
+      "tick": 1800,
+      "hash": "514f1c64c236a15a"
+    },
+    {
+      "tick": 1900,
+      "hash": "3bb4e3c36d242857"
+    },
+    {
+      "tick": 2000,
+      "hash": "4e797e907bbc2faf"
+    },
+    {
+      "tick": 2100,
+      "hash": "134e8bc719a04685"
+    },
+    {
+      "tick": 2200,
+      "hash": "9ebf1b6c234225c6"
+    },
+    {
+      "tick": 2300,
+      "hash": "74a158f534437e15"
+    },
+    {
+      "tick": 2400,
+      "hash": "6228944fd6778fcc"
+    },
+    {
+      "tick": 2500,
+      "hash": "64ef07358c5c8e3b"
+    },
+    {
+      "tick": 2600,
+      "hash": "ac86796f620609bc"
+    },
+    {
+      "tick": 2700,
+      "hash": "05dcbfa28f68b090"
+    },
+    {
+      "tick": 2800,
+      "hash": "4c19aa7fda88024c"
+    },
+    {
+      "tick": 2900,
+      "hash": "b2fb7648d3aac339"
+    },
+    {
+      "tick": 3000,
+      "hash": "f149432cbbc84fee"
+    },
+    {
+      "tick": 3100,
+      "hash": "52789053475a9288"
+    },
+    {
+      "tick": 3200,
+      "hash": "b6c16ee8d08114bf"
+    },
+    {
+      "tick": 3300,
+      "hash": "95228319077f6931"
+    },
+    {
+      "tick": 3400,
+      "hash": "8bfa1dbbf3d38fd0"
+    },
+    {
+      "tick": 3500,
+      "hash": "4cc3f2d7aa0d9d9a"
+    },
+    {
+      "tick": 3600,
+      "hash": "531a3d9cf77aedee"
+    },
+    {
+      "tick": 3700,
+      "hash": "f62db6877f323d96"
+    },
+    {
+      "tick": 3800,
+      "hash": "3082f609c18a399f"
+    },
+    {
+      "tick": 3900,
+      "hash": "7a501fb3a157edae"
+    },
+    {
+      "tick": 4000,
+      "hash": "e8db67a7abd26947"
+    },
+    {
+      "tick": 4100,
+      "hash": "f4cca7d54f1b1bde"
+    },
+    {
+      "tick": 4200,
+      "hash": "6244f7d83d26ce53"
+    },
+    {
+      "tick": 4300,
+      "hash": "caa7e417e432c2c7"
+    },
+    {
+      "tick": 4400,
+      "hash": "1537a4bde2d7b5e3"
+    },
+    {
+      "tick": 4500,
+      "hash": "c5f4f266c4713951"
+    },
+    {
+      "tick": 4600,
+      "hash": "48a5f1d56792e730"
+    },
+    {
+      "tick": 4700,
+      "hash": "c304f14743991f53"
+    },
+    {
+      "tick": 4800,
+      "hash": "b8b8c8e3ba78d7c3"
+    },
+    {
+      "tick": 4900,
+      "hash": "7eceab625180d60e"
+    },
+    {
+      "tick": 5000,
+      "hash": "9c6e186ef454b110"
+    },
+    {
+      "tick": 5100,
+      "hash": "33faf30b3754b91f"
+    },
+    {
+      "tick": 5200,
+      "hash": "90d18cbf7fb6cf59"
+    },
+    {
+      "tick": 5300,
+      "hash": "5ed432a03569d431"
+    },
+    {
+      "tick": 5400,
+      "hash": "0d00deb7881a2ed8"
+    },
+    {
+      "tick": 5500,
+      "hash": "821e0ed40b9a5eb3"
+    },
+    {
+      "tick": 5600,
+      "hash": "00cf99bd9f43ef22"
+    },
+    {
+      "tick": 5700,
+      "hash": "be3e5d48cf198eb7"
+    },
+    {
+      "tick": 5800,
+      "hash": "9399c6245d984fa8"
+    },
+    {
+      "tick": 5900,
+      "hash": "b55be4ea560a4f79"
+    }
+  ]
+}

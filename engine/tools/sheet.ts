@@ -28,7 +28,7 @@ export const BACKEND_TAG: Record<ShotBackend, string> = { canvas2d: '2D', three:
 export interface SheetTileSpec {
   /**
    * Another run file: its name in the same folder (`level-3` or `level-3.run.json`), or a path
-   * relative to that folder (`../../samples/rts-skirmish/runs/battle`), or null.
+   * relative to that folder (`../../rts-classic/runs/battle`), or null.
    */
   run: string | null;
   tick: number;

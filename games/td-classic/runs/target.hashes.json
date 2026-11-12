@@ -1,0 +1,61 @@
+{
+  "run": "games/td-classic/runs/target.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "3f3e14aefc1b4bad"
+    },
+    {
+      "tick": 20,
+      "hash": "7236fae21d3a896c"
+    },
+    {
+      "tick": 40,
+      "hash": "e263ac7e9fd664b9"
+    },
+    {
+      "tick": 60,
+      "hash": "af68bf60f7e4883d"
+    },
+    {
+      "tick": 80,
+      "hash": "f9d060305c7c7b1d"
+    },
+    {
+      "tick": 100,
+      "hash": "5adb0d0a44e4d15d"
+    },
+    {
+      "tick": 120,
+      "hash": "e7c00152dd273893"
+    },
+    {
+      "tick": 140,
+      "hash": "f5b265937121ac92"
+    },
+    {
+      "tick": 160,
+      "hash": "18f8d5b59124d984"
+    },
+    {
+      "tick": 180,
+      "hash": "a296d93e2430e43c"
+    },
+    {
+      "tick": 200,
+      "hash": "63a9ea44069423fc"
+    },
+    {
+      "tick": 220,
+      "hash": "4fe10f9d7c157bbc"
+    },
+    {
+      "tick": 240,
+      "hash": "87af51660c1c3e0f"
+    },
+    {
+      "tick": 260,
+      "hash": "c007de2189d310be"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import type { JsonObject } from '@engine/core/headless';
 import { stateHash } from '@engine/core/state-hash';
-import type { RecordedOrder } from '@kits/rts';
+import type { RecordedEntry } from './headless';
 
 /**
  * The page's recording of a battle (Engine 0.9 T12, the "done when"): the player's orders with
@@ -24,7 +24,7 @@ export interface RecordedRun {
   game: string;
   seed: number;
   ticks: number;
-  orders: RecordedOrder[];
+  orders: RecordedEntry[];
   hashEvery: number;
   hashes: { tick: number; hash: string }[];
 }
@@ -51,11 +51,12 @@ export class BattleRecorder {
 
   /**
    * The battle so far as a run file, ending at the last hash tick: `orders` are those applied
-   * before it (`recorded`, the kit's `RtsGame.recorded()`). `game` is `..`, the game folder seen
+   * before it (`recorded`, `SkirmishGame.recorded()`: the kit's `RtsGame.recorded()` with the
+   * interface actions in place, D9). `game` is `..`, the game folder seen
    * from `games/samples/rts-skirmish/runs/`; a file saved elsewhere changes it. Null before the
    * first hash tick after 0 (a run plays at least one tick).
    */
-  async runFile(recorded: readonly RecordedOrder[], game = '..'): Promise<RecordedRun | null> {
+  async runFile(recorded: readonly RecordedEntry[], game = '..'): Promise<RecordedRun | null> {
     const ticks = this.lastHashed();
     if (ticks === 0) return null;
     const hashes = this.hashes.filter((h) => h.tick <= ticks).map((h) => ({ tick: h.tick, hash: h.hash }));

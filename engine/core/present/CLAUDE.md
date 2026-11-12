@@ -4,7 +4,8 @@ The presentation contract (docs/DESIGN.md, section 6; docs/ROADMAP.md, Engine 0.
 snapshot a backend gets each frame. A kit describes what is there; a backend decides how it looks,
 from the frame and a skin. Types and small pure helpers only: no drawing, no kit or backend code.
 
-- `types.ts`: `PresentFrame` `{ frame, size, entities, map?, events, status, camera? }`.
+- `types.ts`: `PresentFrame` `{ frame, size, entities, map?, events, status, camera?, fog? }`
+  (`fog`, Engine 0.16 part D, D3: `PresentFog`, see `fog.ts` below).
   - `PresentEntity` `{ id, kind, x, y, w, h, facing, anim: { state, t }, tags, layer?, fx? }`:
     `id` is stable across frames; `x`/`y`/`w`/`h` are the box in world pixels (top-left); `facing`
     is one of `FACINGS`: `up | down | left | right` or (Engine 0.9, owner answer 128 to item 48)
@@ -31,6 +32,38 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
     and optional `resize(size)`, and from Engine 0.16 part C T1 optional `showHud(shown)`
     (whether the skin's HUD is drawn from the next frame: the shell hides it under its title;
     both backends' presenters have it). Backends implement `Presenter`.
+- `fog.ts` (Engine 0.16 part D, D3): fog of war as presentation. A frame's optional `fog`
+  (`PresentFog` `{ cols, rows, cells }`, in `types.ts`): `rows` strings of `cols` characters, one
+  per map tile, `0` unexplored, `1` explored (seen before), `2` visible (`FOG_CELLS`,
+  `FOG_CELL_CHARS`); `presentFrameSchema` checks the characters and the grid's size (each field
+  `.describe`d). Plain string rows, not run-length: a 64 x 64 map is 4 KB a frame, and a kit
+  diffing it is not worth the reader's trouble. A skin's top-level `fog` (`fogLookSchema`, on any
+  backend; only the 2D walk and the minimap draw it): `{ unexplored?: { color?, alpha? }, explored?:
+{ color?, alpha? }, edge? (0-FOG_EDGE_MAX 16 world px) }`; a bad field is a schema error at its
+  path (`fog.explored.alpha`). `resolveFogLook(look)` fills `DEFAULT_FOG_LOOK` (unexplored
+  `#000000` at 1, explored `#000000` at 0.5, no edge), so a frame with `fog` and a skin without
+  one still shows it. `fogState(fog, col, row)` (outside the grid or another character:
+  `visible`), `fogShade(look, state)` and `fogBoxes(fog, look, tileSize)`: the boxes to lay over
+  the picture in world px, each row's run of one state merged; with an `edge` (cut to half a
+  tile) a cell beside a lighter one (four sides; outside the grid counts as the same) is nine
+  boxes that never overlap: the middle at its alpha, each strip toward a lighter neighbour at the
+  alpha halfway to it, corners at the lower of their two strips'. Alpha 0 boxes are left out.
+  The 2D walk (`engine/core/draw`) draws them; nothing here draws. A `minimap` HUD item's `fog`
+  (boolean), `teams` (tag -> colour) and `view` (a colour) are schema fields of `skin.ts`
+  (`bad_field` on another item); the UI kit draws them. Tested in `fog.test.ts`.
+- `readability.ts` (Engine 0.16 part D, D4: readable at every zoom): three 2D kind fields, all
+  default off, in `SPRITE_FIELDS` (`wrong_backend_field` on a 3D skin), each `.describe`d:
+  `outline` (`outlineSchema`: a colour or `"team"`, `OUTLINE_TEAM`; also on a `byTag` look,
+  `TAG_SPRITE_FIELDS`), `team` (`teamSchema`: `{ prefix? (default `DEFAULT_TEAM_PREFIX`,
+`faction:`; `""`reads whole tags such as`own`), colors: { <name>: colour } (at least one),
+mask? | hue?: { min, max } (degrees, wrapping when min > max) }`; both `mask` and `hue` is
+  `bad_team`) and `screenScale` (`screenScaleSchema`: `{ min?, max?, anchor? }`, `anchor` one of
+  `SCREEN_SCALE_ANCHORS` `center` (default), `top`, `bottom`; `min` above `max` is `bad_range`).
+  `skinSchema` adds `checkTeamOutlines`: `outline: "team"` on a kind (or look) whose kind has no
+  `team` is `missing_field`. Pure readings: `skinTeamColor(entry, tags)` (the first of the
+  entity's tags `<prefix><name>` with a colour, else null), `skinOutlineColor(entry, tags)`,
+  `screenScaleAt(spec, zoom)` (the zoom held in `[min, max]`) and `screenScalePivot(anchor, box)`.
+  The 2D walk (`engine/core/draw`) draws them; tested in `readability.test.ts`.
 - `freeze.ts`: `freezeFrame(value)` deep-freezes a frame in place and returns it as
   `DeepReadonly`, so a backend that writes to it throws. Use it in tests and dev; it is not needed
   per frame in a release build.
@@ -250,6 +283,27 @@ parallax?, tiles? }` (a platformer level's id is its map's), so one skin gives e
     silhouette in the colour while the entity has the tag). A palette that is a colour (`#fff`,
     `isSilhouettePalette`) is never a palette file: `checkSkinRefs` accepts it and the 2D sheet
     lookup (`contentSheets`, `silhouetteSheet`) draws the sheet as a silhouette in it.
+  - The tower defense's looks (Engine 0.16 E6, `projectile.ts`): an event entry's `projectile`
+    (`projectileSchema`, each field `.describe`d: `{ frame?, sheet?, palette?, color?
+(PROJECTILE_DEFAULT_COLOR), size? (1-16 world px, PROJECTILE_DEFAULT_SIZE 2), ticks (1-240),
+arc? (world px at mid-flight), ease? (bad_ease), turn?, impact?: { emit?, sound?, shake? } }`):
+    a sprite frame or square flying from the event's `fromX`/`fromY` to its `x`/`y` over `ticks`
+    presentation frames, then its impact where it lands; 2D only (`wrong_backend_field` on a 3D
+    skin); the impact's `emit` must name emitters (`missing_ref` at
+    `events.<key>.projectile.impact.emit`); across files its frame (`missing_frame`; a frame with
+    neither `sheet` nor `sheets.sheet` is `missing_field`), sheet, palette and impact sound
+    (`missing_ref`). Pure readings: `projectileFlight(ev)` (both points, else null) and
+    `projectilePlace(look, from, to, age)` (`{ x, y, angle }`: the eased share `s` of the way, the
+    line raised by `arc * 4 s (1 - s)`, the angle of the path's tangent in degrees clockwise from
+    right; null before it starts and from `ticks` on, when it has landed). Presentation only:
+    started by frame events and timed by frame numbers, never in a frame or a hash. A kind `ring`
+    takes `tag` (a prefix, `range:`) and `per` (world px per unit; the 2D walk's `ringRadius`) and
+    needs `radius`, `tag` or both (`missing_field`). A label's `max` may be `{ tag: "<prefix>" }`
+    (scene3d.ts: `labelBar(label, value, status, entity?)` reads the entity's own `maxhp:`; a max
+    that reads nothing falls back as if left out). The HUD widget `preview` (`HUD_WIDGET_TYPES`;
+    the UI kit lays it out) shows a `kind:count` status list; `frames` (kind -> frame) is allowed
+    on `icon` and `preview`, `spacing` on `preview` only (`bad_field`); `checkSkinRefs` checks its
+    frames and that its font has every digit. Tested in `projectile.test.ts`.
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
     round ones use `LOW_POLY_SEGMENTS`) that fills the entity box (or tile) and is `depth` px

@@ -9,15 +9,25 @@ import {
   worldTimeline,
   type World,
 } from '@engine/sim/index';
-import { rtsGame, sidesOf, type RtsGame, type RtsView, type SideSummary } from '@kits/rts';
+import {
+  matchResult,
+  rtsGame,
+  sidesOf,
+  type MatchResult,
+  type RtsEnd,
+  type RtsGame,
+  type RtsView,
+  type SideSummary,
+} from '@kits/rts';
 import { interfaceActionSchema, PlayerInterface } from './actions';
-import { PLAYER, skirmishEnemy, skirmishScenario } from './content';
+import { PLAYER, skirmishEnd, skirmishEnemy, skirmishScenario } from './content';
 
 /**
  * The skirmish's headless entry (named by `headless` in `game.json`): thin glue joining an
  * `engine/sim` world built from the map to the RTS kit's `rtsGame`, which takes the player's
- * recorded orders and runs the scripted enemy. No browser, no drawing. The world's rules
- * (movement, combat, building, training, gathering) are the sim's; the kit only gives orders.
+ * recorded orders and runs the AI opponent (the kit's scripted enemy with a fog plan: it knows
+ * only what its side has seen). No browser, no drawing. The world's rules (movement, combat,
+ * building, training, gathering) are the sim's; the kit only gives orders.
  */
 
 /** The sim world built from the map, the types and `seed` (the world's and the enemy's seed). */
@@ -28,21 +38,18 @@ export function createWorld(content: ContentBundle, seed: number): World {
 /** Every side at a glance (the kit's `sidesOf`), re-exported for the page and the tests. */
 export { sidesOf, type SideSummary };
 
-/** How the skirmish has ended for the player, or null while it goes on. */
-export type SkirmishResult = 'won' | 'lost' | null;
+/** How the match has ended for the player, or null while it goes on. */
+export type SkirmishResult = MatchResult;
 
 /**
- * The skirmish's end (Engine 0.15 T14), the sample's own rule, read off the view and kept out of
- * the snapshot (so no hash moves): `lost` once the player has no unit left, `won` once no other
- * side has a unit or a building, else null. The page shows the end screen and the skin plays its
- * jingle from it; run files check the same through `sides` (`sides.red.units`, `sides.blue.units`).
+ * The match's end (Engine 0.16 part D, D8): the kit's `matchResult` under the game's end rule
+ * (`content/end/ford.json`: won once blue's town centre is down; lost once red's town centre is
+ * down or red has no unit left), read off the whole view (the game knows; fog is the player's
+ * picture). It is kept out of the snapshot, so no hash depends on it; run files check the same
+ * through `sides`. Before D8 it was code (`won` once no enemy unit or building stood).
  */
-export function skirmishResult(view: RtsView): SkirmishResult {
-  if (!view.units.some((u) => u.faction === PLAYER)) return 'lost';
-  const enemy = (f: string | null) => f !== null && f !== PLAYER;
-  if (!view.units.some((u) => enemy(u.faction)) && !view.buildings.some((b) => enemy(b.faction)))
-    return 'won';
-  return null;
+export function skirmishResult(view: RtsView, end: RtsEnd): SkirmishResult {
+  return matchResult(view, end);
 }
 
 /**
@@ -52,8 +59,17 @@ export function skirmishResult(view: RtsView): SkirmishResult {
  * kit, sides, ui }`: `sides` from `sidesOf` (so a run file can check `sides.blue.units` instead of
  * counting components) and `ui.selection`, the selected ids.
  */
+/** An entry of a run file's `orders`: a recorded order or an interface action, with its tick. */
+export type RecordedEntry = JsonObject & { tick: number };
+
 export class SkirmishGame implements HeadlessGame {
   readonly player: PlayerInterface;
+  /**
+   * The interface actions taken (D9), in order: each with the length of the kit's `recorded()` when
+   * it came (`at`) and whether it gave an order (`made`, recorded there at `at`), so `recorded()`
+   * can put the action back in the order's place.
+   */
+  private readonly actions: { at: number; made: boolean; entry: RecordedEntry }[] = [];
 
   constructor(
     readonly rts: RtsGame,
@@ -61,6 +77,8 @@ export class SkirmishGame implements HeadlessGame {
     readonly factions: readonly string[],
     /** The sim world the kit plays (for the event log and the timeline, Engine 0.14 T7). */
     readonly world: World,
+    /** The end rule (`content/end/`), for `result()`. */
+    readonly end: RtsEnd,
   ) {
     this.player = new PlayerInterface(PLAYER, rts.rules);
   }
@@ -69,14 +87,47 @@ export class SkirmishGame implements HeadlessGame {
     this.rts.step(input);
   }
 
+  /** The world as the kit reads it now. */
+  view(): RtsView {
+    return this.rts.view();
+  }
+
+  /** How the match stands now (`skirmishResult`): `won`, `lost`, or null while it goes on. */
+  result(): SkirmishResult {
+    return skirmishResult(this.rts.view(), this.end);
+  }
+
   order(order: JsonObject): string | null {
     if (!Object.hasOwn(order, 'ui')) return this.rts.order(order);
     const parsed = interfaceActionSchema.safeParse(order);
     if (!parsed.success)
       return `not an interface action: ${parsed.error.issues.map((i) => i.message).join('; ')}`;
+    const entry = { tick: this.rts.tick, ...order } as RecordedEntry;
+    const at = this.rts.recorded().length;
     const result = this.player.act(this.rts.view(), parsed.data);
-    if (result === null || typeof result === 'string') return result;
+    const made = result !== null && typeof result !== 'string';
+    this.actions.push({ at, made, entry });
+    if (!made) return result;
     return this.rts.issue(result).error;
+  }
+
+  /**
+   * Everything handed to `order` and the page's own commands, as a run file's `orders` (D9): the
+   * kit's recorded orders, with each interface action in its place (in place of the order it gave),
+   * so a replay of a match that came in through `ui` entries (the step hook's `replay` of
+   * `match-won`) makes the same selections and hashes the same (`ui.selection` is in the snapshot).
+   */
+  recorded(): RecordedEntry[] {
+    const orders = this.rts.recorded() as unknown as RecordedEntry[];
+    const out: RecordedEntry[] = [];
+    let i = 0;
+    for (const { at, made, entry } of this.actions) {
+      while (i < at) out.push(orders[i++]!);
+      out.push({ ...entry });
+      if (made) i++;
+    }
+    while (i < orders.length) out.push(orders[i++]!);
+    return out;
   }
 
   /** The world's event log from world tick `sinceTick` (`HeadlessGame.worldEvents`); never in the snapshot. */
@@ -119,5 +170,6 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
     }),
     [PLAYER, enemy.faction],
     world,
+    skirmishEnd(content),
   );
 }

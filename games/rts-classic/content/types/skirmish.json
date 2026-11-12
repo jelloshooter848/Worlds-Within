@@ -1,0 +1,51 @@
+{
+  "units": {
+    "worker": {
+      "health": 20,
+      "speed": 2,
+      "attack": 1,
+      "range": 1,
+      "cooldown": 4,
+      "sight": 4,
+      "cost": { "gold": 50 },
+      "trainTicks": 25,
+      "work": 2,
+      "gather": { "capacity": 5, "ticks": 2 }
+    },
+    "soldier": {
+      "health": 30,
+      "speed": 2,
+      "attack": 4,
+      "range": 1,
+      "cooldown": 3,
+      "sight": 5,
+      "cost": { "gold": 50 },
+      "trainTicks": 20
+    },
+    "hero": {
+      "health": 80,
+      "speed": 2,
+      "attack": 6,
+      "range": 1,
+      "cooldown": 3,
+      "sight": 6,
+      "trainTicks": 1
+    }
+  },
+  "buildings": {
+    "town-centre": {
+      "health": 600,
+      "size": { "w": 3, "h": 3 },
+      "work": 200,
+      "dropoff": true,
+      "trains": ["worker"]
+    },
+    "barracks": {
+      "health": 300,
+      "size": { "w": 2, "h": 2 },
+      "work": 60,
+      "cost": { "gold": 100 },
+      "trains": ["soldier"]
+    }
+  }
+}

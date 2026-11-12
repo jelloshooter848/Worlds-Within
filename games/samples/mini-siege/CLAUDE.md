@@ -918,7 +918,7 @@ kept and what was changed; checked by `validate`), 221 GLB models, about 8.7 MB 
 - `quaternius-farm-animals` (Quaternius, Farm Animals, 1 GLB, 0.2 MB): `sheep` (`Idle`, `Jump`),
   converted from FBX.
 
-The named packs have no people or sheep, hence the last two (owner item F-2 in `docs/BUILD-LOG.md`,
+The named packs have no people or sheep, hence the last two (owner item 534 in `docs/BUILD-LOG.md`,
 Engine 0.16 part F, which also covers the 2020 village pack and the clips). Since F8 two 2D packs
 draw the hosted rounds: `dungeon-tileset-ii` (0x72, DungeonTileset II 1.7, one 512x512 PNG) and
 `kenney-tower-defense` (Kenney, Tower Defense top-down, its tile sheet scaled to 16, 24 and 32 px

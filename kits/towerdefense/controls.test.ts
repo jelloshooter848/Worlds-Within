@@ -2,13 +2,30 @@ import { describe, expect, it } from 'vitest';
 import type { Action } from '@engine/core/input/actions';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { fixtureRound } from './__fixtures__/game';
-import { cellAtScreen, gridOf, REPEAT_DELAY, REPEAT_EVERY, screenAtCell, TdControls } from './controls';
+import {
+  cellAtScreen,
+  gridOf,
+  REPEAT_DELAY,
+  REPEAT_EVERY,
+  screenAtCell,
+  TD_CONTROLS,
+  TD_UPGRADE_CONTROL,
+  TdControls,
+} from './controls';
 import { tdGame } from './game';
 import { presentWorld } from './present';
 import { TdWorld, type TdCommand } from './world';
 
 const SIZE = { width: 256, height: 240 };
 const round = () => new TdWorld(fixtureRound(), { seed: 1 });
+/** The fixture round with the arrow tower given one upgrade (Engine 0.16 E3). */
+const leveled = () => {
+  const r = fixtureRound();
+  return new TdWorld(
+    { ...r, towers: { ...r.towers, arrow: { ...r.towers.arrow!, levels: [{ cost: 5, range: 2 }] } } },
+    { seed: 1 },
+  );
+};
 
 /** Feeds the controls `frames` frames of a script, returning each frame's commands. */
 function drive(c: TdControls, script: InputScript, frames: number): TdCommand[][] {
@@ -177,5 +194,50 @@ describe('pointer taps', () => {
     input.next();
     g.step(input);
     expect(g.world.towers.map((t) => [t.col, t.row])).toEqual([[3, 1]]);
+  });
+});
+
+describe('upgrades (Engine 0.16 E3)', () => {
+  it('jump on a tower whose type has levels upgrades it; on one without, places as before', () => {
+    const w = leveled();
+    w.place('arrow', 1, 1);
+    w.place('cannon', 3, 1);
+    w.step();
+    const c = new TdControls(gridOf(w));
+    expect(c.onUpgradable).toBe(true);
+    const cmds = drive(c, hold([0, ['jump']], [1, ['right']], [2, []], [3, ['right']], [4, ['jump']]), 5);
+    expect(cmds[0]).toEqual([{ type: 'upgrade', col: 1, row: 1 }]);
+    expect(c.onUpgradable).toBe(false);
+    expect(cmds[4]).toEqual([{ type: 'place', tower: 'arrow', col: 3, row: 1 }]);
+    // Without levels (the classic grid), jump on a tower is still a place.
+    const old = round();
+    old.place('arrow', 1, 1);
+    old.step();
+    const d = new TdControls(gridOf(old));
+    expect(drive(d, hold([0, ['jump']]), 1)[0]).toEqual([{ type: 'place', tower: 'arrow', col: 1, row: 1 }]);
+  });
+
+  it('a tap on a tower selects it, a second tap upgrades it', () => {
+    const w = leveled();
+    w.place('arrow', 3, 1);
+    w.step();
+    const c = new TdControls(gridOf(w));
+    const frame = presentWorld(w, { size: SIZE });
+    const at = (col: number, row: number): [number, number] => [80 + col * 16 + 8, 88 + row * 16 + 8];
+    expect(c.tap(...at(3, 1), frame)).toEqual([]);
+    expect(c.onUpgradable).toBe(true);
+    expect(c.tap(...at(3, 1), frame)).toEqual([{ type: 'upgrade', col: 3, row: 1 }]);
+  });
+
+  it('lists upgrading in TD_CONTROLS, after build', () => {
+    expect(TD_CONTROLS.map((x) => x.label)).toEqual([
+      'move',
+      'build',
+      'upgrade',
+      'next tower',
+      'sell',
+      'send the wave',
+    ]);
+    expect(TD_CONTROLS[2]).toBe(TD_UPGRADE_CONTROL);
   });
 });

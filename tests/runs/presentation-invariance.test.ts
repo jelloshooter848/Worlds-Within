@@ -106,6 +106,8 @@ describe('presentation invariance: presenters and effects never change the state
       'games/fx-lab',
       'games/platformer-classic',
       'games/platformer-lab',
+      'games/rts-classic',
+      'games/td-classic',
       'games/samples/dungeon',
       'games/samples/mini-siege',
       'games/samples/platformer',
@@ -134,9 +136,9 @@ describe('presentation invariance: presenters and effects never change the state
   });
 
   it.each(runFiles)('%s', async (file) => {
-    const { content, run, golden } = loadRun(ROOT, file);
-    // `pnpm cli run`: no presenter at all.
-    const played = await playRun(ROOT, file);
+    const { content, run, golden, cut } = loadRun(ROOT, file);
+    // `pnpm cli run`: no presenter at all (a long run to its presented part, `loadRun`).
+    const played = await playRun(ROOT, file, cut ? { untilTick: run.ticks } : {});
     if (!played.ok) throw new Error(JSON.stringify(played.errors));
     expect(played.value.failures).toEqual([]);
     expect(played.value.hashes).toEqual(golden);

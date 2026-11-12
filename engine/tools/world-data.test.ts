@@ -18,7 +18,7 @@ vi.setConfig({ testTimeout: 60_000 });
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PLAYED = 'games/samples/mini-siege/runs/played.run.json';
-const SKIRMISH = 'games/samples/rts-skirmish/runs';
+const SKIRMISH = 'games/rts-classic/runs';
 const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 const RAID = 'engine/sim/__fixtures__/raid-partial.run.json';
 

@@ -20,7 +20,8 @@ snapshot give it (`mission-defence.ts`, T6) and report what happened. It never i
   `td-towers` file's types by id).
 - `rules.ts`: `TOWERDEFENSE_RULES` (below).
 - `world.ts`: `TdWorld({ map, towers, waves }, { rng?, seed?, disabledRules? })`, one round (below);
-  `TdCommand`, `TdEvent`, `TdRefusal`, `TdSnapshot`, `sellValue(type)`. It throws on content that
+  `TdCommand`, `TdEvent`, `TdRefusal`, `TdSnapshot`, `sellValue(type, level?)`, `towerStats(type,
+level?)`, `upgradeCost(type, level)`, `maxLevel(type)` (Engine 0.16 E3). It throws on content that
   does not fit (a bad map, a tower type the table lacks, a wave list the map does not name).
 - `present.ts`: `presentWorld(world, opts)` (frozen) / `describeWorld` (not frozen), the round as a
   `PresentFrame`; `tdFrames(size, cursor?, opts?)`, the kit's `FrameSource`; `TdPresentState`,
@@ -33,7 +34,8 @@ snapshot give it (`mission-defence.ts`, T6) and report what happened. It never i
 - `game.ts`: `tdGame({ map, towers, waves, seed, disabledRules?, size? })` (`TdGame`, an `engine/core`
   `HeadlessGame`) and `tdRound(content, map?)`, the round from a game's loaded content (below).
 - `bot.ts`: `TdBot(plan)`, a deterministic player for tests: `next(game)` gives the actions to
-  hold this step (steps `place`, `sell`, `wave`, `wait`, `clear`; one press, then a released frame).
+  hold this step (steps `place`, `sell`, `upgrade`, `wave`, `wait`, `clear`; one press, then a
+  released frame).
 - `mission-defence.ts`: the `td-defence` mini game (`tdDefence`, `TD_DEFENCE`,
   `tdDefenceParamsSchema`, `TdDefenceRound`, `TdDefenceReport`) and the stateless
   `towerdefenseMissionAdapter` (below).
@@ -59,8 +61,19 @@ lives }`, lives at least 1), `towers` (the tower type ids placeable here, at lea
   `checkAll`: `unknown_tower` at `towers.<i>`, `unknown_waves` at `waves`, and `no_waves` at
   `waves` for a map without one that no `td-defence` mission names (it could only be played
   standalone); `tdRound` refuses a map without `waves` too (the mini siege's `walls`).
-- `td-towers`: `{ towers: { <id>: { cost, range (cells), damage, cooldown (ticks, >= 1), sell? } } }`;
-  `sell` left out is half the cost, rounded down. `checkAll`: `duplicate_tower` for a type in two files.
+  `stars?` (Engine 0.16 E4): `{ three, two }`, the lives left at least, on a win, for three and
+  two stars (any other win is one star, a loss none); `bad_stars` at `stars.two` when two needs
+  more than three, at `stars.three` when three needs more than `start.lives`.
+- `td-towers`: `{ towers: { <id>: { cost, range (cells), damage, cooldown (ticks, >= 1), sell?,
+levels? } } }`; `sell` left out is half the cost, rounded down. `checkAll`: `duplicate_tower` for
+  a type in two files. `levels` (Engine 0.16 E3; at least one when given): the upgrades in order,
+  each `{ cost, range?, damage?, cooldown?, sell? }`; the type itself is level 1, `levels[0]` level
+  2, and each level is the one below with its own fields put over it (`towerStats`). `cost` is the
+  upgrade's price; a level's `sell` left out is the level below's sell value plus half its cost,
+  rounded down, so selling counts the upgrades paid. A type without `levels` cannot be upgraded.
+  `splash?` and `slow?` (Engine 0.16 E4; on a type or a level, a level's replacing the one
+  below's): `splash: { radius (cells, >= 1), damage (>= 1) }`, `slow: { factor (percent of speed
+kept, 1-99), ticks (>= 1) }`.
 - `td-waves` (`waves/<id>.json`): `id`, `timer?` (ticks), `waves` (at least one, each `{ groups }`,
   each group `{ kind, count, spacing (ticks), hp, speed (sub-cell units a tick, 1..16), bounty,
 jitter? }`).
@@ -69,16 +82,22 @@ jitter? }`).
 
 ## The round (`world.ts`)
 
-Commands (`command(cmd)`, or `place(type, col, row)`, `sell(col, row)`, `startWave()`) are queued
+Commands (`command(cmd)`, or `place(type, col, row)`, `sell(col, row)`, `upgrade(col, row)`,
+`startWave()`) are queued
 and carried out, in order, at the start of the next `step()`, which returns that step's events.
-`placeRefusal(type, col, row)` says why a placement would be refused now (for a cursor or ghost).
+`placeRefusal(type, col, row)` says why a placement would be refused now (for a cursor or ghost);
+`upgradeRefusal(col, row)` the same for an upgrade, and `statsOf(tower)` is what a tower fires
+with now (its level's stats, or level 1's with `upgrade-improves` off).
 One step, in this fixed order:
 
 1. commands: `place` on a build cell (`build-on-build-cells`) with no tower, paying its cost
-   (`build-costs-gold`); `sell` removes the tower on a cell and gives back its sell value
-   (`sell-refunds`); `start-wave` starts the next wave. Refusals are `refused` events with a code
-   (`round_over`, `unknown_tower` (not on the map's list), `off_map`, `not_build_cell`, `occupied`,
-   `too_poor`, `no_tower`, `no_more_waves`), never thrown;
+   (`build-costs-gold`); `sell` removes the tower on a cell and gives back its sell value at its
+   level (`sell-refunds`); `upgrade` (Engine 0.16 E3) raises the tower on a cell one level, paying
+   that level's cost (`upgrade-costs-gold`; it also counts in `stats.spent`); `start-wave` starts
+   the next wave. Refusals are `refused` events with a code (`round_over`, `unknown_tower` (not on
+   the map's list), `off_map`, `not_build_cell`, `occupied`, `too_poor`, `no_tower`, `max_level`
+   (an upgrade past the type's last level, or of a type without `levels`), `no_more_waves`), never
+   thrown; an upgrade checks `round_over`, `no_tower`, `max_level`, `too_poor` in that order;
 2. the wave timer (`wave-timer`): with `timer`, the next wave starts once `timer` ticks have passed
    since the last wave started (or the round did, for the first);
 3. spawning: enemies still to come enter at the entry (`progress` 0), each `spacing` ticks after
@@ -92,20 +111,36 @@ One step, in this fixed order:
    (`targetOf`): an enemy whose cell (the path cell nearest its progress, `enemyCell`) is within
    `range` (squared cell distance; `tower-range`), the furthest along the path, ties to the lowest
    id (`target-first`; off, the lowest id in reach), for `damage`, then waits `cooldown` ticks
-   (`tower-cooldown`; off, it may fire every tick). A tower placed this step can fire at once. An
-   enemy at 0 hp is killed at once and pays its bounty (`kill-bounty`);
+   (`tower-cooldown`; off, it may fire every tick). Range, damage and cooldown are the tower's
+   level's (`upgrade-improves`; off, its type's own). A tower placed this step can fire at once. An
+   enemy at 0 hp is killed at once and pays its bounty (`kill-bounty`). Engine 0.16 E4: a target
+   hit and not killed by a tower with `slow` is slowed (`slow-enemies`; a `slowed` event): an
+   unslowed enemy takes it, a slowed one only a lower factor, or the same factor with more ticks.
+   Then a tower with `splash` hurts every other enemy whose cell is within `radius` of the
+   target's cell (as it was before the shot; squared cells), in id order, for the splash damage,
+   each a `splash` event and, at 0 hp, a kill credited to the tower (`splash-damage`). A slowed
+   enemy walks (step 4) `max(1, floor(speed * factor / 100))` (`speedOf`), and each tick it walks
+   counts its slow down;
 6. the end: 0 lives is `lost` (`lose-at-zero-lives`); else every wave started, none to come and
    no enemy left is `won` (`win-on-clear`);
 7. `tick` counts up. Once won or lost a step only counts the tick and refuses every command.
 
-Events (`TdEvent`): `placed`, `sold`, `refused`, `wave` (`wave` 1-based, `by` `button` or
-`timer`), `spawn`, `fire` (the hp left), `kill` (the bounty paid), `leak` (the lives left), `won`,
+Events (`TdEvent`): `placed`, `sold`, `upgraded` (`level`, the new one, and `cost`), `refused`, `wave` (`wave` 1-based, `by` `button` or
+`timer`), `spawn`, `fire` (the hp left), `splash` (`enemy`, `target`, `damage`, `hp`; E4),
+`slowed` (`factor`, `ticks`; E4), `kill` (the bounty paid), `leak` (the lives left), `won`,
 `lost`. `snapshot()` (`TdSnapshot`) is plain, JSON-safe and whole-number: `tick`, `map`, `outcome`,
-`gold`, `lives`, `rng`, `wave` (`started`, `total`, `sinceStart`, `pending`, `spawnIn`), `towers`,
-`enemies` (with `progress` and their `col`/`row`), `stats` (`spent`, `refunded`, `earned`,
+`gold`, `lives`, `rng`, `wave` (`started`, `total`, `sinceStart`, `pending`, `spawnIn`), `towers`
+(with `level` only once above 1, so a round without upgrades, the classic road's, the sample's
+earlier runs and the mini siege's, hashes as before),
+`enemies` (with `progress` and their `col`/`row`, and `slow` (ticks left) and `slowFactor` only
+while slowed, Engine 0.16 E4, so a round without slow towers hashes as before), `stats` (`spent`, `refunded`, `earned`,
 `killed`, `leaked`) and `events` (the last step's), so `canonicalJson` hashes it.
 
 `waveLeft(wave)` is the enemies of a wave still to come or on the path (0 once it is cleared).
+Engine 0.16 E4: `nextWave()` is the next wave to start, `{ wave, groups: [{ kind, count }] }`
+(kinds in first-come order, a kind's groups summed), or null once all have started; `stars()` is
+the rating, null without the map's `stars`, 0 while playing or lost, 1-3 once won (a reading, not
+a rule). An enemy's `maxHp` (its hp on spawning) is state for presentation, not in the snapshot.
 
 ## Controls (`controls.ts`; decision 3, item 199)
 
@@ -122,13 +157,20 @@ the commands, which `TdGame` queues for the round's next step:
   `REPEAT_DELAY` (10); clamped to the map;
 - `attack` cycles the tower type; `jump` places it on the cursor's cell; `special` sells the tower
   there; `start` starts the next wave (the shell does not take `start` from a round).
+- Upgrades (Engine 0.16 E3): the cursor on a tower is that tower **selected** (no extra state, so
+  no hash moves). On a tower whose type has `levels` (`TdGrid.upgradable`, which `gridOf` fills),
+  `jump` gives `upgrade` instead of `place`; on a tower of a type without levels it is still a
+  `place` (refused `occupied`), exactly as before. `TD_UPGRADE_CONTROL` (`jump` or a second tap on
+  a tower: upgrade) is a row of `TD_CONTROLS`; a page whose towers have no levels filters it out of
+  its hint (the classic road does, and `TD_DEFENCE_CONTROLS` leaves it out).
 
 `tap(x, y, frame, button?, tileSize?)`: picture point to cell through the frame's camera
 (`cellAtScreen`, the presenters' framing: the hint's centre and zoom clamped to its `bounds`); a
-primary tap moves the cursor there, or on the cursor's own cell places; a secondary one moves
+primary tap moves the cursor there (on a tower: selects it), or on the cursor's own cell places
+(or, on an upgradable tower, upgrades it); a secondary one moves
 there and sells; off the map nothing. From Engine 0.15 (lesson D1) taps are frame input
 (`InputFrame.taps`, game screen pixels): `TdGame.step` reads them, so a run file's `input.taps`
-replays a round played by tapping (`games/samples/tower-defense/runs/tapped.run.json`), and a
+replays a round played by tapping (`games/td-classic/runs/tapped.run.json`), and a
 hosted `TdDefenceRound` gets the host frame's taps through `RoundInput` (lesson D12).
 `screenAtCell(cell, frame, grid)` is the cell's centre as a picture point, the exact inverse of
 `cellAtScreen` for the frame's camera (a page script or browser test maps it on with the
@@ -143,22 +185,38 @@ their kind), sent once per stream (`MapTracker`). Entities, by depth (`TD_DEPTH`
 
 - `tower-<id>`, kind `tower:<type>`: anim `fire` on a step it fired, else `idle`; facing (eight
   ways, `facingToward`) toward the enemy it fired at or would target; tags `type:<type>`, `ready` or
-  `cooling`;
+  `cooling`, `level:<n>` and `range:<cells>` (the range it fires with now; Engine 0.16 E3), and
+  `splash:<radius>` and `slows` for a tower that has them (E4);
 - `enemy-<id>`, kind `enemy:<kind>`: its box slid along the path by progress (`enemyPlace`, whole
-  px), facing the way it walks (cardinal), anim `walk`; tags `hp:<hp>`, `wave:<n>`, `hit` (and
-  `fx.tint` `hit`) on a step it was shot;
+  px), facing the way it walks (cardinal), anim `walk`; tags `hp:<hp>`, `maxhp:<n>` (E4, for a
+  health bar), `wave:<n>`, `slow` while slowed (E4), `hit` (and `fx.tint` `hit`) on a step it was
+  shot or splashed;
 - `shot-<tower id>`, kind `shot:<type>`, over the target on the step a tower fired; tags
   `from:tower-<id>`, `target:enemy-<id>`;
 - with a cursor: `ghost` (kind `ghost:<type>`, anim and tag `ok` or `blocked` with `why:<refusal>`,
-  from `placeRefusal`; not once the round is over) and `cursor` (tag `cell:<kind>`).
+  from `placeRefusal`, then `range:<cells>`, the type's own, E4; on a tower, Engine 0.16 E7,
+  `selected` and that tower's range now instead, so a skin rings the selected tower; not once the
+  round is over) and
+  `cursor` (tag `cell:<kind>`).
 
 Status (`presentStatus`): `gold`, `lives`, `wave` (`n/m`), `waveNumber`, `waveCount`, `enemies`,
-`outcome`, `nextWave` (ticks to the timer's next wave, only with a timer and waves left) and, with
-a cursor, `tower` and `towerCost`. Camera: the map's centre, `bounds` the map, `zoom` if given.
+`outcome`, `nextWave` (ticks to the timer's next wave, only with a timer and waves left),
+`nextWaveKinds` (`runner,brute`) and `nextWaveGroups` (`runner:6,brute:1`) while a wave is still to
+start and the round is playing (E4, the HUD's wave preview), `stars` only on a map with a rating
+(E4), from Engine 0.16 E9 `killed` (the enemies killed), `wavesHeld` (started waves with no enemy
+left to come or on the path: an end screen's waves held) and `nearGate` (enemies within
+`TD_NEAR_GATE_CELLS`, 8, path cells of the exit: a skin's danger music) and, with
+a cursor, `tower` and `towerCost`, and with the cursor on a tower (selected; Engine 0.16 E3)
+`selected` (`tower-<id>`), `sellValue` and, while it has a level above it, `upgradeCost` (0 with
+`upgrade-costs-gold` off). Camera: the map's centre, `bounds` the map, `zoom` if given.
 
 Events (`TD_EVENT_TYPES`, for skin sounds): `td-place` (`tower`, `cost`), `td-sell` (`refund`),
+`td-upgrade` (`tower`, `level`, `cost`; Engine 0.16 E3),
 `td-refused` (`command`, `code`), `td-wave-start` (`wave`, `by`, `waves`), `td-spawn`, `td-shot`
-(at the target; `from`, `fromX`/`fromY`, `tower`, `damage`, `hp`), `td-kill` (`kind`, `bounty`; a
+(at the target; `from`, `fromX`/`fromY`, `tower`, `damage`, `hp`, and for a splash tower
+`splash`, the other enemies the shot hurt), `td-splash` (E4: at each enemy a splash hurt; `from`,
+`target`, `fromX`/`fromY` the target's centre, `tower`, `damage`, `hp`), `td-slow` (E4: at the
+slowed enemy; `from`, `factor`, `ticks`), `td-kill` (`kind`, `bounty`; a
 gone enemy placed by the last frame's box), `td-leak` (at the exit; `lives`), `td-wave-clear`
 (`wave`, `waves`; once per wave per stream, so only with a `TdPresentState`, and never for a wave
 cleared before the stream started) and `td-end` (`result` `won` or `lost`: skin keys
@@ -172,7 +230,8 @@ and the controls' commands, and steps the round (`events` is that step's); no `o
 (decision 3: frame input only, taps included since Engine 0.15).
 `snapshot()` is `{ round, controls, kit }`: the round's `TdSnapshot`, the controls' `{ col, row,
 tower, held }` and `kit`, a summary for run-file paths: `outcome`, `gold`, `lives`, `wave`,
-`waves`, `towers`, `enemies`, `killed`, `leaked`, `spent`, `earned`. `world` and `controls` are
+`waves`, `towers`, `enemies`, `killed`, `leaked`, `spent`, `earned`, and `stars` only on a map
+with a rating (Engine 0.16 E4; 0 until won). `world` and `controls` are
 public for a page's frame stream (`new FrameStream(tdFrames(screen, () => game.controls.view()))`)
 and `tap`. A game's `createGame` is `tdGame({ ...tdRound(content), seed, disabledRules, size:
 content.manifest.screen })`.
@@ -198,7 +257,9 @@ names it with `"play": "td-defence"` (`TD_DEFENCE`) and says everything in its `
 - `budget?`: `{ faction, item, cap? }`, the round's gold: the `Inventory` item of the entity with
   that faction's `Stockpile` (0 when it has none of the item), at most `cap`. Left out, the map's
   `start.gold`. `lives?`: the round's lives (the map's `start.lives` when left out). `timer?`:
-  ticks until the wave starts by itself (left out, only `start` starts it).
+  ticks until the wave starts by itself (left out, only `start` starts it). `upgrades?` (Engine
+  0.16 E3): `true` keeps the tower types' `levels` in the round; left out, every type plays without
+  them (so a game's towers gaining levels never moves a mission round).
 - `wave`: `[{ kind, select?, hpPer?, speed, spacing?, bounty? }]`, the world units that come, as
   one wave: each entry's units in entry order, then ascending id, an entity going to the first
   entry that selects it; hp `ceil(Health.hp / hpPer)` (at least 1; `Health.hp` without `hpPer`, 1
@@ -226,7 +287,7 @@ The halves (the kit never imports `engine/sim`; it reads the snapshot with `snap
 
 - `towerdefenseMissionAdapter` (`MissionAdapter<JsonObject, MiniGameEnd>`, stateless; `MissionHost`
   takes it as `adapters: { 'td-defence': ... }`): `input` is `tdDefenceInput`, the round's params
-  `TdDefenceInput { map, gold?, lives?, timer?, walls (or null), slot?, foes: [{ entity, name,
+  `TdDefenceInput { map, gold?, lives?, timer?, upgrades?, walls (or null), slot?, foes: [{ entity, name,
 kind, hp, speed, spacing, bounty }] }`; `outcome` is `tdDefenceOutcome`, with `stats` `{ placed,
 spent, leaked, livesLeft, killed, escaped, fallen, ticks }`. `stats.spent` and the `spentAtMost`
   rule read the gold **net** of sales (the report's `spent - refunded`, never below 0; Engine 0.15
@@ -265,13 +326,23 @@ kit itself is unchanged: `stats.killed` and `stats.fallen` were already world na
 
 ## Named rules (`rules.ts`)
 
-`TOWERDEFENSE_RULES`: `build-on-build-cells`, `build-costs-gold`, `sell-refunds`, `wave-timer`,
+`TOWERDEFENSE_RULES`: `build-on-build-cells`, `build-costs-gold`, `sell-refunds`,
+`upgrade-costs-gold`, `upgrade-improves` (Engine 0.16 E3), `wave-timer`,
 `spawn-spacing`, `enemies-walk`, `towers-fire`, `target-first`, `tower-range`, `tower-cooldown`,
-`kill-bounty`, `leak-costs-life`, `win-on-clear`, `lose-at-zero-lives`. Each is one `isOn` check
+`splash-damage`, `slow-enemies` (Engine 0.16 E4), `kill-bounty`, `leak-costs-life`, `win-on-clear`, `lose-at-zero-lives`. Each is one `isOn` check
 where it is decided; `world.test.ts` has one case per rule that changes when it is off (and fails
 when a rule has no case). The kit is strict: the run files of `games/samples/tower-defense` guard
 every rule (`pnpm cli mutants games/samples/tower-defense`, `tests/runs/tower-defense-mutants.test.ts`),
-so a new rule needs a run there that fails without it.
+so a new rule needs a run there that fails without it. From Engine 0.16 part E (E2) the same
+0.15 round is kept unchanged as the test game `games/td-classic`, whose run files never move,
+held the same way by `tests/runs/td-classic-mutants.test.ts`; a rule added after the copy that
+its road cannot reach is listed there by name, not guarded by a re-recorded run (E3:
+`upgrade-costs-gold` and `upgrade-improves`, guarded in the sample by `runs/upgrade.run.json`,
+over the sample's `towers.json`, which gained `levels` without moving its earlier runs; E4:
+`splash-damage` and `slow-enemies`, guarded then by the sample's `runs/shells.run.json`, its
+cannon's levels 2 (splash) and 3 (slow), which no earlier run reaches). From E8 the sample is the
+16:9 map with ten waves (arrow, cannon with splash, frost with slow) and its guard runs are
+`build`, `upgrade`, `splash`, `slow`, `target`, `timer`, `leak`, `lost` and `won`.
 
 ## Rules
 
@@ -290,7 +361,12 @@ so a new rule needs a run there that fails without it.
 
 ## Testing
 
-`pnpm test kits/towerdefense`: `world.test.ts` (placement and paying, refusals, selling, the wave
+`pnpm test kits/towerdefense`: `world.test.ts` (placement and paying, refusals, selling, upgrades:
+stats per level, success, each refusal, firing with the level's stats, sell value after upgrades;
+splash in reach and id order with its kills, slow by factor and ticks and the stronger one winning,
+levels giving splash and slow, the star rating 3/2/1 and none on a loss, `bad_stars`, the next
+wave's preview;
+the wave
 button, spacing and queueing, the timer, jitter through the given RNG, targeting order, range,
 cooldown, kills and bounty, leaks and lives, won and lost, one case per rule switched off, the same
 snapshots from the same seed twice and whole numbers only) and `kit.test.ts` (the hook, the

@@ -1,35 +1,540 @@
 {
   "backend": "canvas2d",
-  "background": "#00a800",
+  "background": "#2ecc71",
+  "images": {
+    "road": {
+      "image": "assets/kenney-tower-defense/road-art.png",
+      "frames": {
+        "arrow-1": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "arrow-1-fire": {
+          "x": 24,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "arrow-2": {
+          "x": 48,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "arrow-2-fire": {
+          "x": 72,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "arrow-3": {
+          "x": 96,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "arrow-3-fire": {
+          "x": 120,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "cannon-1": {
+          "x": 144,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "cannon-1-fire": {
+          "x": 168,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "cannon-2": {
+          "x": 192,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "cannon-2-fire": {
+          "x": 216,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "cannon-3": {
+          "x": 240,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "cannon-3-fire": {
+          "x": 264,
+          "y": 0,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "frost-1": {
+          "x": 0,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "frost-1-fire": {
+          "x": 24,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "frost-2": {
+          "x": 48,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "frost-2-fire": {
+          "x": 72,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "frost-3": {
+          "x": 96,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "frost-3-fire": {
+          "x": 120,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "ghost-arrow": {
+          "x": 144,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "ghost-cannon": {
+          "x": 168,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "ghost-frost": {
+          "x": 192,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "runner-0": {
+          "x": 216,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "runner-1": {
+          "x": 240,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "runner-slow-0": {
+          "x": 264,
+          "y": 24,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "runner-slow-1": {
+          "x": 0,
+          "y": 48,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "brute-0": {
+          "x": 24,
+          "y": 48,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "brute-1": {
+          "x": 48,
+          "y": 48,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "brute-slow-0": {
+          "x": 72,
+          "y": 48,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "brute-slow-1": {
+          "x": 96,
+          "y": 48,
+          "w": 24,
+          "h": 24,
+          "anchor": "center"
+        },
+        "grass-0": {
+          "x": 0,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "grass-1": {
+          "x": 16,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "grass-2": {
+          "x": 32,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "grass-3": {
+          "x": 48,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road": {
+          "x": 64,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-top": {
+          "x": 80,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-right": {
+          "x": 96,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-top-right": {
+          "x": 112,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-bottom": {
+          "x": 128,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-top-bottom": {
+          "x": 144,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-right-bottom": {
+          "x": 160,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-top-right-bottom": {
+          "x": 176,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-left": {
+          "x": 192,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-top-left": {
+          "x": 208,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-right-left": {
+          "x": 224,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-top-right-left": {
+          "x": 240,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-bottom-left": {
+          "x": 256,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-top-bottom-left": {
+          "x": 272,
+          "y": 72,
+          "w": 16,
+          "h": 16
+        },
+        "road-right-bottom-left": {
+          "x": 0,
+          "y": 88,
+          "w": 16,
+          "h": 16
+        },
+        "road-top-right-bottom-left": {
+          "x": 16,
+          "y": 88,
+          "w": 16,
+          "h": 16
+        },
+        "cave": {
+          "x": 32,
+          "y": 88,
+          "w": 16,
+          "h": 16
+        },
+        "gate": {
+          "x": 48,
+          "y": 88,
+          "w": 16,
+          "h": 16
+        },
+        "blank": {
+          "x": 64,
+          "y": 88,
+          "w": 16,
+          "h": 16
+        }
+      }
+    },
+    "td16": {
+      "image": "assets/kenney-tower-defense/tilesheet-16.png",
+      "frameSize": {
+        "w": 16,
+        "h": 16
+      },
+      "grid": {
+        "cols": 23,
+        "rows": 13
+      }
+    }
+  },
   "sheets": {
-    "sheet": "td",
+    "sheet": "road",
     "fallbackColor": "#ff00ff"
   },
   "kinds": {
     "tower:arrow": {
       "frames": {
-        "idle": "arrow-idle",
-        "fire": "arrow-fire"
-      }
+        "idle": "arrow-1",
+        "fire": {
+          "frames": ["arrow-1-fire", "arrow-1"],
+          "ticks": [3, 5],
+          "loop": false
+        }
+      },
+      "turnToFacing": "up",
+      "spawnTween": [
+        {
+          "prop": "scale",
+          "from": 0.3,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        }
+      ],
+      "byTag": [
+        {
+          "prefix": "level:",
+          "min": 3,
+          "frames": {
+            "idle": "arrow-3",
+            "fire": {
+              "frames": ["arrow-3-fire", "arrow-3"],
+              "ticks": [3, 5],
+              "loop": false
+            }
+          }
+        },
+        {
+          "prefix": "level:",
+          "min": 2,
+          "max": 2,
+          "frames": {
+            "idle": "arrow-2",
+            "fire": {
+              "frames": ["arrow-2-fire", "arrow-2"],
+              "ticks": [3, 5],
+              "loop": false
+            }
+          }
+        }
+      ]
     },
     "tower:cannon": {
       "frames": {
-        "idle": "cannon-idle",
-        "fire": "cannon-fire"
-      }
+        "idle": "cannon-1",
+        "fire": {
+          "frames": ["cannon-1-fire", "cannon-1"],
+          "ticks": [3, 5],
+          "loop": false
+        }
+      },
+      "turnToFacing": "up",
+      "spawnTween": [
+        {
+          "prop": "scale",
+          "from": 0.3,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        }
+      ],
+      "byTag": [
+        {
+          "prefix": "level:",
+          "min": 3,
+          "frames": {
+            "idle": "cannon-3",
+            "fire": {
+              "frames": ["cannon-3-fire", "cannon-3"],
+              "ticks": [3, 5],
+              "loop": false
+            }
+          }
+        },
+        {
+          "prefix": "level:",
+          "min": 2,
+          "max": 2,
+          "frames": {
+            "idle": "cannon-2",
+            "fire": {
+              "frames": ["cannon-2-fire", "cannon-2"],
+              "ticks": [3, 5],
+              "loop": false
+            }
+          }
+        }
+      ]
+    },
+    "tower:frost": {
+      "frames": {
+        "idle": "frost-1",
+        "fire": {
+          "frames": ["frost-1-fire", "frost-1"],
+          "ticks": [3, 5],
+          "loop": false
+        }
+      },
+      "turnToFacing": "up",
+      "spawnTween": [
+        {
+          "prop": "scale",
+          "from": 0.3,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        }
+      ],
+      "byTag": [
+        {
+          "prefix": "level:",
+          "min": 3,
+          "frames": {
+            "idle": "frost-3",
+            "fire": {
+              "frames": ["frost-3-fire", "frost-3"],
+              "ticks": [3, 5],
+              "loop": false
+            }
+          }
+        },
+        {
+          "prefix": "level:",
+          "min": 2,
+          "max": 2,
+          "frames": {
+            "idle": "frost-2",
+            "fire": {
+              "frames": ["frost-2-fire", "frost-2"],
+              "ticks": [3, 5],
+              "loop": false
+            }
+          }
+        }
+      ]
     },
     "enemy:runner": {
       "frames": {
         "walk": {
           "frames": ["runner-0", "runner-1"],
-          "ticks": 8
+          "ticks": 6
         }
       },
-      "flipFacing": true,
+      "turnToFacing": true,
+      "hitFlash": {
+        "tag": "hit",
+        "color": "#ffffff"
+      },
+      "spawnTween": [
+        {
+          "prop": "alpha",
+          "from": 0,
+          "to": 1,
+          "frames": 8
+        }
+      ],
       "byTag": [
         {
-          "tag": "hit",
-          "palette": "td-hit"
+          "tag": "slow",
+          "frames": {
+            "walk": {
+              "frames": ["runner-slow-0", "runner-slow-1"],
+              "ticks": 12
+            }
+          }
         }
       ]
     },
@@ -37,58 +542,123 @@
       "frames": {
         "walk": {
           "frames": ["brute-0", "brute-1"],
-          "ticks": 8
+          "ticks": 5
         }
       },
-      "flipFacing": true,
+      "turnToFacing": true,
+      "hitFlash": {
+        "tag": "hit",
+        "color": "#ffffff"
+      },
+      "spawnTween": [
+        {
+          "prop": "alpha",
+          "from": 0,
+          "to": 1,
+          "frames": 8
+        }
+      ],
       "byTag": [
         {
-          "tag": "hit",
-          "palette": "td-hit"
+          "tag": "slow",
+          "frames": {
+            "walk": {
+              "frames": ["brute-slow-0", "brute-slow-1"],
+              "ticks": 10
+            }
+          }
         }
       ]
     },
     "shot:arrow": {
       "frames": {
-        "idle": "shot-arrow"
+        "idle": "blank"
       }
     },
     "shot:cannon": {
       "frames": {
-        "idle": "shot-cannon"
+        "idle": "blank"
+      }
+    },
+    "shot:frost": {
+      "frames": {
+        "idle": "blank"
       }
     },
     "ghost:arrow": {
       "frames": {
-        "idle": "arrow-idle"
+        "idle": "ghost-arrow"
+      },
+      "ring": {
+        "tag": "range:",
+        "color": "#fcfcfc",
+        "alpha": 0.18,
+        "edge": "#fcfcfc"
       },
       "byTag": [
         {
-          "tag": "ok",
-          "palette": "td-ok"
+          "tag": "selected",
+          "sheet": "td16",
+          "frames": {
+            "idle": "16"
+          }
         },
         {
           "tag": "blocked",
-          "palette": "td-blocked"
+          "palette": "#f83800"
         }
       ]
     },
     "ghost:cannon": {
       "frames": {
-        "idle": "cannon-idle"
+        "idle": "ghost-cannon"
+      },
+      "ring": {
+        "tag": "range:",
+        "color": "#fcfcfc",
+        "alpha": 0.18,
+        "edge": "#fcfcfc"
       },
       "byTag": [
         {
-          "tag": "ok",
-          "palette": "td-ok"
+          "tag": "selected",
+          "sheet": "td16",
+          "frames": {
+            "idle": "16"
+          }
         },
         {
           "tag": "blocked",
-          "palette": "td-blocked"
+          "palette": "#f83800"
+        }
+      ]
+    },
+    "ghost:frost": {
+      "frames": {
+        "idle": "ghost-frost"
+      },
+      "ring": {
+        "tag": "range:",
+        "color": "#fcfcfc",
+        "alpha": 0.18,
+        "edge": "#fcfcfc"
+      },
+      "byTag": [
+        {
+          "tag": "selected",
+          "sheet": "td16",
+          "frames": {
+            "idle": "16"
+          }
+        },
+        {
+          "tag": "blocked",
+          "palette": "#f83800"
         }
       ]
     },
     "cursor": {
+      "sheet": "td",
       "frames": {
         "idle": {
           "frames": ["cursor-0", "cursor-1"],
@@ -99,13 +669,38 @@
   },
   "tiles": {
     ".": {
-      "frame": "ground"
+      "frame": "grass-0",
+      "vary": {
+        "frames": ["grass-0", "grass-1", "grass-2", "grass-3"],
+        "weights": [40, 2, 1, 1]
+      }
     },
     "#": {
-      "frame": "road"
+      "frame": "road",
+      "join": {
+        "with": ["#", "S", "X"],
+        "frames": {
+          "top": "road-top",
+          "right": "road-right",
+          "top right": "road-top-right",
+          "bottom": "road-bottom",
+          "top bottom": "road-top-bottom",
+          "right bottom": "road-right-bottom",
+          "top right bottom": "road-top-right-bottom",
+          "left": "road-left",
+          "top left": "road-top-left",
+          "right left": "road-right-left",
+          "top right left": "road-top-right-left",
+          "bottom left": "road-bottom-left",
+          "top bottom left": "road-top-bottom-left",
+          "right bottom left": "road-right-bottom-left",
+          "top right bottom left": "road-top-right-bottom-left"
+        }
+      }
     },
     "B": {
-      "frame": "pad"
+      "sheet": "td16",
+      "frame": "84"
     },
     "S": {
       "frame": "cave"
@@ -114,25 +709,168 @@
       "frame": "gate"
     }
   },
+  "labels": {
+    "enemy:runner": {
+      "from": {
+        "tag": "hp:"
+      },
+      "as": "bar",
+      "max": {
+        "tag": "maxhp:"
+      },
+      "w": 12,
+      "h": 2,
+      "color": "#58d854",
+      "back": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -1
+      }
+    },
+    "enemy:brute": {
+      "from": {
+        "tag": "hp:"
+      },
+      "as": "bar",
+      "max": {
+        "tag": "maxhp:"
+      },
+      "w": 12,
+      "h": 2,
+      "color": "#58d854",
+      "back": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -1
+      }
+    }
+  },
+  "emitters": {
+    "spark": {
+      "burst": 4,
+      "life": [5, 9],
+      "speed": [0.6, 1.4],
+      "angle": [0, 360],
+      "drag": 0.12,
+      "size": [2, 1],
+      "color": ["#fff6b0", "#f8b800"],
+      "alpha": [1, 0]
+    },
+    "blast": {
+      "burst": 10,
+      "life": [8, 14],
+      "speed": [0.8, 1.8],
+      "angle": [0, 360],
+      "drag": 0.12,
+      "size": [3, 1],
+      "color": ["#ffffff", "#f8b800", "#f83800"],
+      "alpha": [1, 0]
+    },
+    "shrapnel": {
+      "burst": 4,
+      "life": [6, 10],
+      "speed": [0.5, 1.2],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "size": [2, 1],
+      "color": ["#f8b800", "#f83800"],
+      "alpha": [1, 0]
+    },
+    "frost": {
+      "burst": 6,
+      "life": [8, 14],
+      "speed": [0.4, 1.0],
+      "angle": [0, 360],
+      "drag": 0.08,
+      "size": [2, 1],
+      "color": ["#ffffff", "#7cd8fc", "#3cbcfc"],
+      "alpha": [1, 0]
+    },
+    "smoke": {
+      "burst": 6,
+      "life": [18, 30],
+      "speed": [0.2, 0.6],
+      "angle": [0, 360],
+      "drag": 0.05,
+      "gravity": -0.01,
+      "size": [3, 5],
+      "color": ["#8c8c8c", "#4c4c4c"],
+      "alpha": [0.8, 0]
+    },
+    "debris": {
+      "burst": 8,
+      "life": [10, 16],
+      "speed": [0.8, 1.6],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "gravity": 0.05,
+      "size": [2, 1],
+      "color": ["#2e8b57", "#5c3c1c", "#d8d8d8"],
+      "alpha": [1, 0]
+    },
+    "dust": {
+      "burst": 8,
+      "life": [10, 18],
+      "speed": [0.4, 1.0],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "size": [2, 1],
+      "color": ["#e2d2b0", "#b8a888"],
+      "alpha": [1, 0]
+    },
+    "coins": {
+      "burst": 6,
+      "life": [12, 18],
+      "speed": [0.6, 1.4],
+      "angle": [220, 320],
+      "gravity": 0.06,
+      "size": [2, 1],
+      "color": ["#fff6b0", "#ffd030"],
+      "alpha": [1, 0]
+    },
+    "stars": {
+      "burst": 10,
+      "life": [10, 18],
+      "speed": [0.4, 1.2],
+      "angle": [200, 340],
+      "drag": 0.06,
+      "size": [2, 1],
+      "color": ["#ffffff", "#fcd800"],
+      "alpha": [1, 0]
+    },
+    "breach": {
+      "burst": 10,
+      "life": [12, 20],
+      "speed": [0.6, 1.4],
+      "angle": [0, 360],
+      "drag": 0.08,
+      "size": [3, 1],
+      "color": ["#f83800", "#a80020"],
+      "alpha": [1, 0]
+    }
+  },
   "events": {
     "td-place": {
       "sound": "place",
-      "effect": {
-        "kind": "particles",
-        "color": "#fcfcfc",
-        "count": 6,
-        "size": 1,
-        "ticks": 8
+      "emit": "dust",
+      "shake": {
+        "amount": 1,
+        "ticks": 4
       }
     },
     "td-sell": {
       "sound": "sell",
-      "effect": {
-        "kind": "particles",
-        "color": "#f8b800",
-        "count": 6,
-        "size": 1,
-        "ticks": 8
+      "emit": ["dust", "coins"]
+    },
+    "td-upgrade": {
+      "sound": "upgrade",
+      "emit": "stars",
+      "tween": {
+        "prop": "scale",
+        "from": 1.3,
+        "to": 1,
+        "frames": 10,
+        "ease": "backOut"
       }
     },
     "td-refused": {
@@ -140,43 +878,100 @@
     },
     "td-wave-start": {
       "sound": "wave",
-      "effect": {
-        "kind": "flash",
+      "flash": {
         "color": "#fcfcfc",
-        "ticks": 2
-      }
-    },
-    "td-shot:tower=cannon": {
-      "sound": "boom",
-      "effect": {
-        "kind": "shake",
-        "size": 1,
+        "alpha": 0.3,
         "ticks": 4
       }
     },
+    "td-spawn": {
+      "sound": "spawn",
+      "emit": "dust",
+      "volume": [0.5, 0.7],
+      "cooldown": 4
+    },
+    "td-shot:tower=cannon": {
+      "sound": "launch",
+      "projectile": {
+        "sheet": "td16",
+        "frame": "274",
+        "ticks": 8,
+        "arc": 10,
+        "ease": "quadIn",
+        "impact": {
+          "emit": ["blast", "smoke"],
+          "sound": "boom",
+          "shake": {
+            "amount": 1.5,
+            "ticks": 6
+          }
+        }
+      }
+    },
+    "td-shot:tower=frost": {
+      "sound": "frost",
+      "projectile": {
+        "sheet": "td16",
+        "frame": "275",
+        "ticks": 6,
+        "impact": {
+          "emit": "frost"
+        }
+      }
+    },
     "td-shot": {
-      "sound": "arrow"
+      "sound": "arrow",
+      "pitch": [-1, 1],
+      "projectile": {
+        "sheet": "td16",
+        "frame": "273",
+        "ticks": 4,
+        "impact": {
+          "emit": "spark"
+        }
+      }
+    },
+    "td-splash": {
+      "sound": "splash",
+      "cooldown": 2,
+      "projectile": {
+        "ticks": 10,
+        "arc": 4,
+        "size": 2,
+        "color": "#f8b800",
+        "impact": {
+          "emit": "shrapnel"
+        }
+      }
+    },
+    "td-slow": {
+      "sound": "chill",
+      "emit": "frost"
     },
     "td-kill": {
       "sound": "kill",
-      "effect": {
-        "kind": "particles",
-        "color": "#f83800",
-        "count": 8,
-        "size": 2,
-        "ticks": 12
+      "emit": ["debris", "smoke"],
+      "shake": {
+        "amount": 1,
+        "ticks": 4
       }
     },
     "td-leak": {
       "sound": "leak",
-      "effect": {
-        "kind": "tint",
+      "emit": "breach",
+      "shake": {
+        "amount": 3,
+        "ticks": 12
+      },
+      "flash": {
         "color": "#a80020",
+        "alpha": 0.35,
         "ticks": 8
       }
     },
     "td-wave-clear": {
-      "sound": "clear"
+      "sound": "clear",
+      "emit": "stars"
     },
     "td-end:won": {
       "sound": "won",
@@ -201,7 +996,8 @@
       "as": "icon",
       "x": 4,
       "y": 4,
-      "frame": "icon-gold"
+      "frame": "icon-gold",
+      "sheet": "td"
     },
     {
       "status": "gold",
@@ -215,7 +1011,8 @@
       "as": "icon",
       "x": 48,
       "y": 4,
-      "frame": "icon-lives"
+      "frame": "icon-lives",
+      "sheet": "td"
     },
     {
       "status": "lives",
@@ -229,7 +1026,8 @@
       "as": "icon",
       "x": 84,
       "y": 4,
-      "frame": "icon-wave"
+      "frame": "icon-wave",
+      "sheet": "td"
     },
     {
       "status": "wave",
@@ -243,7 +1041,8 @@
       "as": "icon",
       "x": 132,
       "y": 4,
-      "frame": "icon-timer"
+      "frame": "icon-timer",
+      "sheet": "td"
     },
     {
       "status": "nextWave",
@@ -256,22 +1055,148 @@
       "status": "tower",
       "as": "text",
       "x": 4,
-      "y": 228,
+      "y": 256,
       "font": "td-font"
     },
     {
       "status": "towerCost",
       "as": "icon",
       "x": 60,
-      "y": 228,
-      "frame": "icon-gold"
+      "y": 256,
+      "frame": "icon-gold",
+      "sheet": "td"
     },
     {
       "status": "towerCost",
       "as": "number",
       "x": 70,
-      "y": 228,
+      "y": 256,
       "font": "td-font"
+    },
+    {
+      "status": "nextWaveGroups",
+      "as": "text",
+      "format": "next",
+      "x": 178,
+      "y": 4,
+      "font": "road-small",
+      "color": "#fcfcfc",
+      "shadow": "#000000",
+      "when": "nextWaveGroups"
+    },
+    {
+      "status": "nextWaveGroups",
+      "as": "preview",
+      "x": 204,
+      "y": 4,
+      "sheet": "td",
+      "frames": {
+        "runner": "icon-runner",
+        "brute": "icon-brute"
+      },
+      "frame": "icon-runner",
+      "font": "road-small",
+      "color": "#fcfcfc",
+      "shadow": "#000000",
+      "gap": 2,
+      "spacing": 5
+    },
+    {
+      "status": "speed",
+      "as": "text",
+      "format": "{value}x",
+      "x": 400,
+      "y": 4,
+      "font": "road-small",
+      "color": "#fcd800",
+      "shadow": "#000000",
+      "when": {
+        "status": "speed",
+        "gt": 1
+      }
+    },
+    {
+      "status": "upgradeCost",
+      "as": "icon",
+      "x": 100,
+      "y": 256,
+      "frame": "icon-up",
+      "sheet": "td"
+    },
+    {
+      "status": "upgradeCost",
+      "as": "number",
+      "x": 110,
+      "y": 256,
+      "font": "td-font"
+    },
+    {
+      "status": "sellValue",
+      "as": "text",
+      "format": "sell {value}",
+      "x": 140,
+      "y": 257,
+      "font": "road-small",
+      "color": "#fcfcfc",
+      "shadow": "#000000",
+      "when": "sellValue"
     }
-  ]
+  ],
+  "music": {
+    "road": {
+      "layers": {
+        "calm": "road",
+        "danger": "road-danger"
+      },
+      "fade": 40,
+      "mix": [
+        {
+          "when": {
+            "status": "outcome",
+            "ne": "playing"
+          },
+          "layers": {
+            "calm": 1,
+            "danger": 0
+          },
+          "fade": 20
+        },
+        {
+          "when": {
+            "status": "nearGate",
+            "gte": 1
+          },
+          "layers": {
+            "calm": 1,
+            "danger": 1
+          },
+          "fade": 15
+        },
+        {
+          "when": [
+            {
+              "status": "waveNumber",
+              "gte": 8
+            },
+            {
+              "status": "enemies",
+              "gte": 1
+            }
+          ],
+          "layers": {
+            "calm": 1,
+            "danger": 0.6
+          },
+          "fade": 45
+        },
+        {
+          "layers": {
+            "calm": 1,
+            "danger": 0
+          },
+          "fade": 90
+        }
+      ]
+    }
+  }
 }

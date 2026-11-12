@@ -75,6 +75,12 @@ export interface RtsUnitView {
   event: string | null;
   /** True while its event is frozen (an open mission holds it). */
   frozen: boolean;
+  /** How far it sees in whole cells (`Unit.sight`), when the snapshot has it (Engine 0.16 part D). */
+  sight?: number;
+  /** Its move task's goal cell (`Task.goal`), when it has one (Engine 0.16 part D, path dots). */
+  goal?: { x: number; y: number };
+  /** The cells still to enter on its A* way (`Task.path`), when not empty (Engine 0.16 part D). */
+  path?: { x: number; y: number }[];
 }
 
 /** A building as the view sees it. */
@@ -181,90 +187,135 @@ export interface RtsView {
 }
 
 const Id = z.int().min(1);
-const rows = <T extends z.ZodType>(data: T) => z.array(z.tuple([Id, data])).default([]);
 const Cell = z.looseObject({ x: z.int(), y: z.int() });
 
-const snapshotSchema = z.looseObject({
-  tick: z.int().min(0),
-  components: z.looseObject({
-    Terrain: rows(
-      z.looseObject({
-        width: z.int().min(1),
-        height: z.int().min(1),
-        types: z.array(z.looseObject({ name: z.string(), cost: z.int(), passable: z.boolean() })),
-        cells: z.array(z.int().min(0)),
-      }),
-    ),
-    Position: rows(Cell),
-    Owner: rows(z.looseObject({ faction: z.string() })),
-    Health: rows(z.looseObject({ hp: z.int(), max: z.int() })),
-    Unit: rows(z.looseObject({ type: z.string().nullable().default(null) })),
-    Facing8: rows(z.looseObject({ dir: z.int().min(0).max(7) })),
-    Task: rows(z.looseObject({ kind: z.enum(['move', 'attack', 'build', 'gather']) })),
-    Target: rows(z.looseObject({ entity: Id })),
-    Cooldown: rows(z.looseObject({ move: z.int(), attack: z.int() })),
-    Worker: rows(z.looseObject({})),
-    Gatherer: rows(z.looseObject({ carry: z.int() })),
-    Member: rows(
-      z.looseObject({ name: z.string().default(''), role: z.enum(['regular', 'hero', 'captain']) }),
-    ),
-    // Fates (Engine 0.13): left out of a snapshot until someone's fate moves.
-    Fate: rows(z.looseObject({ state: z.enum(['injured', 'captured', 'freed', 'dead']) })),
-    Building: rows(z.looseObject({ kind: z.string(), w: z.int(), h: z.int(), dropoff: z.boolean() })),
-    Construction: rows(z.looseObject({ progress: z.int(), work: z.int(), done: z.boolean() })),
-    Producer: rows(
-      z.looseObject({
-        trains: z.array(z.string()),
-        queue: z.array(z.looseObject({ unit: z.string(), ticks: z.int() })),
-        progress: z.int(),
-      }),
-    ),
-    Resource: rows(z.looseObject({ item: z.string() })),
-    Inventory: rows(z.record(z.string(), z.int())),
-    Stockpile: rows(z.looseObject({ faction: z.string() })),
-    RtsTypes: rows(rtsTypesSchema),
-    // Time and missions (Engine 0.10-0.11): all left out of a snapshot until used.
-    EventMember: rows(z.looseObject({ event: z.string() })),
-    WorldTime: rows(z.looseObject({ frozen: z.array(z.looseObject({ event: z.string() })).default([]) })),
-    Missions: rows(
-      z.looseObject({
-        open: z
-          .array(
-            z.looseObject({
-              def: z.looseObject({ id: z.string(), title: z.string(), event: z.string().optional() }),
-              openTick: z.int().min(0),
-              commitTick: z.int().min(0),
-              resolved: z.unknown().optional(),
-            }),
-          )
-          .default([]),
-        committed: z.array(z.looseObject({ mission: z.string() })).default([]),
-      }),
-    ),
-    Opportunities: rows(
-      z.looseObject({
-        list: z
-          .array(
-            z.looseObject({
-              def: z.looseObject({ id: z.string(), mission: z.string() }),
-              status: z.string(),
-              closes: z.int().nullable().default(null),
-            }),
-          )
-          .default([]),
-      }),
-    ),
+/** Each component the kit reads: the schema of one entity's data (extra fields allowed). */
+const ROW_DATA = {
+  Terrain: z.looseObject({
+    width: z.int().min(1),
+    height: z.int().min(1),
+    types: z.array(z.looseObject({ name: z.string(), cost: z.int(), passable: z.boolean() })),
+    cells: z.array(z.int().min(0)),
   }),
-});
+  Position: Cell,
+  Owner: z.looseObject({ faction: z.string() }),
+  Health: z.looseObject({ hp: z.int(), max: z.int() }),
+  Unit: z.looseObject({ type: z.string().nullable().default(null), sight: z.int().min(0).optional() }),
+  Facing8: z.looseObject({ dir: z.int().min(0).max(7) }),
+  Task: z.looseObject({
+    kind: z.enum(['move', 'attack', 'build', 'gather']),
+    goal: Cell.nullable().optional(),
+    path: z.array(Cell).optional(),
+  }),
+  Target: z.looseObject({ entity: Id }),
+  Cooldown: z.looseObject({ move: z.int(), attack: z.int() }),
+  Worker: z.looseObject({}),
+  Gatherer: z.looseObject({ carry: z.int() }),
+  Member: z.looseObject({ name: z.string().default(''), role: z.enum(['regular', 'hero', 'captain']) }),
+  // Fates (Engine 0.13): left out of a snapshot until someone's fate moves.
+  Fate: z.looseObject({ state: z.enum(['injured', 'captured', 'freed', 'dead']) }),
+  Building: z.looseObject({ kind: z.string(), w: z.int(), h: z.int(), dropoff: z.boolean() }),
+  Construction: z.looseObject({ progress: z.int(), work: z.int(), done: z.boolean() }),
+  Producer: z.looseObject({
+    trains: z.array(z.string()),
+    queue: z.array(z.looseObject({ unit: z.string(), ticks: z.int() })),
+    progress: z.int(),
+  }),
+  Resource: z.looseObject({ item: z.string() }),
+  Inventory: z.record(z.string(), z.int()),
+  Stockpile: z.looseObject({ faction: z.string() }),
+  RtsTypes: rtsTypesSchema,
+  // Time and missions (Engine 0.10-0.11): all left out of a snapshot until used.
+  EventMember: z.looseObject({ event: z.string() }),
+  WorldTime: z.looseObject({ frozen: z.array(z.looseObject({ event: z.string() })).default([]) }),
+  Missions: z.looseObject({
+    open: z
+      .array(
+        z.looseObject({
+          def: z.looseObject({ id: z.string(), title: z.string(), event: z.string().optional() }),
+          openTick: z.int().min(0),
+          commitTick: z.int().min(0),
+          resolved: z.unknown().optional(),
+        }),
+      )
+      .default([]),
+    committed: z.array(z.looseObject({ mission: z.string() })).default([]),
+  }),
+  Opportunities: z.looseObject({
+    list: z
+      .array(
+        z.looseObject({
+          def: z.looseObject({ id: z.string(), mission: z.string() }),
+          status: z.string(),
+          closes: z.int().nullable().default(null),
+        }),
+      )
+      .default([]),
+  }),
+};
+
+type RowData = typeof ROW_DATA;
+type Components = { [K in keyof RowData]: [number, z.output<RowData[K]>][] };
+
+/**
+ * The parsed data of each frozen component value seen (Engine 0.16 part D, D9): a world's
+ * `peek()` hands the kit its stored values, which are deep-frozen and keep their identity until
+ * changed, so a value parsed once (the terrain, the types, every unit that did not move) is not
+ * parsed again. Parsed values are frozen too: views share them.
+ */
+const parsedData = new WeakMap<object, unknown>();
+
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const v of Object.values(value)) deepFreeze(v);
+  }
+  return value;
+}
+
+function bad(path: readonly PropertyKey[], message: string): never {
+  throw new Error(`not an RTS world snapshot: ${path.join('.')}: ${message}`);
+}
+
+/** One component kind's rows `[id, data]`, each data parsed by its schema (cached when frozen). */
+function readRows(name: keyof RowData, list: unknown): [number, unknown][] {
+  if (list === undefined) return [];
+  if (!Array.isArray(list)) bad(['components', name], 'expected an array');
+  return list.map((row: unknown, i): [number, unknown] => {
+    if (!Array.isArray(row) || row.length !== 2) bad(['components', name, i], 'expected an [id, data] pair');
+    const [id, data] = row as [unknown, unknown];
+    if (!Id.safeParse(id).success) bad(['components', name, i, 0], 'expected an entity id');
+    const frozen = data !== null && typeof data === 'object' && Object.isFrozen(data);
+    if (frozen && parsedData.has(data)) return [id as number, parsedData.get(data)];
+    const parsed = ROW_DATA[name].safeParse(data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]!;
+      bad(['components', name, i, 1, ...issue.path], issue.message);
+    }
+    if (!frozen) return [id as number, parsed.data];
+    const value = deepFreeze(parsed.data);
+    parsedData.set(data, value);
+    return [id as number, value];
+  });
+}
+
+/** The snapshot's tick and the components the kit reads (a kind left out has no rows). */
+function readSnapshot(json: unknown): { tick: number; components: Components } {
+  if (json === null || typeof json !== 'object') bad([], 'expected an object');
+  const { tick, components } = json as { tick?: unknown; components?: unknown };
+  if (!z.int().min(0).safeParse(tick).success) bad(['tick'], 'expected a whole number >= 0');
+  if (components === null || typeof components !== 'object' || Array.isArray(components))
+    bad(['components'], 'expected an object');
+  const all = components as Record<string, unknown>;
+  const out = {} as Record<string, unknown>;
+  for (const name of Object.keys(ROW_DATA) as (keyof RowData)[]) out[name] = readRows(name, all[name]);
+  return { tick: tick as number, components: out as Components };
+}
 
 /** Reads a world snapshot (see the file comment). Throws naming the first bad field. */
 export function readWorld(json: unknown): RtsView {
-  const parsed = snapshotSchema.safeParse(json);
-  if (!parsed.success) {
-    const issue = parsed.error.issues[0]!;
-    throw new Error(`not an RTS world snapshot: ${issue.path.join('.')}: ${issue.message}`);
-  }
-  const c = parsed.data.components;
+  const parsed = readSnapshot(json);
+  const c = parsed.components;
   const byId = <T>(list: readonly (readonly [number, T])[]) => new Map(list.map(([id, v]) => [id, v]));
   const pos = byId(c.Position);
   const owner = byId(c.Owner);
@@ -309,6 +360,7 @@ export function readWorld(json: unknown): RtsView {
     if (!p || lost(id)) continue;
     const h = health.get(id);
     const cd = cooldown.get(id);
+    const tk = task.get(id);
     units.push({
       id,
       type: unit.type,
@@ -318,7 +370,7 @@ export function readWorld(json: unknown): RtsView {
       hp: h?.hp ?? 1,
       maxHp: h?.max ?? 1,
       dir: facing.get(id)?.dir ?? null,
-      task: task.get(id)?.kind ?? null,
+      task: tk?.kind ?? null,
       target: target.get(id)?.entity ?? null,
       moveWait: cd?.move ?? 0,
       attackWait: cd?.attack ?? 0,
@@ -327,6 +379,9 @@ export function readWorld(json: unknown): RtsView {
       carry: gatherer.get(id)?.carry ?? 0,
       role: member.get(id)?.role ?? null,
       ...membership(id),
+      ...(unit.sight !== undefined && { sight: unit.sight }),
+      ...(tk?.goal != null && { goal: { x: tk.goal.x, y: tk.goal.y } }),
+      ...(tk?.path !== undefined && tk.path.length > 0 && { path: tk.path.map((c) => ({ x: c.x, y: c.y })) }),
     });
   }
 
@@ -390,7 +445,7 @@ export function readWorld(json: unknown): RtsView {
   });
 
   return {
-    tick: parsed.data.tick,
+    tick: parsed.tick,
     terrain,
     units,
     buildings,
@@ -401,8 +456,6 @@ export function readWorld(json: unknown): RtsView {
     named,
   };
 }
-
-type Components = z.output<typeof snapshotSchema>['components'];
 
 /** The missions view from the world-level time, missions and opportunities state (the lowest id). */
 function readMissions(

@@ -212,6 +212,18 @@ export interface CameraHint {
   bounds?: PresentBox;
 }
 
+/**
+ * Extension point (Engine 0.16 part D, D3): fog of war, presentation only. One cell per map tile,
+ * `rows` strings of `cols` characters each: `0` unexplored, `1` explored (seen before), `2`
+ * visible now (`FOG_CELLS` in `fog.ts`). A 2D backend lays the skin's `fog` look over the map and
+ * the entities, under the HUD; a HUD minimap may show it. A frame without it shows no fog.
+ */
+export interface PresentFog {
+  cols: number;
+  rows: number;
+  cells: string[];
+}
+
 /** A HUD value: health, score, a room's name. */
 export type PresentStatusValue = number | string | boolean;
 
@@ -228,6 +240,8 @@ export interface PresentFrame {
   events: PresentEvent[];
   status: Record<string, PresentStatusValue>;
   camera?: CameraHint;
+  /** Extension point: fog of war over the map (Engine 0.16 part D, D3). */
+  fog?: PresentFog;
 }
 
 /** A type with every field and element read-only, all the way down. */

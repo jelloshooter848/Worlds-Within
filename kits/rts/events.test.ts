@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validate } from '@engine/core/content/validate';
 import { presentFrameSchema } from '@engine/core/present';
 import { battleSnapshot } from './__fixtures__/world';
-import { RtsEventTracker, rtsEvents } from './events';
+import { barkEvent, RtsEventTracker, rtsEvents } from './events';
 import { presentWorld } from './present';
 import { readWorld, type RtsView } from './snapshot';
 
@@ -84,5 +84,50 @@ describe('RtsEventTracker', () => {
     expect(t.next(view(3, (v) => (v.units = v.units.filter((u) => u.id !== 10))))).toEqual([]);
     t.reset();
     expect(t.next(view(4))).toEqual([]);
+  });
+});
+
+describe('barkEvent', () => {
+  const v = view(3);
+
+  it("names the order, the first unit's type, its entity and box centre, for the player's side", () => {
+    expect(barkEvent(v, { faction: 'red', type: 'attack', units: [7, 6], target: 9 }, 'red')).toEqual({
+      type: 'bark',
+      side: 'own',
+      order: 'attack',
+      unitType: 'soldier',
+      entity: 'unit-7',
+      x: 40,
+      y: 56,
+    });
+    expect(barkEvent(v, { faction: 'red', type: 'gather', units: [5], target: 4 }, 'red', 8)).toMatchObject({
+      order: 'gather',
+      unitType: 'worker',
+      x: 20,
+      y: 12,
+    });
+    expect(barkEvent(v, { faction: 'blue', type: 'stop', units: [9] }, 'red')).toMatchObject({
+      side: 'enemy',
+    });
+  });
+
+  it('barks a train order from the building, with the type trained; null without a unit in the view', () => {
+    expect(
+      barkEvent(v, { faction: 'red', type: 'train', units: [3], target: 'worker' }, 'red'),
+    ).toMatchObject({
+      order: 'train',
+      unitType: 'worker',
+      kind: 'hall',
+      entity: 'building-3',
+    });
+    expect(
+      barkEvent(v, { faction: 'red', type: 'move', units: [99], target: { x: 1, y: 1 } }, 'red'),
+    ).toBeNull();
+  });
+
+  it('passes presentFrameSchema as a frame event', () => {
+    const bark = barkEvent(v, { faction: 'red', type: 'move', units: [6], target: { x: 3, y: 3 } }, 'red')!;
+    const frame = presentWorld(v, { faction: 'red', size: { width: 64, height: 64 }, events: [bark] });
+    expect(validate('frame.json', frame, presentFrameSchema).errors).toEqual([]);
   });
 });

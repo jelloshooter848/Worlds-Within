@@ -183,7 +183,7 @@ games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear --out x.
 - `pnpm cli sheet <run-file> --ticks <tiles> [--backend 2d|3d|pixi] [--allow-software-gl]
 [--out file.png] [--columns N] [--scale N] [--labels a|b|...] [--title text]` (Engine 0.16 T14):
   the owner's review sheet. Each tile is `[<run>/]<tick>[+<overlay>][@<backend>]`: a tick of the
-  run file (or of another run file in its folder, `level-3/120`, or relative to it, `../../samples/rts-skirmish/runs/battle/141`), drawn as `screenshot` draws it,
+  run file (or of another run file in its folder, `level-3/120`, or relative to it, `../../rts-classic/runs/battle/141`), drawn as `screenshot` draws it,
   with an optional overlay drawn by the engine's own code (`title`, `pause`, `settings`,
   `controls` from `game.json`'s `menus`, and from Engine 0.16 part B `levels`, `clear` and `end`,
   the stat screens reading the tick's frame status (`end` with the heading of the end trigger

@@ -57,6 +57,26 @@ describe('tdGame', () => {
     expect(canonicalJson(snap)).toBe(canonicalJson(g.snapshot()));
   });
 
+  it('gives kit.stars only when the map has a rating: 0 until won, then by the lives left (Engine 0.16 E4)', () => {
+    expect(tdGame({ ...fixtureRound(), seed: 1 }).snapshot().kit).not.toHaveProperty('stars');
+    const r = fixtureRound();
+    const rated = (three: number, two: number) => {
+      const game = tdGame({ ...r, map: { ...r.map, stars: { three, two } }, seed: 3 });
+      expect((game.snapshot().kit as { stars?: number }).stars).toBe(0);
+      const bot = new TdBot(WIN);
+      const input = new ScriptedInput({ steps: [] });
+      while (game.world.outcome === 'playing' && game.world.tick < 600) {
+        input.setHeld(bot.next(game));
+        input.next();
+        game.step(input);
+      }
+      expect(game.world.outcome).toBe('won');
+      return (game.snapshot().kit as { stars?: number }).stars;
+    };
+    expect(rated(3, 2)).toBe(3);
+    expect(rated(3, 1)).toBe(3);
+  });
+
   it('plays the bot to a won round and gives the same hashes on two runs from one seed', () => {
     const a = play(WIN);
     const b = play(WIN);
@@ -107,6 +127,27 @@ describe('tdGame', () => {
     input.next();
     g.step(input);
     expect(g.events).toEqual([{ type: 'placed', tower: 1, towerType: 'arrow', col: 1, row: 1, cost: 10 }]);
+  });
+});
+
+describe('upgrades (Engine 0.16 E3)', () => {
+  it('the bot upgrades a tower with jump, and the snapshot shows its level', () => {
+    const r = fixtureRound();
+    const arrow = { ...r.towers.arrow!, levels: [{ cost: 5, damage: 2 }] };
+    const game = tdGame({ ...r, towers: { ...r.towers, arrow }, seed: 1 });
+    const bot = new TdBot([
+      { do: 'place', tower: 'arrow', col: 1, row: 1 },
+      { do: 'upgrade', col: 1, row: 1 },
+    ]);
+    const input = new ScriptedInput({ steps: [] });
+    for (let i = 0; i < 6; i++) {
+      input.setHeld(bot.next(game));
+      input.next();
+      game.step(input);
+    }
+    expect(bot.done).toBe(true);
+    expect(game.world.gold).toBe(15);
+    expect(game.snapshot()).toMatchObject({ round: { towers: [{ id: 1, level: 2 }] }, kit: { spent: 15 } });
   });
 });
 

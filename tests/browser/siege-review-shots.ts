@@ -6,7 +6,7 @@ import type { DebugWindow } from '../../engine/core/shell';
 import { launch, ROOT, serveBuilt } from './serve';
 
 // The mini siege's page review shots (Engine 0.16 polish P; F10 took its own with a scratch script
-// on these helpers, F-19): the 3D page built and served as `tests/browser/mini-siege-page.test.ts`
+// on these helpers, item 551): the 3D page built and served as `tests/browser/mini-siege-page.test.ts`
 // serves it, opened in headless Chromium (software WebGL) on a 1920x1080 window at the skin's
 // render scale, stepped with `?debug=step` and driven by the `wwSiege` hooks, seed 11. What the
 // CLI's `pnpm cli screenshot` cannot draw: the page's controls over a round, the mission-open

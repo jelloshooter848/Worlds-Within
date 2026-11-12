@@ -12,6 +12,11 @@ export const RTS_RULES = defineRules([
     id: 'enemy-waits-for-trigger',
     description: 'a plan step with a `when` condition fires only once the condition holds',
   },
+  {
+    id: 'enemy-knows-only-what-it-saw',
+    description:
+      'a plan with `knowledge: "fog"` targets and counts only the enemies its side sees or remembers (off: it reads the whole world)',
+  },
   { id: 'box-selects-own-units', description: "a box selects only the player's own units" },
   {
     id: 'command-attacks-enemies',

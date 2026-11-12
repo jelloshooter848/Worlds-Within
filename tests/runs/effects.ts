@@ -233,6 +233,57 @@ export const EFFECTS: Readonly<Record<string, EffectSwitch>> = {
       ),
     } as SkinFile;
   },
+  /**
+   * The tower defense's looks (Engine 0.16 E6): on a 2D skin, a projectile on every event (from
+   * its `fromX`/`fromY` where it has them, on an arc, landing with a burst, a shake and the event's
+   * own sound), a ring from a `range:` tag and a health bar against a `maxhp:` tag on every kind,
+   * and a wave preview in the HUD. A 3D skin is left as it is (projectiles are 2D).
+   */
+  towerDefense: (skin) => {
+    if (skin.backend === 'three') return skin;
+    return {
+      ...skin,
+      emitters: { ...skin.emitters, 'fx-impact': { burst: 4, life: [3, 6], speed: [0.5, 1.5], max: 8 } },
+      kinds: Object.fromEntries(
+        Object.entries(skin.kinds).map(([kind, entry]) => [
+          kind,
+          { ...entry, ring: { tag: 'range:', radius: 6, color: '#fcfcfc', alpha: 0.2, edge: '#fcfcfc' } },
+        ]),
+      ),
+      labels: {
+        ...skin.labels,
+        ...Object.fromEntries(
+          Object.keys(skin.kinds).map((kind) => [
+            kind,
+            { from: { tag: 'hp:' }, as: 'bar', max: { tag: 'maxhp:' }, back: '#000000' },
+          ]),
+        ),
+      },
+      events: Object.fromEntries(
+        Object.entries(skin.events ?? {}).map(([type, entry]) => [
+          type,
+          {
+            ...entry,
+            projectile: {
+              ticks: 5,
+              arc: 6,
+              ease: 'quadOut',
+              color: '#f8b800',
+              impact: {
+                emit: 'fx-impact',
+                shake: { amount: 1, ticks: 3 },
+                ...(entry.sound !== undefined && { sound: entry.sound }),
+              },
+            },
+          },
+        ]),
+      ),
+      hud: [
+        ...(skin.hud ?? []),
+        { status: 'nextWaveGroups', as: 'preview', x: 2, y: 2, frames: {}, spacing: 2 },
+      ],
+    } as SkinFile;
+  },
   audio: (skin) => ({
     ...skin,
     music: {

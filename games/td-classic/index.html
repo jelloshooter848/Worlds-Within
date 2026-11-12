@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#000000" />
+    <title>TD classic: the 0.15 Winding Road, hold it against three waves</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
+        user-select: none;
+      }
+      #screen {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: calc(100vh - 40px);
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+      #bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 40px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 6px;
+        overflow-x: auto;
+        background: #181818;
+        color: #eee;
+        font:
+          14px/1.2 system-ui,
+          sans-serif;
+      }
+      #bar button {
+        flex: none;
+        min-height: 30px;
+        padding: 0 10px;
+        border: 1px solid #666;
+        border-radius: 4px;
+        background: #333;
+        color: #fff;
+        font: inherit;
+      }
+      #status {
+        flex: 1;
+        min-width: 8em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #message {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        color: #eee;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        text-align: center;
+      }
+      /* The title screen (Engine 0.16 T9) shows the picture alone: the bar waits for Start. */
+      body[data-menu='title'] #bar {
+        visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="screen"></canvas>
+    <!-- The bar: the same buttons as Enter (Wave), X (Tower) and C (Sell), and the status line. -->
+    <div id="bar">
+      <button id="wave" type="button" title="Start the next wave (Enter)">Wave</button>
+      <button id="tower" type="button" title="Choose the next tower type (X)">Tower</button>
+      <button id="sell" type="button" title="Sell the tower under the cursor (C)">Sell</button>
+      <span id="status"></span>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

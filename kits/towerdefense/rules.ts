@@ -18,6 +18,14 @@ export const TOWERDEFENSE_RULES = defineRules([
   },
   { id: 'sell-refunds', description: "selling a tower gives back its type's sell value" },
   {
+    id: 'upgrade-costs-gold',
+    description: "upgrading a tower needs its next level's cost in gold and pays it (off: upgrades are free)",
+  },
+  {
+    id: 'upgrade-improves',
+    description: "an upgraded tower fires with its level's range, damage and cooldown (off: its type's own)",
+  },
+  {
     id: 'wave-timer',
     description: "with the wave list's timer, the next wave starts by itself timer ticks after the last",
   },
@@ -34,6 +42,15 @@ export const TOWERDEFENSE_RULES = defineRules([
   },
   { id: 'tower-range', description: 'a tower reaches only enemies within its range (off: every enemy)' },
   { id: 'tower-cooldown', description: 'after a shot a tower waits its cooldown (off: it fires every tick)' },
+  {
+    id: 'splash-damage',
+    description:
+      "a splash tower's shot also hurts the other enemies within its splash radius of the target (off: the target only)",
+  },
+  {
+    id: 'slow-enemies',
+    description: "a slow tower's shot slows the target it hits for its ticks (off: no enemy is slowed)",
+  },
   { id: 'kill-bounty', description: 'a killed enemy pays its bounty in gold' },
   { id: 'leak-costs-life', description: 'an enemy reaching the exit costs a life' },
   { id: 'win-on-clear', description: 'the round is won once every wave has come and no enemy is left' },

@@ -1,20 +1,50 @@
 {
   "faction": "blue",
+  "knowledge": "fog",
   "steps": [
     {
       "id": "rally",
       "order": { "type": "move", "units": { "idle": true }, "area": { "x": 4, "y": 0, "w": 3, "h": 3 } }
     },
     {
+      "id": "gold",
+      "repeat": { "every": 10, "times": null },
+      "order": { "type": "gather", "units": { "type": "worker", "idle": true }, "resource": "gold" }
+    },
+    {
       "id": "train",
       "at": 20,
       "repeat": { "every": 60, "times": 4 },
-      "order": { "type": "train", "building": "hall", "unit": "worker" }
+      "order": { "type": "train", "building": "hall", "unit": "worker", "upTo": 6 }
     },
     {
-      "id": "attack",
-      "when": { "count": "units", "side": "self", "type": "worker", "op": "gte", "value": 3 },
-      "order": { "type": "attack", "units": { "type": "worker" }, "target": "nearest-enemy" }
+      "id": "barracks",
+      "when": { "count": "buildings", "side": "self", "type": "barracks", "op": "lte", "value": 0 },
+      "repeat": { "every": 30, "times": null },
+      "order": {
+        "type": "build",
+        "units": { "type": "worker", "max": 1 },
+        "building": "barracks",
+        "cells": [
+          { "x": 8, "y": 2 },
+          { "x": 8, "y": 5 }
+        ]
+      }
+    },
+    {
+      "id": "scout",
+      "at": 100,
+      "repeat": { "every": 40, "times": null },
+      "order": { "type": "scout", "units": { "type": "worker", "idle": true, "max": 1 } }
+    },
+    {
+      "id": "wave",
+      "repeat": { "every": 200, "times": null },
+      "order": {
+        "type": "attack",
+        "units": { "type": "soldier", "idle": true, "min": 4 },
+        "target": "enemy-base"
+      }
     }
   ]
 }

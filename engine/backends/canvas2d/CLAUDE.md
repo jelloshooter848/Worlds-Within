@@ -25,7 +25,8 @@ exactly the same code. This folder keeps thin wrappers with the same names, cons
 signatures and options: `SkinnedCanvasPresenter` (`presenter.ts`) is `SkinnedPresenter` on a
 `CanvasRenderer` (or the `Renderer` given) with `canvasSurface` (`surface.ts`: an offscreen canvas,
 else a page canvas, none in Node) as its default `mapSurface`, `glyphSurface` and `lightSurface`
-(the lighting's light map, part C T4);
+(the lighting's light map, part C T4), and `canvasRecolor` (`@engine/core/assets/canvas-recolor`)
+as its default `recolor` (Engine 0.16 part D, D4: outline silhouettes and team colours);
 `CanvasUiPainter` (`ui-painter.ts`) is `RendererUiPainter` with that default glyph surface;
 `skinSetCanvasPresenter` (`skin-set.ts`) is `skinSetPresenter` making a `SkinnedCanvasPresenter`
 per skin on `r`. `SkinnedPresenterOptions`, `MapSurface` and `GlyphSurface` are re-exported from
@@ -182,6 +183,16 @@ map's surface, below). `particleCount` is the particles alive after the last `pr
   presenter passes it the map shown) and are drawn with the other particles. The walk is the
   core's (merged in Engine 0.16 part D, D1), so the PixiJS backend runs it too, with its own
   `gradient` (radial sprites) and a light map surface (feedback item 434's follow-up).
+- Fog of war (Engine 0.16 part D, D3): a frame's `fog` is laid over the map, the entities, the
+  particles and the lighting, under effects, flashes and the HUD: the skin's `fog` look
+  (`fogBoxes`, `@engine/core/present`) as `rect`s, translucent below alpha 1, at the zoom and
+  cut to the picture. A frame without `fog` draws exactly the calls it did. A HUD `minimap` with
+  `fog: true`, `teams` or `view` shows the fog, team-coloured dots and the camera's view box.
+- Readable at every zoom (Engine 0.16 part D, D4): a kind's `outline` (its sheet's silhouette one
+  picture pixel each way under the sprite; a box one pixel larger), `team` colour (the sprite from
+  a copy of its sheet recoloured once per colour by `recolor`; a box filled with it) and
+  `screenScale` (the drawn scale is the zoom held in its range, about the box's anchor). See
+  `engine/core/draw/CLAUDE.md`. Without the fields every call is as before.
 - Per-map looks (Engine 0.16 part B, T7): the clear colour, the parallax layers and the tiles come
   from `themedSkin(skin, mapId)` (`@engine/core/present`) for the map shown (the full map last
   sent, else the frame's map id), made once per map id: a skin's `themes` entry for that map
@@ -323,6 +334,16 @@ same fill coloured once and another colour anew.
 These tests drive the shared walk in `@engine/core/draw` through the thin wrappers here (Engine
 0.16 T13b moved the code, not the tests); `engine/core/draw/draw.test.ts` checks the core's own
 defaults (no surfaces) and the skin set's factory.
+`fog.test.ts` (Engine 0.16 part D, D3) draws a fogged frame through `CanvasRenderer` onto a
+small software 2D context (`fillRect` with `globalAlpha`) and reads the pixels: unexplored grass
+black, an explored unit half dark, visible grass as it is; a frame without fog (or an
+all-visible one) records the same calls; the fog placed at a camera and zoom, cut to the picture.
+`readability.test.ts` (Engine 0.16 part D, D4) draws outlined and team-coloured sprites onto a
+software context with `drawImage` (sheet images as RGBA buffers, a buffer recolour) and reads the
+pixels, and checks zoom-stable bars keep their 16x2 size at zoom 0.5, 1 and 2 (`screenScale`
+`{ min: 1, max: 1 }`; `{ min: 1 }` grows at 2; a `bottom` anchor keeps the bottom edge).
+`tests/browser/fog-parity.test.ts` draws a fogged frame with a minimap through this presenter and
+PixiJS in Chromium and holds them within the parity harness's strict bound.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for a fade, a
 wipe (its gradient line and stops) and an iris (the even-odd hole on the focus) on a recording
 context, and `presenter.test.ts` the presenter's `focus()` scrolled and clamped.

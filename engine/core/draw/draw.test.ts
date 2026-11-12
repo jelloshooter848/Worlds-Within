@@ -324,3 +324,221 @@ describe('hitFlash (Engine 0.16 F8)', () => {
     expect(asked).toEqual(['#ffffff', '#ffffff', undefined, undefined, undefined]);
   });
 });
+
+describe('tower-defense looks (Engine 0.16 E6)', () => {
+  const SHOTS: SpriteSheet = {
+    id: 'td',
+    image: null,
+    frames: new Map([
+      ['arrow', { x: 0, y: 0, w: 4, h: 2 }],
+      ['runner', { x: 0, y: 0, w: 8, h: 8 }],
+    ]),
+  };
+  const tdLookup = (id: string) => (id === 'td' ? SHOTS : null);
+  const ent = (id: string, kind: string, tags: string[], x = 16, y = 16) => ({
+    id,
+    kind,
+    x,
+    y,
+    w: 16,
+    h: 16,
+    facing: 'down' as const,
+    anim: { state: 'idle', t: 0 },
+    tags,
+  });
+  const empty = (n: number, over: Partial<PresentFrame> = {}): PresentFrame => ({
+    frame: n,
+    size: { width: 64, height: 64 },
+    entities: [],
+    events: [],
+    status: {},
+    camera: { x: 32, y: 32 },
+    ...over,
+  });
+  const shot = { type: 'td-shot', fromX: 8, fromY: 24, x: 48, y: 24 };
+
+  function shooter(skin: Partial<SkinFile>, opts: SkinnedPresenterOptions = {}) {
+    const { r, calls } = recorder();
+    const s: SkinFile = {
+      backend: 'canvas2d',
+      background: '#000',
+      sheets: { sheet: 'td' },
+      kinds: {},
+      ...skin,
+    };
+    return { p: new SkinnedPresenter(r, s, tdLookup, opts), calls };
+  }
+
+  it('flies a square from fromX/fromY to x/y over its ticks, then lands once with its impact', () => {
+    const sounds: [string, number | undefined][] = [];
+    const { p, calls } = shooter(
+      {
+        emitters: { dust: { burst: 3, life: 4, speed: 0 } },
+        events: {
+          'td-shot': {
+            projectile: { ticks: 4, color: '#f00', size: 2, impact: { emit: 'dust', sound: 'thud' } },
+          },
+        },
+      },
+      { onSound: (id, cue) => sounds.push([id, cue?.frame]) },
+    );
+    const squares = () => {
+      const out = calls.filter((c) => c.endsWith('#f00'));
+      calls.length = 0;
+      return out;
+    };
+    p.present(freezeFrame(empty(10, { events: [shot] })));
+    expect(squares()).toEqual(['rect 7,23 2x2 #f00']);
+    expect(p.projectileCount).toBe(1);
+    p.present(freezeFrame(empty(11)));
+    expect(squares()).toEqual(['rect 17,23 2x2 #f00']);
+    p.present(freezeFrame(empty(13)));
+    expect(squares()).toEqual(['rect 37,23 2x2 #f00']);
+    expect(sounds).toEqual([]);
+    // Landed on frame 14 (10 + 4 ticks): the sound once, the burst where it landed, no square.
+    calls.length = 0;
+    p.present(freezeFrame(empty(14)));
+    expect(squares()).toEqual([]);
+    expect(sounds).toEqual([['thud', 14]]);
+    expect(p.projectileCount).toBe(0);
+    expect(p.particleCount).toBe(3);
+    p.present(freezeFrame(empty(14)));
+    expect(sounds).toHaveLength(1);
+  });
+
+  it('lands a shot whose frame was skipped, and drops shots on a new level', () => {
+    const sounds: number[] = [];
+    const { p } = shooter(
+      { events: { 'td-shot': { projectile: { ticks: 6, impact: { sound: 'thud' } } } } },
+      { onSound: (_, cue) => sounds.push(cue!.frame) },
+    );
+    p.present(freezeFrame(empty(10, { events: [shot] })));
+    p.present(freezeFrame(empty(30)));
+    expect(sounds).toEqual([30]);
+    p.present(freezeFrame(empty(40, { events: [shot] })));
+    p.present(freezeFrame(empty(2)));
+    expect(p.projectileCount).toBe(0);
+    expect(sounds).toEqual([30]);
+  });
+
+  it('lands at once where an event gives no start, and draws a frame turned to its way', () => {
+    const sounds: number[] = [];
+    const { r, calls } = recorder();
+    const turns: number[] = [];
+    const turning: Renderer = {
+      ...r,
+      transform: (x, y, angle, _sx, _sy, draw) => {
+        turns.push(Math.round((angle * 180) / Math.PI));
+        calls.push(`turn ${x},${y}`);
+        draw(r);
+      },
+    };
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      sheets: { sheet: 'td' },
+      kinds: {},
+      events: {
+        'td-shot': {
+          projectile: { frame: 'arrow', ticks: 4, arc: 8, turn: true, impact: { sound: 'thud' } },
+        },
+      },
+    };
+    const p = new SkinnedPresenter(turning, skin, tdLookup, { onSound: (_, cue) => sounds.push(cue!.frame) });
+    p.present(freezeFrame(empty(5, { events: [{ type: 'td-shot', x: 20, y: 20 }] })));
+    expect(sounds).toEqual([5]);
+    expect(p.projectileCount).toBe(0);
+    calls.length = 0;
+    p.present(freezeFrame(empty(6, { events: [shot] })));
+    // Frame 0 of the flight: rising at the start, turned up from right about its centre.
+    expect(calls.filter((c) => c.startsWith('turn') || c.includes('td:arrow'))).toEqual([
+      'turn 8,24',
+      'sprite td:arrow -2,-1',
+    ]);
+    expect(turns[0]).toBeLessThan(0);
+    calls.length = 0;
+    p.present(freezeFrame(empty(8)));
+    // Mid-flight, at the top of its arc: level, so not turned.
+    expect(calls.filter((c) => c.startsWith('turn') || c.includes('td:arrow'))).toEqual([
+      'sprite td:arrow 26,15',
+    ]);
+  });
+
+  it("draws a ring from the entity's range tag times the map's tile size, else its radius", () => {
+    const { p, calls } = shooter({
+      kinds: {
+        tower: {
+          frames: { idle: 'none' },
+          fallbackColor: '#444',
+          ring: { tag: 'range:', color: '#0f0', alpha: 1 },
+        },
+        ghost: {
+          frames: { idle: 'none' },
+          fallbackColor: '#444',
+          ring: { tag: 'range:', per: 4, radius: 3, color: '#00f', alpha: 1 },
+        },
+      },
+    });
+    const widest = (color: string) =>
+      Math.max(...calls.filter((c) => c.endsWith(color)).map((c) => Number(/ (\d+)x1 /.exec(c)?.[1] ?? 0)));
+    const map = { id: 'm', version: 0, tileSize: 8, cols: 8, rows: 8, tiles: Array(8).fill('........') };
+    p.present(
+      freezeFrame(
+        empty(0, { map, entities: [ent('t', 'tower', ['range:2']), ent('g', 'ghost', ['range:3'])] }),
+      ),
+    );
+    // range 2 at 8 px a cell: radius 16, 32 px across; the ghost's 3 at `per` 4: 24 across.
+    expect(widest('#0f0')).toBe(32);
+    expect(widest('#00f')).toBe(24);
+    calls.length = 0;
+    p.present(freezeFrame(empty(1, { map: { id: 'm', version: 0 }, entities: [ent('g', 'ghost', [])] })));
+    expect(widest('#00f')).toBe(6);
+    calls.length = 0;
+    p.present(freezeFrame(empty(2, { map: { id: 'm', version: 0 }, entities: [ent('t', 'tower', [])] })));
+    expect(calls.some((c) => c.endsWith('#0f0'))).toBe(false);
+  });
+
+  it('draws only the rows of a ring on the picture, however large a zoom makes it', () => {
+    const { p, calls } = shooter({
+      kinds: {
+        tower: {
+          frames: { idle: 'none' },
+          fallbackColor: '#444',
+          ring: { radius: 4, color: '#0f0', edge: '#fff' },
+        },
+      },
+    });
+    p.present(
+      freezeFrame(empty(0, { entities: [ent('t', 'tower', [])], camera: { x: 24, y: 24, zoom: 5000 } })),
+    );
+    expect(calls.filter((c) => c.endsWith('#0f0'))).toHaveLength(64);
+    expect(calls.filter((c) => c.endsWith('#fff'))).toHaveLength(128);
+  });
+
+  it("fills a health bar against each enemy's own maxhp tag", () => {
+    const { p, calls } = shooter({
+      kinds: { enemy: { frames: { walk: 'runner' } } },
+      labels: {
+        enemy: {
+          from: { tag: 'hp:' },
+          as: 'bar',
+          max: { tag: 'maxhp:' },
+          w: 10,
+          h: 1,
+          color: '#0f0',
+          back: '#300',
+        },
+      },
+    });
+    p.present(
+      freezeFrame(
+        empty(0, {
+          entities: [
+            ent('a', 'enemy', ['hp:5', 'maxhp:10'], 0, 20),
+            ent('b', 'enemy', ['hp:5', 'maxhp:20'], 32, 20),
+          ],
+        }),
+      ),
+    );
+    expect(calls.filter((c) => c.endsWith('#0f0'))).toEqual(['rect 3,17 5x1 #0f0', 'rect 35,17 3x1 #0f0']);
+  });
+});

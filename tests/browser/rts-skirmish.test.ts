@@ -1,22 +1,27 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import type { CDPSession, Page } from 'playwright';
-import type { DebugWindow } from '@engine/core/shell';
+import type { DebugWindow, MenusView } from '@engine/core/shell';
 import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The RTS skirmish's page in a browser (docs/ROADMAP.md, 0.9 "done when": build a barracks, train
-// units and fight the enemy in the browser, and get the same state hashes when the recorded
-// orders are replayed headless). The repo is built as `pnpm build` builds it and served as `pnpm
-// preview` serves it; headless Chromium checks the launcher lists games/samples/rts-skirmish/,
-// opens it and plays a battle with real input: mouse box selection, the Build barracks button and
-// a click to place it, a right click to gather, a touch tap on the barracks, three Train soldier
-// clicks, a touch box and a touch long-press to send the builders to gather, a middle-drag pan, a
-// wheel zoom out, a box and a Shift+click for the army and a right click on a raider. The page's
-// loop is the test's (`?debug=step`, one loop step per `window.__ww.step(1)`), so the battle is the
-// same every time. It then exports the recording (`window.wwSkirmish.exportRun`) and replays it
+// units and command them in the browser, and get the same state hashes when the recorded orders
+// are replayed headless). The repo is built as `pnpm build` builds it and served as `pnpm preview`
+// serves it; headless Chromium checks the launcher lists games/samples/rts-skirmish/, opens it and
+// plays the opening of The River Ford (Engine 0.16 part D, D8: the 64x40 map, the AI across the
+// river) with real input: mouse box selection, the Build barracks button and a click to place it,
+// a right click to gather, a touch tap on the barracks, a Train soldier click, a touch box and a
+// touch long-press to send the builders to gather, a middle-drag pan, a wheel zoom out, a click on
+// the minimap that moves the camera to blue's base, a box and a Shift+click for the army and a
+// right click that sends it to the centre ford. From D9 it starts from the title (Start, with
+// `?debug=step&title=show`), and after the opening a fresh page replays the whole ten-minute win
+// (`runs/match-won.run.json`) through the step hook (`__ww.replay`) to the end screen, its hashes
+// the golden file's, and its own export replays headless. The page's loop is the test's
+// (`?debug=step`: one loop step per `window.__ww.step(1)`, one game tick each), so the battle is
+// the same every time. It then exports the recording (`window.wwSkirmish.exportRun`) and replays it
 // headless with `pnpm -s cli run`, which must pass with every sync hash equal. Where things are on
 // the page comes from the hook (`clientAt`, `units`), never from fixed pixels, so the camera can
 // move. The page runs on its default backend, PixiJS (Engine 0.16 T13b-8). Skipped where Chromium
@@ -24,8 +29,12 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 const GAME = 'games/samples/rts-skirmish/';
 const TILE = 16;
-/** Loop steps per game tick (`STEPS_PER_TICK` in play.ts). */
-const STEPS_PER_TICK = 6;
+/**
+ * Loop steps per game tick in manual-loop mode: one (D9; `STEPS_PER_TICK`, 6, is the real-time
+ * page's), so the step hook's `replay` hands a run file's orders over at its own ticks.
+ */
+const STEPS_PER_TICK = 1;
+const WON = 'games/samples/rts-skirmish/runs/match-won.run.json';
 
 interface Unit {
   id: number;
@@ -39,8 +48,19 @@ interface Side {
   unitTypes: Record<string, number>;
   buildings: Record<string, number>;
 }
+interface Building {
+  id: number;
+  kind: string;
+  faction: string | null;
+  x: number;
+  y: number;
+  done: boolean;
+}
 interface Hook {
   tick(): number;
+  buildings(): Building[];
+  minimapClientAt(wx: number, wy: number): { x: number; y: number } | null;
+  stats(): { trained: number; built: number; gold: number };
   sides(): Record<string, Side>;
   units(): Unit[];
   selection(): number[];
@@ -81,7 +101,7 @@ function hook<K extends keyof Hook>(
 }
 
 describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', () => {
-  it('is built and in the launcher, plays a battle by mouse and touch, and its recording replays headless', async () => {
+  it('is built and in the launcher, plays the opening by mouse and touch, and its recording replays headless', async () => {
     const dist = join(temp, 'dist');
     const server = await serveBuilt('/', dist);
     const browser = await launch();
@@ -109,10 +129,20 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
       expect(new URL(page.url()).pathname).toBe(`/${GAME}`);
 
-      // The page in manual-loop mode (`?debug=step`): `window.__ww.step(n)` takes n loop steps
-      // (see platformer.test.ts).
-      await page.goto(`${page.url()}?debug=step`);
+      // The page in manual-loop mode with its title shown (`?debug=step&title=show`):
+      // `window.__ww.step(n)` takes n loop steps (see platformer.test.ts), one game tick each.
+      await page.goto(`${page.url()}?debug=step&title=show`);
       await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+      const menus = () => page.evaluate(() => (window as DebugWindow).__ww!.menus()) as Promise<MenusView>;
+      const steps = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
+      // D9: the match starts from the title: The River Ford, Start focused; Enter starts it.
+      await steps(30);
+      const title = await menus();
+      expect([title.state, title.screen, title.focused]).toEqual(['title', 'title', 'start']);
+      expect(await hook(page, 'tick')).toBe(0); // the title holds the game at its start
+      await page.keyboard.press('Enter');
+      for (let i = 0; i < 120 && (await menus()).state !== 'play'; i++) await steps(1);
+      expect((await menus()).state).toBe('play');
       // PixiJS by default (Engine 0.16 T13b-8; headless Chromium's SwiftShader counts as WebGL), so
       // the selection, orders and touch below go through the PixiJS display's letterbox maths.
       expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('pixi');
@@ -154,32 +184,36 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
           touchPoints: p ? [{ x: Math.round(p.x), y: Math.round(p.y), id: 1 }] : [],
         });
 
-      // Tick 0: a mouse box over workers 7 and 8, Build barracks, a click on cell 10,9 to place it.
-      await mouseBox(7, 9, 7, 10);
-      expect(await selection()).toEqual([7, 8]);
+      // Tick 0: a mouse box over workers 11-13, Build barracks, a click on cell 11,17 to place it.
+      await mouseBox(8, 16, 9, 22);
+      expect(await selection()).toEqual([11, 12, 13]);
       await page.click('#build-barracks');
       await frames(1);
       expect(await page.isVisible('#cancel')).toBe(true);
-      const site = await cell(10, 9);
+      const site = await cell(11, 17);
       await page.mouse.move(site.x, site.y);
       await frames(1);
-      await click(10, 9);
+      await click(11, 17);
       expect(await page.isVisible('#cancel')).toBe(false);
-      // Worker 9 (7,12) gathers at the southern gold (8,15): a click, then a right click.
-      await click(7, 12);
-      expect(await selection()).toEqual([9]);
-      await click(8, 15, 'right');
+      // Worker 13 gathers at the southern gold (10,25): a click on it, then a right click.
+      const worker = (await units()).find((u) => u.id === 13)!;
+      await click(worker.x, worker.y);
+      expect(await selection()).toEqual([13]);
+      await click(10, 25, 'right');
       await until('a barracks', async () => (await sides()).red?.buildings['barracks'] === 1);
+      const barracks = (await hook(page, 'buildings')).find(
+        (x) => x.faction === 'red' && x.kind === 'barracks',
+      )!;
 
-      // A touch tap on the barracks (cells 10-11, 9-10) selects it; three Train soldier clicks.
-      await touch('touchStart', await cell(10, 9));
+      // A touch tap on the barracks selects it; Train soldier.
+      await touch('touchStart', await cell(barracks.x, barracks.y));
       await touch('touchEnd');
       await frames(1);
-      expect(await selection()).toEqual([16]);
-      for (let i = 0; i < 3; i++) await page.click('#train-soldier');
+      expect(await selection()).toEqual([barracks.id]);
+      await page.click('#train-soldier');
       await frames(1);
-      // A touch box over the builders, then a long-press on the northern gold (8,6): gather.
-      const builders = (await units()).filter((u) => u.id === 7 || u.id === 8);
+      // A touch box over the builders, then a long-press on the northern gold (10,14): gather.
+      const builders = (await units()).filter((u) => u.id === 11 || u.id === 12);
       const xs = builders.map((u) => u.x);
       const ys = builders.map((u) => u.y);
       const a = await client(Math.min(...xs) * TILE + 1, Math.min(...ys) * TILE + 1);
@@ -189,14 +223,14 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
         await touch('touchMove', { x: a.x + ((b.x - a.x) * i) / 5, y: a.y + ((b.y - a.y) * i) / 5 });
       await touch('touchEnd');
       await frames(1);
-      expect(await selection()).toEqual([7, 8]);
-      await touch('touchStart', await cell(8, 6));
+      expect(await selection()).toEqual([11, 12]);
+      await touch('touchStart', await cell(10, 14));
       await page.waitForTimeout(650);
       await touch('touchEnd');
       await frames(1);
 
-      await until('three soldiers', async () => ((await sides()).red?.unitTypes['soldier'] ?? 0) >= 3);
-      // The camera: a middle-drag pan, then the wheel zooms out to the whole map.
+      await until('a soldier', async () => ((await sides()).red?.unitTypes['soldier'] ?? 0) >= 1);
+      // The camera: a middle-drag pan, then the wheel zooms out.
       const centre = await hook(page, 'camera');
       const mid = await client(centre.x, centre.y);
       await page.mouse.move(mid.x, mid.y);
@@ -209,27 +243,37 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       await page.mouse.wheel(0, 500);
       await frames(1);
       expect((await hook(page, 'camera')).zoom).toBe(0.5);
+      // A click on the minimap (bottom right) at blue's town centre moves the camera east and
+      // gives no order (Engine 0.16 part D, D8); then back home the same way.
+      const before = await hook(page, 'camera');
+      const east = (await hook(page, 'minimapClientAt', 58.5 * TILE, 20.5 * TILE))!;
+      await page.mouse.click(east.x, east.y);
+      await frames(1);
+      expect((await hook(page, 'camera')).x).toBeGreaterThan(before.x);
+      const home = (await hook(page, 'minimapClientAt', 8 * TILE, 19 * TILE))!;
+      await page.mouse.click(home.x, home.y);
+      await frames(1);
 
-      // The army: a box over the soldiers, Shift+click the hero (15), right click a raider.
+      // The army: a box over the soldier, Shift+click the hero (19), right click the centre ford.
       const soldiers = (await units()).filter((u) => u.faction === 'red' && u.type === 'soldier');
       const sx = soldiers.map((u) => u.x);
       const sy = soldiers.map((u) => u.y);
       await mouseBox(Math.min(...sx), Math.min(...sy), Math.max(...sx), Math.max(...sy));
       const army = await selection();
       expect(army).toEqual(expect.arrayContaining(soldiers.map((u) => u.id)));
-      const hero = (await units()).find((u) => u.id === 15)!;
+      const hero = (await units()).find((u) => u.id === 19)!;
       await page.keyboard.down('Shift');
       await click(hero.x, hero.y);
       await page.keyboard.up('Shift');
-      expect(await selection()).toEqual([...army, 15].sort((p, q) => p - q));
-      const raider = (await units()).find((u) => u.faction === 'blue')!;
-      await click(raider.x, raider.y, 'right');
-      await until('the raiders beaten', async () => (await sides()).blue?.units === 0);
-      // The end screen (Engine 0.15 T14): the win, over the picture's banner.
-      await frames(1);
-      expect(await hook(page, 'result')).toBe('won');
-      expect(await page.isVisible('#end')).toBe(true);
-      expect(await page.locator('#end-title').textContent()).toContain('Victory');
+      expect(await selection()).toEqual([...army, 19].sort((p, q) => p - q));
+      await click(24, 19, 'right');
+      await frames(STEPS_PER_TICK * 5);
+      // No end yet, and the stats count the opening.
+      expect(await hook(page, 'result')).toBeNull();
+      expect(await page.isVisible('#end')).toBe(false);
+      const stats = await hook(page, 'stats');
+      expect(stats.built).toBe(1);
+      expect(stats.trained).toBe(1);
       const red = (await sides()).red!;
       expect(red.buildings['barracks']).toBe(1);
       expect(red.unitTypes['hero']).toBe(1);
@@ -242,8 +286,8 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       expect(run).not.toBeNull();
       expect(run!.ticks).toBe(await tick());
       const types = run!.orders.map((o) => o.type);
-      expect(types).toEqual(['build', 'gather', 'train', 'train', 'train', 'gather', 'attack']);
-      expect(run!.orders.at(-1)?.units).toContain(15);
+      expect(types).toEqual(['build', 'gather', 'train', 'gather', 'move']);
+      expect(run!.orders.at(-1)?.units).toContain(19);
       writeFileSync(file, `${JSON.stringify(run, null, 2)}\n`);
       const replay = JSON.parse(
         execFileSync('pnpm', ['-s', 'cli', 'run', file, '--json'], { cwd: ROOT, encoding: 'utf8' }),
@@ -251,10 +295,73 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       expect(replay).toMatchObject({ ok: true, passed: true, hashMismatch: null });
       expect(replay.hashesChecked).toBe(run!.hashes.length);
       expect(replay.finalHash).toBe(run!.hashes.at(-1)?.hash);
+
+      // D9: the whole ten-minute win replayed through the page with the step hook (a fresh page,
+      // `?debug=step`), its state hash equal to the golden file's every 100 ticks, to the end
+      // screen; the page's own export of it then replays headless with no hash mismatch.
+      const won = JSON.parse(readFileSync(join(ROOT, WON), 'utf8')) as { ticks: number };
+      const golden = (
+        JSON.parse(readFileSync(join(ROOT, WON.replace('.run.json', '.hashes.json')), 'utf8')) as {
+          hashes: { tick: number; hash: string }[];
+        }
+      ).hashes;
+      const match = await context.newPage();
+      match.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+      await match.goto(`${server.url}${GAME}?debug=step`);
+      await match.waitForSelector('body[data-backend]', { timeout: 60_000 });
+      expect(await match.evaluate((run) => (window as DebugWindow).__ww!.replay(run), won)).toEqual({
+        ticks: won.ticks,
+      });
+      const pageHashes: { tick: number; hash: string }[] = [];
+      for (const { tick: at } of golden) {
+        const now = await match.evaluate(() => (window as DebugWindow).__ww!.tick);
+        await match.evaluate((n) => void (window as DebugWindow).__ww!.step(n), at - now);
+        pageHashes.push({
+          tick: at,
+          hash: (await match.evaluate(() => (window as DebugWindow).__ww!.hash()))!,
+        });
+      }
+      expect(pageHashes).toEqual(golden);
+      // The page refuses what `pnpm cli run` refuses: the run's one early barracks it cannot pay for.
+      expect(await match.evaluate(() => (window as DebugWindow).__ww!.refused)).toEqual([
+        {
+          tick: 110,
+          kind: 'order',
+          error: 'order 18: faction "red" cannot afford barracks: needs 120 gold, has 115',
+        },
+      ]);
+      expect(await hook(match, 'result')).toBe('won');
+      expect(await match.isVisible('#end')).toBe(true);
+      expect(await match.textContent('#end-title')).toContain('Victory');
+      expect(await match.textContent('#end-text')).toMatch(
+        /^The enemy town centre fell at 9:\d\d \(tick \d+\)\. Trained \d+/,
+      );
+      const whole = await hook(match, 'exportRun', relative(temp, join(ROOT, GAME)));
+      expect(whole!.ticks).toBe(won.ticks);
+      const wholeFile = join(temp, 'match.run.json');
+      writeFileSync(wholeFile, `${JSON.stringify(whole, null, 2)}\n`);
+      // `spawnSync`, not `execFileSync`: a failed run exits 4, and its result says why.
+      const replayed = JSON.parse(
+        spawnSync('pnpm', ['-s', 'cli', 'run', wholeFile, '--json', '--max-output', '1000000'], {
+          cwd: ROOT,
+          encoding: 'utf8',
+        }).stdout,
+      ) as {
+        passed: boolean;
+        hashesChecked: number;
+        hashMismatch: unknown;
+        failure: unknown;
+        errors?: unknown;
+      };
+      expect(replayed, JSON.stringify([replayed.errors, replayed.failure])).toMatchObject({
+        passed: true,
+        hashMismatch: null,
+      });
+      expect(replayed.hashesChecked).toBe(whole!.hashes.length);
       expect(errors).toEqual([]);
     } finally {
       await browser.close();
       await server.close();
     }
-  }, 300_000);
+  }, 600_000);
 });

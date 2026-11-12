@@ -24,6 +24,8 @@ import {
   cameraView,
   cameraZoom,
   CameraFollower,
+  fogBoxes,
+  resolveFogLook,
   FrameEventClock,
   isFullMap,
   layoutHud,
@@ -36,16 +38,29 @@ import {
   themedSkin,
   type DeepReadonly,
   type HudFrameSize,
+  type PresentBox,
   type PresentEntity,
+  type PresentEvent,
   type PresentFrame,
   type PresentMap,
   type Presenter,
   type SkinFile,
   zoomAbout,
+  screenScaleAt,
+  screenScalePivot,
+  skinOutlineColor,
+  skinTeamColor,
   skinSoundCue,
   type SoundCue,
+  projectileFlight,
+  projectilePlace,
+  PROJECTILE_DEFAULT_COLOR,
+  PROJECTILE_DEFAULT_SIZE,
+  PROJECTILE_MAX,
+  type SkinProjectile,
 } from '../present';
 import { layoutLabels, paintUi, SkinHud, type FontLookup, type UiDraw } from '../ui';
+import { RecolorCache, type ImageRecolor, type RecolorSpec } from './recolor';
 import type { MapSurface, SurfaceFactory } from './surface';
 import { RendererUiPainter, type GlyphTint } from './ui-painter';
 
@@ -120,7 +135,22 @@ export interface SkinnedPresenterOptions {
    * where the browser has one (null in Node).
    */
   lightSurface?: SurfaceFactory;
+  /**
+   * Makes a recoloured copy of a sheet image, for a kind's `outline` (its silhouette) and `team`
+   * colour (Engine 0.16 part D, D4); each sheet and colour is recoloured once and kept. Default
+   * none: sprites are drawn without outline or team colour (boxes still get both). Both 2D
+   * backends pass `canvasRecolor` (`@engine/core/assets/canvas-recolor`).
+   */
+  recolor?: ImageRecolor;
 }
+
+/** Where an outline's silhouette is drawn round a sprite: one picture pixel each way. */
+const OUTLINE_STEPS: readonly (readonly [number, number])[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
 
 /** Ticks an effect lasts when the skin gives none. */
 const EFFECT_TICKS: Record<Effect['kind'], number> = { flash: 2, particles: 12, shake: 8, tint: 6 };
@@ -132,6 +162,14 @@ interface ActiveEffect {
   effect: DeepReadonly<Effect>;
   x: number;
   y: number;
+  start: number;
+}
+
+/** A projectile in flight (Engine 0.16 E6): its look, its flight in world px and its event's frame. */
+interface Flight {
+  look: DeepReadonly<SkinProjectile>;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
   start: number;
 }
 
@@ -168,12 +206,16 @@ export class SkinnedPresenter implements Presenter {
   private readonly r: Renderer;
   private readonly opts: SkinnedPresenterOptions;
   private size: ScreenSize | undefined;
+  /** The size of the frame being drawn (the picture when no `size` option or `resize` gives one). */
+  private frameSize: ScreenSize = { width: 0, height: 0 };
   private shown: ShownMap | null = null;
   /** The skin as each map id shows it (`look`). */
   private readonly looks = new Map<string, Skin>();
   /** False on a frame with no `map`: nothing is drawn, but the cache is kept for a later reference. */
   private mapVisible = false;
   private effects: ActiveEffect[] = [];
+  /** Projectiles in flight (Engine 0.16 E6), in the order their events came. */
+  private flights: Flight[] = [];
   /** The last frame whose events were handled, so a frame shown twice plays its sounds once. */
   private lastEvents: number | null = null;
   /** Camera state (presentation only): never in a kit, a frame or a hash. */
@@ -206,8 +248,14 @@ export class SkinnedPresenter implements Presenter {
   private hudShown = true;
   /** The skin's `lighting` (Engine 0.16 part C T4): darkness, lights, flicker, vignette. */
   private readonly lighting: SkinLighting;
+  /** The skin's `fog` look, defaults filled (Engine 0.16 part D, D3). */
+  private readonly fogLook: ReturnType<typeof resolveFogLook>;
+  /** The world box the picture showed this frame (shake aside), for a minimap's `view`. */
+  private viewBox: PresentBox | null = null;
   /** The light map's surface and its size (made on the first lit frame, again on a resize). */
   private lightMap: { surface: MapSurface | null; w: number; h: number } | null = null;
+  /** Sheets recoloured for outlines and team colours, once per sheet and colour (D4). */
+  private readonly recolored: RecolorCache;
 
   constructor(
     target: Renderer,
@@ -232,6 +280,8 @@ export class SkinnedPresenter implements Presenter {
       ...(opts.shakeScale !== undefined && { shakeScale: opts.shakeScale }),
     };
     this.lighting = new SkinLighting(skin, opts.seed !== undefined ? { seed: opts.seed } : {});
+    this.fogLook = resolveFogLook(skin.fog);
+    this.recolored = new RecolorCache(opts.recolor);
     this.hud = new SkinHud(skin, {
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.font !== undefined && { font: opts.font }),
@@ -279,9 +329,11 @@ export class SkinnedPresenter implements Presenter {
   present(frame: Frame): void {
     const r = this.r;
     const size = this.size ?? frame.size;
+    this.frameSize = frame.size;
     this.fxClock++;
     this.restartOnNewLevel(frame);
     this.takeEvents(frame);
+    this.landProjectiles(frame);
     this.particles.update(frame.frame, frame.entities, this.shownMap(frame));
     this.updateTweens(frame);
     this.updateMap(frame);
@@ -301,10 +353,13 @@ export class SkinnedPresenter implements Presenter {
     this.drawMap(view);
     this.drawLightProps(view, frame.frame);
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
+    this.drawProjectiles(view, frame.frame);
     this.drawParticles(view);
     // The light map darkens the world; the world labels go over it, readable in the dark.
     this.drawLighting(frame, view, size);
     this.drawLabels(frame, view, size);
+    // Fog of war (part D) covers the world and its labels, so nothing unseen is named.
+    this.drawFog(frame, view, size);
     this.drawEffects(frame.frame, size);
     for (const f of fx.flashes) translucent(r, f.alpha, () => r.rect(0, 0, size.width, size.height, f.color));
     if (this.hudShown) this.drawHud(frame);
@@ -331,12 +386,98 @@ export class SkinnedPresenter implements Presenter {
         this.tweensOf(ev.entity).add(entry.tween, frame.frame);
       this.particles.event(entry, ev, frame.entities, frame.frame);
       this.cameraFx.event(entry, this.fxClock);
+      if (entry.projectile !== undefined) this.launch(entry.projectile, ev, frame.frame);
       if (entry.effect === undefined || entry.effect.kind === 'particles') continue;
       const at = ev.entity === undefined ? undefined : frame.entities.find((e) => e.id === ev.entity);
       const x = ev.x ?? (at ? at.x + at.w / 2 : 0);
       const y = ev.y ?? (at ? at.y + at.h / 2 : 0);
       this.effects.push({ effect: entry.effect, x, y, start: frame.frame });
     }
+  }
+
+  // ---- Projectiles (Engine 0.16 E6) ----
+
+  /**
+   * Starts a projectile for an event: in flight from the event's `fromX`/`fromY` to its `x`/`y`
+   * from this frame, or, with no flight to show (no points, or `PROJECTILE_MAX` in the air), its
+   * impact at once at the event's `x`/`y`.
+   */
+  private launch(look: DeepReadonly<SkinProjectile>, ev: DeepReadonly<PresentEvent>, frame: number): void {
+    const flight = projectileFlight(ev);
+    if (flight !== null && this.flights.length < PROJECTILE_MAX) {
+      this.flights.push({ look, ...flight, start: frame });
+      return;
+    }
+    const x = typeof ev.x === 'number' ? ev.x : flight?.to.x;
+    const y = typeof ev.y === 'number' ? ev.y : flight?.to.y;
+    if (x !== undefined && y !== undefined) this.impact(look, x, y, frame);
+  }
+
+  /**
+   * Lands every projectile whose flight is over by this frame (`ticks` frames after its event; a
+   * frame skipped past it lands it all the same), each once: its impact's emitters where it
+   * lands, its sound and its shake. A frame number that went back (a new level) drops them all.
+   */
+  private landProjectiles(frame: Frame): void {
+    const flying: Flight[] = [];
+    for (const f of this.flights) {
+      const age = frame.frame - f.start;
+      if (age < 0) continue;
+      if (age >= f.look.ticks) this.impact(f.look, f.to.x, f.to.y, frame.frame);
+      else flying.push(f);
+    }
+    this.flights = flying;
+  }
+
+  private impact(look: DeepReadonly<SkinProjectile>, x: number, y: number, frame: number): void {
+    const hit = look.impact;
+    if (hit === undefined) return;
+    if (hit.sound !== undefined) this.opts.onSound?.(hit.sound, { frame });
+    if (hit.emit !== undefined) this.particles.event({ emit: hit.emit }, { type: 'impact', x, y }, [], frame);
+    if (hit.shake !== undefined) this.cameraFx.shake(hit.shake, this.fxClock);
+  }
+
+  /**
+   * The projectiles in flight (after the entities, under the particles): each one's frame centred
+   * on its place at the zoom, turned to the way it flies with `turn`, or a square of `size` world
+   * px in its `color` (also when its sheet lacks the frame).
+   */
+  private drawProjectiles(view: View, tick: number): void {
+    const r = this.r;
+    const { zoom } = view;
+    for (const f of this.flights) {
+      const at = projectilePlace(f.look, f.from, f.to, tick - f.start);
+      if (at === null) continue;
+      const cx = Math.round(at.x * zoom) - view.x;
+      const cy = Math.round(at.y * zoom) - view.y;
+      const look = f.look;
+      const id = look.frame === undefined ? undefined : (look.sheet ?? this.skin.sheets?.sheet);
+      const sheet = id === undefined ? null : this.sheet(id, look.palette ?? this.skin.sheets?.palette);
+      const rect = look.frame === undefined ? undefined : sheet?.frames.get(look.frame);
+      if (sheet && rect) {
+        const w = Math.max(1, Math.round(rect.w * zoom));
+        const h = Math.max(1, Math.round(rect.h * zoom));
+        const draw = (to: Renderer, x: number, y: number) =>
+          zoom === 1
+            ? to.sprite(sheet, look.frame!, x, y)
+            : to.sprite(sheet, look.frame!, x, y, false, false, 0, zoom);
+        const angle = Math.round(at.angle);
+        if (look.turn === true && angle !== 0)
+          transformed(r, cx, cy, (angle * Math.PI) / 180, 1, 1, (l) =>
+            draw(l, -Math.floor(w / 2), -Math.floor(h / 2)),
+          );
+        else draw(r, cx - Math.floor(w / 2), cy - Math.floor(h / 2));
+        continue;
+      }
+      const side = Math.max(1, Math.round((look.size ?? PROJECTILE_DEFAULT_SIZE) * zoom));
+      const half = Math.floor(side / 2);
+      r.rect(cx - half, cy - half, side, side, look.color ?? PROJECTILE_DEFAULT_COLOR);
+    }
+  }
+
+  /** How many projectiles are in flight (for tests and the fx lab). */
+  get projectileCount(): number {
+    return this.flights.length;
   }
 
   // ---- Tweens ----
@@ -578,6 +719,31 @@ export class SkinnedPresenter implements Presenter {
     translucent(r, dark.level, () => r.sprite(sheet, 'light', 0, 0));
   }
 
+  // ---- Fog of war (Engine 0.16 part D, D3) ----
+
+  /**
+   * The frame's `fog` over the map, the entities and the lighting, under effects and the HUD: the
+   * skin's `fog` look as translucent boxes (`fogBoxes`), each from its corner to the next one's
+   * (both rounded at the zoom) so cells meet without gaps; boxes off the picture are skipped. A
+   * frame without `fog`, or with no map shown, draws nothing.
+   */
+  private drawFog(frame: Frame, view: View, size: ScreenSize): void {
+    const fog = frame.fog;
+    const map = this.mapVisible ? (this.shown?.map ?? null) : null;
+    if (fog === undefined || map === null) return;
+    const r = this.r;
+    const { zoom } = view;
+    for (const b of fogBoxes(fog, this.fogLook, map.tileSize)) {
+      const x0 = Math.max(0, Math.round(b.x * zoom) - view.x);
+      const y0 = Math.max(0, Math.round(b.y * zoom) - view.y);
+      const x1 = Math.min(size.width, Math.round((b.x + b.w) * zoom) - view.x);
+      const y1 = Math.min(size.height, Math.round((b.y + b.h) * zoom) - view.y);
+      if (x1 <= x0 || y1 <= y0) continue;
+      if (b.alpha >= 1) r.rect(x0, y0, x1 - x0, y1 - y0, b.color);
+      else translucent(r, b.alpha, () => r.rect(x0, y0, x1 - x0, y1 - y0, b.color));
+    }
+  }
+
   // ---- Camera ----
 
   /**
@@ -595,6 +761,7 @@ export class SkinnedPresenter implements Presenter {
     const focus = cameraTarget(frame, this.skin.camera);
     const { cam } = zoomAbout(framed, cameraView(size, base), fx.zoom, area, focus);
     const zoom = base * fx.zoom;
+    this.viewBox = { x: cam.x, y: cam.y, w: size.width / zoom, h: size.height / zoom };
     return {
       x: Math.round(cam.x * zoom) + this.shake(frame) + fx.shakeX,
       y: Math.round(cam.y * zoom) + fx.shakeY,
@@ -734,19 +901,50 @@ export class SkinnedPresenter implements Presenter {
     const palette = flashing ? flash.color : sf.palette;
     const sheet = sf.sheet === null || sf.frame === null ? null : this.sheet(sf.sheet, palette);
     const rect = sf.frame === null ? undefined : sheet?.frames.get(sf.frame);
-    // The drawn size in picture pixels: the sprite's or box's size times the zoom.
-    const scaled = (n: number) => (zoom === 1 ? n : Math.max(1, Math.round(n * zoom)));
+    // The drawn scale: the zoom, or for a `screenScale` look the zoom held in its range (D4).
+    const scale = screenScaleAt(entry?.screenScale, zoom);
+    // The drawn size in picture pixels: the sprite's or box's size times the scale.
+    const scaled = (n: number) => (scale === 1 ? n : Math.max(1, Math.round(n * scale)));
     const w = scaled(rect?.w ?? sf.size?.w ?? e.w);
     const h = scaled(rect?.h ?? sf.size?.h ?? e.h);
     // A PNG sheet's frame anchor (Engine 0.16 T10) places it on the entity box; text sprites have none.
     const anchor = rect?.anchor === undefined ? null : anchorOffset(rect.anchor, rect, e, sf.flipX);
-    const x = Math.round((e.x + tw.x + (sf.offset?.x ?? 0) + (anchor?.x ?? 0)) * zoom) - view.x;
-    const y = Math.round((e.y + tw.y + (sf.offset?.y ?? 0) + (anchor?.y ?? 0)) * zoom) - view.y;
+    const wx = e.x + tw.x + (sf.offset?.x ?? 0) + (anchor?.x ?? 0);
+    const wy = e.y + tw.y + (sf.offset?.y ?? 0) + (anchor?.y ?? 0);
+    // A world point at the zoom; a `screenScale` look keeps its box's pivot there and is laid out
+    // round it at its own scale (at scale === zoom both are the plain `round(w * zoom)`).
+    const pivot = scale === zoom ? null : screenScalePivot(entry?.screenScale?.anchor, e);
+    const x = (pivot ? Math.round(pivot.x * zoom + (wx - pivot.x) * scale) : Math.round(wx * zoom)) - view.x;
+    const y = (pivot ? Math.round(pivot.y * zoom + (wy - pivot.y) * scale) : Math.round(wy * zoom)) - view.y;
+    // Outline and team colour (D4): recoloured copies of the sheet, made once and kept.
+    const team = skinTeamColor(entry, e.tags);
+    const outline = skinOutlineColor(entry, e.tags);
+    // A hit flash's silhouette is not team-coloured over.
+    const teamSpec: RecolorSpec | null =
+      team === null || entry?.team === undefined || flashing
+        ? null
+        : entry.team.mask !== undefined
+          ? { kind: 'mask', mask: entry.team.mask, color: team }
+          : entry.team.hue !== undefined
+            ? { kind: 'hue', min: entry.team.hue.min, max: entry.team.hue.max, color: team }
+            : { kind: 'tint', color: team };
+    const bodySheet = rect && sheet && teamSpec ? (this.recolored.get(sheet, teamSpec) ?? sheet) : sheet;
+    const edge =
+      rect && sheet && outline !== null
+        ? this.recolored.get(sheet, { kind: 'silhouette', color: outline })
+        : null;
+    const sprite = (to: Renderer, from: SpriteSheet, dx: number, dy: number) => {
+      if (scale === 1) to.sprite(from, sf.frame!, dx, dy, sf.flipX);
+      else to.sprite(from, sf.frame!, dx, dy, sf.flipX, false, 0, scale);
+    };
     const draw = (to: Renderer, dx: number, dy: number) => {
-      if (rect && sheet) {
-        if (zoom === 1) to.sprite(sheet, sf.frame!, dx, dy, sf.flipX);
-        else to.sprite(sheet, sf.frame!, dx, dy, sf.flipX, false, 0, zoom);
-      } else to.rect(dx, dy, w, h, sf.fallbackColor);
+      if (rect && bodySheet) {
+        if (edge) for (const [ox, oy] of OUTLINE_STEPS) sprite(to, edge, dx + ox, dy + oy);
+        sprite(to, bodySheet, dx, dy);
+      } else {
+        if (outline !== null) to.rect(dx - 1, dy - 1, w + 2, h + 2, outline);
+        to.rect(dx, dy, w, h, team ?? sf.fallbackColor);
+      }
       // A colour tween's overlay over the drawn box.
       if (tw.color !== null && tw.colorAmount > 0)
         translucent(to, tw.colorAmount, () => to.rect(dx, dy, w, h, tw.color!));
@@ -784,7 +982,8 @@ export class SkinnedPresenter implements Presenter {
   }
 
   /**
-   * A flat disc of `radius` world px centred on the entity's box, drawn as one-pixel rows (crisp
+   * A flat disc of `radius` world px (or, from Engine 0.16 E6, the number of the entity's `tag`
+   * times `per`, `ringRadius`) centred on the entity's box, drawn as one-pixel rows (crisp
    * at any zoom) at the ring's `alpha`, with its `edge` (the rows' end pixels and the top and
    * bottom rows) opaque.
    */
@@ -794,25 +993,29 @@ export class SkinnedPresenter implements Presenter {
     view: View,
   ): void {
     const r = this.r;
+    const world = ringRadius(ring, e.tags, this.shown?.map.tileSize);
+    if (world === null) return;
     const cx = Math.round((e.x + e.w / 2) * view.zoom) - view.x;
     const cy = Math.round((e.y + e.h / 2) * view.zoom) - view.y;
-    const radius = Math.max(1, Math.round(ring.radius * view.zoom));
-    const rows = discRows(radius);
+    const radius = Math.max(1, Math.round(world * view.zoom));
+    // Only the rows on the picture (a zoom punch can make a ring far larger than it).
+    const height = (this.size ?? this.frameSize).height;
+    const rows = discRows(radius, Math.max(-radius, -cy), Math.min(radius, height - 1 - cy));
     const alpha = ring.alpha ?? DEFAULT_RING_ALPHA;
     translucent(r, alpha, () => {
       for (const row of rows) r.rect(cx - row.half, cy + row.dy, row.half * 2, 1, ring.color);
     });
     if (ring.edge === undefined) return;
     // The rim: on each row the pixels the next row out does not cover (at least one each end).
-    rows.forEach((row, i) => {
+    for (const row of rows) {
       const outer =
         row.dy === 0
-          ? Math.max(rows[i - 1]?.half ?? 0, rows[i + 1]?.half ?? 0)
-          : (rows[row.dy < 0 ? i - 1 : i + 1]?.half ?? 0);
+          ? Math.max(discHalf(radius, -1), discHalf(radius, 1))
+          : discHalf(radius, row.dy < 0 ? row.dy - 1 : row.dy + 1);
       const run = Math.min(row.half, Math.max(1, row.half - outer));
-      r.rect(cx - row.half, cy + row.dy, run, 1, ring.edge!);
-      r.rect(cx + row.half - run, cy + row.dy, run, 1, ring.edge!);
-    });
+      r.rect(cx - row.half, cy + row.dy, run, 1, ring.edge);
+      r.rect(cx + row.half - run, cy + row.dy, run, 1, ring.edge);
+    }
   }
 
   // ---- Labels ----
@@ -859,6 +1062,8 @@ export class SkinnedPresenter implements Presenter {
         map: this.mapVisible ? (this.shown?.map ?? null) : null,
         entities: frame.entities,
         clock: this.fxClock,
+        fog: frame.fog ?? null,
+        view: this.viewBox,
       });
       paintUi(draws, this.uiPainter);
       return;
@@ -878,6 +1083,29 @@ export class SkinnedPresenter implements Presenter {
 /** A ring's fill opacity when the skin gives none. */
 export const DEFAULT_RING_ALPHA = 0.25;
 
+/** World px per unit of a ring's tag number when it gives no `per` and no map is shown. */
+export const DEFAULT_RING_PER = 16;
+
+/**
+ * A ring's radius in world px for an entity's tags (Engine 0.16 E6): with `tag`, the number after
+ * the first tag with that prefix times `per` (default `tileSize`, the shown map's, else
+ * `DEFAULT_RING_PER`); else, or when no tag holds a positive number, its `radius`; null when it has
+ * neither (no ring is drawn).
+ */
+export function ringRadius(
+  ring: DeepReadonly<{ radius?: number; tag?: string; per?: number }>,
+  tags: readonly string[],
+  tileSize?: number,
+): number | null {
+  if (ring.tag !== undefined) {
+    const tag = tags.find((t) => t.startsWith(ring.tag!));
+    const rest = tag?.slice(ring.tag.length) ?? '';
+    const n = rest.trim() === '' ? NaN : Number(rest);
+    if (Number.isFinite(n) && n > 0) return n * (ring.per ?? tileSize ?? DEFAULT_RING_PER);
+  }
+  return ring.radius ?? null;
+}
+
 /** Degrees clockwise from facing right, for `turnToFacing` art (drawn facing right). */
 const FACING_TURN: Readonly<Record<PresentEntity['facing'], number>> = {
   right: 0,
@@ -890,11 +1118,20 @@ const FACING_TURN: Readonly<Record<PresentEntity['facing'], number>> = {
   'up-right': 315,
 };
 
-/** A disc of `radius` px as rows: each row's offset from the centre and half its width (whole px). */
-function discRows(radius: number): { dy: number; half: number }[] {
+/** Half a disc row's width at `dy` from its centre (whole px, at least 1), or 0 past the disc. */
+function discHalf(radius: number, dy: number): number {
+  if (dy < -radius || dy > radius) return 0;
+  return Math.max(1, Math.round(Math.sqrt(radius * radius - dy * dy)));
+}
+
+/**
+ * A disc of `radius` px as rows from `from` to `to` (offsets from the centre, within the disc):
+ * each row's offset and half its width (whole px).
+ */
+function discRows(radius: number, from = -radius, to = radius): { dy: number; half: number }[] {
   const rows: { dy: number; half: number }[] = [];
-  for (let dy = -radius; dy <= radius; dy++)
-    rows.push({ dy, half: Math.max(1, Math.round(Math.sqrt(radius * radius - dy * dy))) });
+  for (let dy = Math.max(-radius, from); dy <= Math.min(radius, to); dy++)
+    rows.push({ dy, half: discHalf(radius, dy) });
   return rows;
 }
 

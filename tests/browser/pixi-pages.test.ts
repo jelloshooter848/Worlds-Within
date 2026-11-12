@@ -14,7 +14,9 @@ import { browserMissing, launch, serveBuilt } from './serve';
 // with WebGL taken away from the page (`getContext('webgl'|'webgl2')` returns null), `?backend=pixi`
 // falls back to Canvas2D. Skipped where Chromium is not installed (never in CI).
 //
-// Engine 0.16 T13b-8: the RTS skirmish and the tower defense default to PixiJS. With no query each
+// Engine 0.16 T13b-8: the RTS skirmish (and, from 0.16 part D, its copy
+// games/rts-classic) and the tower defense (and, from 0.16 part E, its copy games/td-classic)
+// default to PixiJS. With no query each
 // runs on PixiJS (headless Chromium's software WebGL, SwiftShader, counts as WebGL being there),
 // with WebGL taken away it runs on Canvas2D, and `?backend=canvas2d` still forces Canvas2D.
 
@@ -26,10 +28,17 @@ const PAGES = [
   'games/fx-lab/',
   'games/platformer-lab/',
   'games/platformer-classic/',
+  'games/rts-classic/',
+  'games/td-classic/',
 ];
 
 /** The pages whose default 2D backend is PixiJS (Engine 0.16 T13b-8); the others default to Canvas2D. */
-const DEFAULT_PIXI = ['games/samples/rts-skirmish/', 'games/samples/tower-defense/'];
+const DEFAULT_PIXI = [
+  'games/samples/rts-skirmish/',
+  'games/samples/tower-defense/',
+  'games/rts-classic/',
+  'games/td-classic/',
+];
 
 const missing = await browserMissing();
 if (missing) console.warn(`skipping the PixiJS pages test: ${missing}`);

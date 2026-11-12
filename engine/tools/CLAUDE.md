@@ -66,7 +66,9 @@ content)`, which imports the game's headless module by path for its optional
   `stateHash(snapshot)` (re-exported from `engine/core/state-hash.ts` since Engine 0.14 T8, so a
   browser page's step hook hashes with the same code), `orderOf(entry)`, `saveCodeNow(save, ctx)`. From Engine 0.13 it starts a
   game run from its `from` and checks its `codes` (Campaign runs and save codes, below).
-  `onTick(tick, snapshot)` (Engine 0.14) sees every tick's snapshot as it is played, so a command
+  The snapshot of a tick is taken only when something reads it (a check, a hash, `onTick`, the
+  last tick; Engine 0.16 part D, D9), so a long run that hashes every 100 ticks does not copy the
+  world every tick (an invariant still reads every tick's). `onTick(tick, snapshot)` (Engine 0.14) sees every tick's snapshot as it is played, so a command
   that reads the state per tick (`trace`) uses the one playing loop. A game run's `start` (Engine
   0.14, gap G9) is checked against the game's `starts(content)` and handed to `createGame` as
   `HeadlessOptions.start` (Start levels and entries, below); `PlayedRun.start` is it, or null.
@@ -491,7 +493,10 @@ opts)` for the `mission-room` and `td-defence` rounds). So each `RuleSwitch` onl
   `frame()` into `threeScenePresenter` with its `skinSet` (Engine 0.7 T8: no fallback boxes, a
   block for every tile shown; a round the skin's `rounds2d` lists, Engine 0.16 F8, is the 2D
   layer's: it needs a `canvas2d-<id>` skin and is left to the Canvas2D pass), and requires every
-  hash list to equal the golden file.
+  hash list to equal the golden file. A run of 5000 ticks or more (the RTS sample's ten-minute
+  matches, Engine 0.16 part D, D9) is played through views and presenters only for its first 600
+  ticks, against its golden hashes up to there (`tests/runs/view-play.ts`: `loadRun` cuts it with
+  `presentedRun`, `full: true` keeps it); the run-file tests and `mutants` play it whole.
 - Run every game's run files: `pnpm test tests/runs`, or one by one with
   `pnpm -s cli run <file> --json`.
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`
@@ -1120,7 +1125,7 @@ Engine 0.16 T14: `pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks
 - **Tiles** (`--ticks`, comma-separated) are `[<run>/]<tick>[+<overlay>][@<backend>]`. `<run>/`
   is another run file in the positional run file's folder (`level-3` or `level-3.run.json`), or
   (from Engine 0.16 T13b-9) a path relative to that folder, so one sheet can tile several games
-  (`../../samples/rts-skirmish/runs/battle/141` from `games/fx-lab/runs/level-1.run.json`).
+  (`../../rts-classic/runs/battle/141` from `games/fx-lab/runs/level-1.run.json`).
   `@2d` / `@3d` (or `@canvas2d` / `@three`) or, from Engine 0.16 T13b-5, `@pixi` overrides
   `--backend` (`2d`, `3d`, `canvas2d`, `three`, `pixi`; default 2D). Labels end `[2D]`, `[3D]` or
   `[PixiJS]`. `--ticks "154@canvas2d,154@pixi,100+wipe*12@2d,100+wipe*12@pixi" --columns 2` puts

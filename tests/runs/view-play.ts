@@ -13,11 +13,39 @@ import { readRunFile, runStartOf, type RunFile } from '../../engine/tools/run-fi
 // presentation invariance, Engine 0.16): load a run with its golden hashes, make the game's view
 // as `pnpm cli run` makes its headless game, and play it tick by tick.
 
-/** A run file's game content, the run and its committed golden hashes. */
+/**
+ * A long run (Engine 0.16 part D, D9: the River Ford's ten-minute matches, ~6000 ticks) is played
+ * through views and presenters only for its first `PRESENTED_TICKS` ticks: drawing every tick of
+ * it in every presentation test would take minutes, while its whole length is checked headless
+ * (`run-files.test.ts`, `mutants`). A run is long from `LONG_RUN_TICKS` ticks.
+ */
+export const LONG_RUN_TICKS = 5000;
+export const PRESENTED_TICKS = 600;
+
+/** `run` cut to the ticks the presentation tests play (`PRESENTED_TICKS` for a long run). */
+export function presentedRun(run: RunFile): RunFile {
+  if (run.ticks < LONG_RUN_TICKS) return run;
+  const ticks = PRESENTED_TICKS;
+  return {
+    ...run,
+    ticks,
+    orders: run.orders.filter((o) => o.tick < ticks),
+    missions: run.missions.filter((m) => m.tick < ticks),
+    assertions: run.assertions.filter((a) => a.tick <= ticks),
+    ...(run.hashes === undefined ? {} : { hashes: run.hashes.filter((h) => h.tick <= ticks) }),
+  };
+}
+
+/**
+ * A run file's game content, the run and its committed golden hashes: for a long run only its
+ * presented part (`presentedRun`) and the golden hashes up to it, with `cut` true (play it
+ * headless with `{ untilTick: run.ticks }`); `full` keeps the whole run.
+ */
 export function loadRun(
   root: string,
   file: string,
-): { content: ContentBundle; run: RunFile; golden: TickHash[]; gameDir: string } {
+  { full = false }: { full?: boolean } = {},
+): { content: ContentBundle; run: RunFile; golden: TickHash[]; gameDir: string; cut: boolean } {
   const loaded = readRunFile(root, file);
   if (!loaded.ok) throw new Error(JSON.stringify(loaded.errors));
   if (loaded.value.gameDir === null) throw new Error(`${file} plays a world, not a game`);
@@ -25,7 +53,16 @@ export function loadRun(
   if (!game.content.ok) throw new Error(JSON.stringify(game.content.errors));
   const goldenFile = join(root, file.replace(/\.run\.json$/, '.hashes.json'));
   const golden = (JSON.parse(readFileSync(goldenFile, 'utf8')) as { hashes: TickHash[] }).hashes;
-  return { content: game.content.value, run: loaded.value.run, golden, gameDir: loaded.value.gameDir };
+  const whole = loaded.value.run;
+  const run = full ? whole : presentedRun(whole);
+  const cut = run.ticks < whole.ticks;
+  return {
+    content: game.content.value,
+    run,
+    golden: cut ? golden.filter((h) => h.tick <= run.ticks) : golden,
+    gameDir: loaded.value.gameDir,
+    cut,
+  };
 }
 
 /**

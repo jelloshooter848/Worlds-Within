@@ -25,7 +25,8 @@ It never draws and never imports the sim: a game's glue fills its `RtsWorldPort`
 (`Selection`), `commands` (`commandAt`, `buildCommand`,
 `trainCommand`, `stopCommand`, `trainButtons`, `OrderDraft`, `stampOrder`; missions:
 `missionRequest`, `missionButtons`, `launchMission`, `MissionLauncher`), `enemy`
-(`enemyPlanSchema`, `ScriptedEnemy`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`;
+(`enemyPlanSchema`, `ScriptedEnemy`, `conditionHolds`), `knowledge` (`RtsKnowledge`), `end`
+(`rtsEndSchema`, `matchResult`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`;
 from Engine 0.16 F7 the status also names the one selected thing, `selectedName`, `selectedType`,
 `selectedRole`, gives each scenario key's health, progress, fate and life, `keyStatus`:
 `key.<key>.hp`, `.maxHp`, `.progress`, `.fate`, `.name`, `.alive`, and how near the enemy is to
@@ -37,8 +38,8 @@ the picture rectangle, `Selection.boxWhere`),
 `refresh`;
 `RtsWorldPort`, filled by `engine/sim`'s `rtsWorldPort(world)`; and from Engine 0.15 T6, gap M18,
 `rtsMissionHooks(game)`, the `canOpen` (`not_offered`) and `onChange` (`refresh()`) a
-`MissionHost` over the game takes, so no glue wraps the two), `rules` (`RTS_RULES`) and `schema` (the `rts-map`, `rts-types` and `rts-enemy`
-content kinds, and from Engine 0.15 T15 `rtsScenario(map, types, seed)`: the map with the types table spawned first, the
+`MissionHost` over the game takes, so no glue wraps the two), `rules` (`RTS_RULES`) and `schema` (the `rts-map`, `rts-types`, `rts-enemy` and (Engine 0.16 part D)
+`rts-end` content kinds, and from Engine 0.15 T15 `rtsScenario(map, types, seed)`: the map with the types table spawned first, the
 scenario a game builds its world from). `kit.ts` exports `kit`, the hook the tools find by the name `rts`.
 
 - Engine 0.15 T7 (gap M25): `RtsMissionInfo.marker` may be a scenario key (a mission file's
@@ -54,6 +55,27 @@ faction)`): what changed between two views as presentation events, each with its
   so a 3D skin's per-map `decor` and `places` dress each scenario; a unit or building whose
   health bar shows also carries `hp:<hp>/<max>`, the numbers a 3D skin's bar label reads.
 
+- Engine 0.16 part D (D5): `fog` (`visibility(view, faction)`, `fogView`, `RtsFogMemory`,
+  `unitSight`, `buildingSight`): fog of war as presentation and AI knowledge only (a building
+  type's optional `sight` in `engine/core/rts-types.ts`, no default, so no hash moves);
+  `presentWorld`'s `fog: true` fills the frame's `fog`, hides other sides' units out of sight and
+  shows other buildings and nodes as last seen (`last-seen`), the memory in `RtsPresentState`.
+  `feedback` (`orderMarker`, `RtsOrderFeedback`) and `barkEvent` (`events`): `RtsControls.feedback`
+  gives an accepted order's marker and `bark`, which `RtsPresentState.accept` carries into frames
+  (`order-marker`, fading); a selected own unit shows `path-dot`s from its task's `goal`/`path`
+  (new optional `RtsUnitView` fields with `sight`); an own building training shows a `train`
+  `progress-bar` tagged with its queue count (`queue:<n>`). `tests/runs/rts-fog.test.ts` proves the same hashes with fog
+  on and off over every rts-classic and rts-skirmish run.
+
+- Engine 0.16 part D (D6): the scripted enemy as a skirmish opponent, all optional so older plans
+  give the same orders and kit snapshot: `knowledge: "fog"` (targets and enemy-side conditions read
+  only what its side sees and the buildings it remembers, `RtsKnowledge` in `knowledge.ts`; rule
+  `enemy-knows-only-what-it-saw`; the memory in the kit snapshot as `seen` only for a plan that
+  keeps one), a `scout` order, attack targets `enemy-base` and `last-seen-building`, a selector's
+  `min` (waves), `build` at the first free of `cells`, `train` `upTo` a count, and
+  `conditionHolds`. `end` (`rtsEndSchema`, `matchResult(view, end, knowledge?)`, the `rts-end`
+  content kind): a game's win and loss as data, `won` and `lost` in the plan's conditions.
+
 ## Imports allowed
 
 - `@engine/core/*` except its drawing and output side (`FORBIDDEN_CORE` in `config/layers.js`),
@@ -67,4 +89,6 @@ faction)`): what changed between two views as presentation events, each with its
 `pnpm test kits/rts` runs the kit's tests in Node on the tiny snapshot fixture
 (`__fixtures__/world.ts`); `pnpm test tests/kits` drives the kit over a real `engine/sim` battle
 world and replays it from the recorded player orders, and drives its mission offers, launch and
-frozen presentation over the siege fixture with a `MissionHost`.
+frozen presentation over the siege fixture with a `MissionHost`; `tests/kits/rts-ai.test.ts` plays
+the fog opponent over a small sim field (it builds a barracks, scouts, attacks in a wave and the
+end rule decides the match).

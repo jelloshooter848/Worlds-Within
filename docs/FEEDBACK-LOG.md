@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 489.** (Last used: 488.)
+**Next unused number: 618.** (Last used: 617.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1935,3 +1935,490 @@ Owner questions of the PixiJS close-out (T13b-9; 419-422 on the track):
 - **488.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
   positional run file's folder (`../../samples/rts-skirmish/runs/battle/141`), added so the
   parity sheet tiles three games. OK?
+
+**Engine 0.16 part D, D2: the 0.15 skirmish kept as `games/rts-classic`**
+
+- **489.** Before the RTS sample becomes the full ten-minute match (D8), its 0.15 battle (the
+  map, the raiders' plan, text art, skin, sounds, title and menus, the page and the five run
+  files `battle`, `commands`, `hold`, `economy`, `lost`) was **copied** to a new test game,
+  `games/rts-classic` (id `rts-classic`, its own page in the games index, `CLAUDE.md`,
+  `AGENTS.md` and module page), with every golden hash unchanged (only each `.hashes.json`'s
+  `run` path differs). Unlike part B's `git mv`, the sample folder stays as it was until D8
+  replaces it, so both play meanwhile. The tests that guard the 0.15 battle point at the copy:
+  `tests/runs/rts-classic-mutants.test.ts` (no unguarded rule, no weak run), backend parity and
+  presentation invariance list it, the PixiJS parity test's RTS case and the parity sheet's RTS
+  tile path (`../../rts-classic/runs/battle/141`) and `world-data.test.ts`'s events use it. The
+  alternative was to keep both maps in one game (the sample with a second map and the old run
+  files beside the match's), which keeps one folder but ties the old hashes to every change of
+  the match's glue, skin and end rule. OK to keep it as its own test game?
+
+**Engine 0.16 part D, D9: the ten-minute win and loss, balance and feel**
+
+- **490.** Balance, in data only: the AI keeps up to 16 soldiers and 8 archers (6 and 3 before),
+  defends with up to 6 (3), and sends three one-shot waves of growing size from 1800, 3000 and
+  4200 ticks (5+2, 8+3, 10+4 at most; before: 4+2 every 1500 from 1800) and everything it has
+  every 100 ticks from 5400 (4800). The town centre has 1600 hp (800: eight soldiers razed it in
+  30 ticks, so a careless rush won) and the gold nodes hold 1000 at home and 2400 on the far node
+  (800 and 1200: both sides ran dry by tick 4500). It moved every rts-skirmish hash; the four
+  guard runs' assertions held. OK, or tune toward a harder AI?
+- **491.** The town centre now costs 300 gold (it cost nothing, so the bar's Build town-centre
+  put one up for free). OK?
+- **492.** The win and loss were recorded by a throwaway headless bot, not kept: the win is a
+  tidy player (nine workers, two barracks, the army held at a rally point and fighting what comes
+  within 14 cells, crossing at 5700) whose army grows to about 56 and loses little; the loss is a
+  careless one (six workers, a late barracks, eight soldiers thrown at blue's town centre at
+  4600, the hero wandering off). A human will have a closer match. Keep the bot as a tool (like
+  the kits' round bots) or leave it out as now?
+- **493.** The two matches hash every 100 ticks (the guard runs every 20) and open with interface
+  actions that fail every kit rule by tick 2 (a drag over the enemy's sentry that selects nothing,
+  a command on it with the hero), so `mutants` plays them whole only once each. The win keeps one
+  refused order (a barracks it could not yet pay for at tick 110). OK?
+- **494.** The presentation tests (drawing every tick, fog on and off, backend parity, the
+  stepped shell, presentation invariance) play runs of 5000 ticks or more only for their first
+  600 ticks, against their golden hashes up to there; the run-file tests and `mutants` play them
+  whole. OK, or draw them whole at the cost of minutes per test?
+- **495.** For speed, with no hash moved: `World.peek()` (the snapshot without copies, read by the
+  RTS kit's view), the kit's `readWorld` parsing each frozen component value once, the attack
+  system reading its candidate targets once a tick, and `pnpm cli run` snapshotting only on the
+  ticks it reads. A ten-minute match runs in about 9 s headless (about 35 s before). OK?
+- **496.** The skirmish page in manual-loop mode (`?debug=step`) plays one game tick per loop step
+  (6 in real time) and reports its game to the step hook, so `__ww.replay` replays a run file tick
+  for tick and `__ww.hash()` is the run's. The browser test's opening now steps one tick a step.
+  OK?
+- **497.** `SkirmishGame.recorded()` puts every interface action handed to `order` back in its
+  place, and the page exports that, so a replay of a run with `ui` entries exports as itself (the
+  selection is in the snapshot, so the plain orders alone hashed differently). OK?
+- **498.** The danger layer: `ford-danger` (an original G minor sixteenth ostinato, pedal bass and
+  busier drums, the calm song's tempo and length), up (calm at 0.6) within 20 frames while a
+  seen enemy is 8 cells or fewer from one of the player's buildings (`enemyNear`), down over 90
+  frames. OK, or another distance or mix?
+- **499.** Sounds: every event has one (new `crumble` for a building down on either side, `alarm`
+  for the player's building hit, at most every 45 frames, and `clash` pitched down for hitting an
+  enemy building); hits and barks vary by -2 to 2 semitones (barks also in volume), coins by 0 to
+  2; the music ducks under the ends' jingles and the player's building falling. The enemy's
+  training and building stay silent. OK?
+- **500.** The HUD: a selected-unit panel at the bottom left (name, health bar and number, a
+  building's training and its progress) when one thing is selected; the own-units counter is the
+  population (no cap, as the kit has none). OK, or a population cap as a rule?
+- **501.** The camera's feel: an 8 px edge band (32 CSS px at 1920x1080) scrolling 6 px a step
+  (the map's width in about 3 s), and 400 px of wheel per halving or doubling of the zoom (0.5 to
+  2). Tuned from reasoning and the CLI's 4x screenshots, not yet from a playtest. OK?
+- **502.** PixiJS parity on match frames: `match-won` at 1920 and 1940 (the first wave on red's
+  ground) on both 2D backends, strict bound; it adds about 2-3 minutes to the browser tests here.
+  The Canvas2D fallback stays checked by `pixi-pages.test.ts`. OK, or a cheaper earlier frame?
+- **503.** The 1920x1080 screenshot tuning of the HUD was done on the CLI's 4x pictures (the view's
+  camera on the map's centre, no selection), so the selected-unit panel's place was set by its
+  numbers and not yet seen on a page shot; D10's screenshots are where to review it.
+
+**Engine 0.16 part D, D10: close-out** (details in `docs/BUILD-LOG.md`, Engine 0.16 part D):
+
+- **504.** Owner playtest (part D's Done when): please play The River Ford (`pnpm dev`, then
+  `/games/samples/rts-skirmish/`) from the title to a win and to a loss, with a mouse (and, if you
+  can, touch): gather, build barracks, train soldiers and archers, hold off the AI's three waves
+  (from about 3, 5 and 7 minutes) and its push (9), and take blue's town centre across a ford.
+  Does a match take about ten minutes and feel good (the fog, the minimap, markers and barks, the
+  zoom, the music's danger layer)? Accepted, or what should change?
+- **505.** Owner screenshot review (part D's Done when): the ten 1920x1080 screenshots in
+  `docs/reports/screenshots/0.16-D/` (title, orders and a bark, a barracks going up, fog and the
+  minimap, an attack's marker and path, the AI's wave from the centre ford, the defence at home,
+  a fight zoomed out, victory, defeat), listed with their commands in the build log. Accepted?
+- **506.** For the screenshots the skirmish's view (`view.ts`, used only by `pnpm cli screenshot`,
+  `sheet` and the tests) changed, presentation only and no hash moved: it draws the run's own
+  selection (`ui.selection`: rings, path dots, the selected-unit panel), gives an accepted
+  interface command its order marker and bark, draws the HUD's text (its fonts were missing, so
+  the bark line and the panel's words never showed in a CLI picture) and its camera is a
+  director's: it frames the fight (units with a target where one side is red), else the selected
+  units, else all red's units, zoomed out to fit (1 down to 0.5). Before, the camera sat on the
+  map's centre, which shows neither base. OK, or should a run file name the camera (an engine
+  change to the run-file schema)?
+- **507.** The victory banner's second line still reads "THE RAIDERS ARE BEATEN" (the 0.15
+  battle's words; the banner is a 160x48 text sprite, `banner-won`), though the match is now
+  against a base across the river (screenshot 09; the page's end screen says "Victory: the far
+  bank is yours"). Options: (a) redraw the line as "THE FAR BANK IS YOURS"; (b) leave it.
+  Recommended (a), a small text-art change with no hash moved. Which?
+- **508.** Under red's fog the AI's waves are never seen in the river: red has no sight of the
+  fords, so a wave first shows on the road west of the centre ford, a few cells from red's base
+  (screenshot 06, wave 3 at 4270 in `match-lost`), and the match-won player meets every wave at
+  home. Options: (a) leave it (scouting is the player's job); (b) a sight post at each ford on
+  red's bank (map data); (c) a longer sight for archers. Which?
+- **509.** D3 (engine): fog of war is a frame field (`fog`, string rows of 0 unexplored, 1
+  explored, 2 seen, one cell per map tile) drawn by the shared 2D walk over the map, entities and
+  lighting and under the HUD, alike on Canvas2D and PixiJS, with the skin's `fog` look (colours,
+  alpha, soft edge); the UI kit's minimap shows the fog, team-coloured dots and the camera's box,
+  and `minimapPointToWorld` maps a tap back to the world. OK?
+- **510.** D4 (engine): readability as three skin kind fields, all off by default: `outline` (a
+  colour or "team"), `team` (a tag prefix picks a colour that replaces a hue range or mask colour,
+  or tints) and `screenScale` (the drawn scale held in min..max whatever the zoom: the skirmish's
+  health, progress and train bars stay the same size at every zoom, markers and path dots never
+  shrink below one picture px per sprite px); recoloured sheets are made once per sheet and
+  colour. Units themselves scale with the zoom. OK, or should units also keep a minimum size?
+- **511.** D5 (kit): fog is presentation and AI knowledge only: a unit's sight from its `sight`,
+  else its type's, else 4; a building's from its type's optional `sight`, else its size plus 2;
+  explored cells and last-seen buildings kept per frame stream (never hashed); enemy units shown
+  only on cells seen now, enemy buildings and gold as last seen. Feedback: an accepted order's
+  marker (8 ticks, fading) and bark (an event and a HUD line for 15 ticks), path dots only for
+  selected own units, a train bar under a training building. OK?
+- **512.** D6 (kit): the AI's memory (explored cells, buildings as last seen) is in the kit's
+  snapshot only for a plan that keeps one, so every older hash stayed; the end rule is data
+  (`rts-end`), `lost` checked first, so both town centres falling on one tick is a loss. OK?
+- **513.** D7: Kenney's Medieval RTS (CC0) fetched from its OpenGameArt mirror; only four files
+  kept; the river, banks, roads and plaza pieces made for 16 px cells by
+  `tools/ford-tiles.ts` from the pack's sheet (checked byte for byte); blue keeps the pack's own
+  blue units, red its red ones, both with team colours and outlines; text sprites only where the
+  pack has nothing (rings, bars, markers, banners). OK?
+- **514.** D8: the map is 64x40, point-symmetric, with three fords; the sample's 0.15 run files
+  were removed (they live, unchanged, in `games/rts-classic`) and four short guard runs
+  (`opening`, `ai-barracks`, `fog`, `razed`) guard all six kit rules. OK?
+- **515.** Looks found in the screenshots and left: the gold counter is hidden once red's town
+  centre (its stockpile) is gone (10); a held army stands in one overlapping blob (07); the
+  selected town centre stays in the panel the whole match because the matches' runs select it at
+  tick 1 (the page's player changes selection); and the player's finished building flashes the
+  whole picture white for 2 ticks (the skin's `building-done:side=own` `flash`, `#fcfcfc`; the
+  shell's "flashing" setting reduces flashes): (a) leave all; (b) soften the flash (a lower
+  alpha or a warm tint) and leave the rest. Recommended (b).
+
+**Engine 0.16 part D: build decisions of D1-D8 not yet numbered** (recorded at part D's
+finalize pass; details in `docs/BUILD-LOG.md`, Engine 0.16 part D and part A2's merge notes):
+
+- **516.** D1, the merge: part C's lighting, `showHud` and anchored layer frames now live in the
+  shared core `SkinnedPresenter` (Canvas2D passes its canvas as `lightSurface`, so its pictures
+  are unchanged), and PixiJS draws the lighting too (`PixiRenderer.gradient`,
+  `PixiSurfaces.makeLive`), which the fx-lab parity and PixiJS screenshot tests needed. This
+  delivers item 434's PixiJS lighting pass, outside part D's scope. Item 434 is left open: OK to
+  close it as done?
+- **517.** D1: one `vary` field serves part C's 2D tile variety (`frames`, `weights`, `period`)
+  and part F's 3D model-tile variety (`turn`, `height`, `tint`); the shape not of the skin's
+  backend is `wrong_backend_field`. Likewise a HUD `when` may be a status key (part C) or a
+  status test (part F). OK, or split them into two named fields?
+- **518.** D1: in the 3D scene a skin with both `themes` and a `timeOfDay` uses the time of day
+  (no skin has both yet); without a time of day a theme also sets exposure and clear colour. OK?
+- **519.** D2: the copied `games/rts-classic` keeps the sample's content ids (`skirmish`, `ford`,
+  `raiders`) and glue names (`loadSkirmish`, `SkirmishPlay`, `window.wwSkirmish`) and PixiJS as
+  its default backend; it has no browser test of its own (covered by the pages, pixi-pages and
+  in-folder play tests). OK, or rename its glue as part B did?
+- **520.** D6/D8: `tests/runs/rts-classic-mutants.test.ts` accepts one unguarded rule,
+  `enemy-knows-only-what-it-saw`: the 0.15 raiders know everything, so no rts-classic run can
+  guard it without changing frozen hashes (the sample's `fog` and `ai-barracks` runs and
+  `rts-ai.test.ts` guard it). OK?
+- **521.** D3: fog cells are plain string rows (no run-length encoding), about 4 KB per frame on a
+  64x64 map; a skin without a `fog` look uses black (opaque unexplored, half explored, no edge);
+  the soft edge is one step of plain fills (no gradient) so both backends match; fog is drawn
+  after the lighting, so it hides lights too. OK?
+- **522.** D3: the minimap's camera box is the box actually framed (clamped, no shake), named
+  `view`; `teams` only recolours dots a `dots` entry already matches. OK?
+- **523.** D4: team recolours and outlines need pixel access through a `recolor` presenter option
+  (default `canvasRecolor`, in `engine/core/assets`); without a DOM (Node, headless sheets)
+  sprites draw with neither, plain boxes still get both. Outlines are 4-neighbour, one picture
+  pixel at any zoom; mask colours match exact RGB; the hue mode skips greys. OK?
+- **524.** D4: the backend parity test is strict at zoom 1 and 2 only; at 0.5 the two backends
+  pick different pixels when halving a sprite (Canvas2D from the pixel corner, the GPU from the
+  texel centre), so it checks only the zoom-stable bar's size there. Not checked against an older
+  commit. OK?
+- **525.** D5: sight is `dx*dx + dy*dy < (sight+1)^2` to the nearest footprint cell, a unit's
+  default 4 and a building's `max(w, h) + 2`; under fog the HUD's enemy counts and selection read
+  only what is seen now, while `keyStatus` and mission markers read the whole view (the game's
+  own knowledge). OK?
+- **526.** D5/D8: the training queue is a `queue:<n>` tag on the train bar (no new kind, so no
+  skin needs new art), the bar only on the player's own buildings; the optional rally or target
+  line was not built. Other sides' placed events are heard only on cells seen now
+  (`heardEvents`, D8). OK?
+- **527.** D6: the AI keeps a memory (and `kit.seen` in the snapshot) for a plan with
+  `knowledge: "fog"` or any `scout` step (the task said fog only; scouting needs explored
+  cells). Under fog it never attacks a building it only remembers, it walks to it to look;
+  resource nodes are never hidden from it; a scout target may be unreachable (the unit idles and
+  retries). OK?
+- **528.** D6 review (after D10): with a side's knowledge, an "enemy has at most N" end condition
+  holds only once that side has seen an enemy thing of that type (`RtsKnowledge.hasSeen`), so an
+  unscouted base never reads as a win. No hash moved. OK?
+- **529.** D7: map cells stay 16 px and the pack's units (about 16x24) and buildings are drawn at
+  the pack's size, a building up to 6 px past its footprint. The cut tile sheet `ford-tiles.png`
+  is a derived binary in the pack folder, made by `tools/ford-tiles.ts` and checked byte for
+  byte; the atlas is kept as text. OK?
+- **530.** D8: two AI plan steps beyond the task text: `defend` (attack seen red units only with
+  at least 2 idle soldiers, so the lone scout does not chase) and `rally` (idle soldiers go home
+  once red's base is known, so the scout does not camp at red's town centre). Blue builds up to
+  two barracks. OK?
+- **531.** D8: the minimap is 128x80 at 348,186 so the whole 64x40 map fits at scale 2 and every
+  cell is clickable (the old 82x50 box left most of the map unclickable). OK?
+- **532.** D10: the roadmap's "expand" is gathering at the far gold node; neither the AI nor the
+  bots ever build a second town centre. OK, or should the AI expand with a second town centre?
+
+**Engine 0.16 part F: the mini siege in 3D low-poly** (F1-F10, built on the track branch
+`engine/0.16-track2`; F1-F7 merged into `engine/build-0.15` in part D, D1, and F8-F10 with the
+review fixes in part E, E1; details in `docs/BUILD-LOG.md`, Engine 0.16 part F). Labelled `F-1`
+to `F-22` on the track; the merge numbered them 533-554 (`F-n` is item 532+n).
+
+- **533.** The mini siege's picture is 320x180 (16:9; 256x240 before), so six times is
+  1920x1080; the Canvas2D skins and the tests' sizes moved with it (F6).
+- **534.** The people and the sheep come from Quaternius Ultimate Animated Character Pack and
+  Farm Animals (CC0), not named by the roadmap, with `Defeat` as the death clip (the pack has no
+  death) and `Punch` as the attack; the Quaternius village pack is the 2020 OBJ "Medieval Village
+  Pack", not the newer textured MegaKit (the model check refuses textures in other files); FBX
+  and OBJ converted to GLB, the Castle Kit's colour map baked into vertex colours (F1).
+- **535.** The 3D packs are about 8.7 MB of GLB in the game's `assets/`, all 221 files kept
+  (F1).
+- **536.** The ground view's camera maths is one core function shared by drawing and picking
+  (`groundProjection`); side-view skins are unchanged (F2).
+- **537.** Decor is presentation: drawn from the presentation RNG, never in the sim, so a decor
+  grid can change without moving a hash (F3).
+- **538.** The world clock: 60 ticks an hour, the siege from day 2, 14:00, the dawn day 3, 05:30,
+  the ridge day 3, 10:00; the sabotage's 120 ticks read as two hours (F4).
+- **539.** A mission's `text` (the card's description) is presentation only, never stored, so no
+  save code moved (F5).
+- **540.** The hosted rounds are drawn in 2D on a layer over the 3D picture (the shell's
+  `roundLayerDisplay`, the game's 2D backend) with an iris, not with 3D round skins; F6's 3D
+  round skins were removed (F8).
+- **541.** Parts C and E are not on this branch: the rounds were brought to their bar with the
+  0x72 DungeonTileset II and Kenney Tower Defense packs; re-point them at C and E's skins when
+  those merge (F8).
+- **542.** The ground camera: pitch 60, yaw -8, fov 35, zoom 0.42 (the whole village, river and
+  camp in view), render scale 6 (F6).
+- **543.** Health and progress bars are world labels, not 3D meshes (F6).
+- **544.** The 3D page is the default; 2D only where WebGL 2 is missing or by the query (F7).
+- **545.** The HUD is the UI kit's in a new 3x5 pixel font (`siege-tiny`), not the mockup's
+  serif (F7).
+- **546.** The 3D page has no text box: a save code goes in the link, `?code=<code>` (gap M42;
+  F9).
+- **547.** The title hides the HUD and the world labels; labels that would cover a HUD panel
+  are left out (gap M40; F9).
+- **548.** The page's controls move to the bottom-right corner over a centred screen and the
+  title (gap M41; F9), but not over the rounds (outstanding above).
+- **549.** A skirt of grass is laid past the map's edges (`scene3d.skirt`), and the night keys
+  of the time of day were lightened so the dawn's start reads (gaps M43, M44; F9).
+- **550.** M45 (labels cut at the picture's edge) is left open for the owner's review (F9).
+- **551.** The F10 screenshots were taken with a scratch script on `tests/browser/serve.ts` and
+  the page's hooks, not a committed tool; the page test's `WW_SHOTS_DIR` shoots the same screens
+  at 640x520.
+- **552.** Review screenshots may be committed as PNGs in `docs/reports/screenshots/<part>/`
+  (4.3 MB for these ten); `no-content.test.ts` and DESIGN.md allow that folder. OK, or keep
+  them out of git?
+- **553 (owner review).** Playtest the mini siege in 3D from the title through the dawn, and
+  review the ten screenshots and the mockup comparison above: accept, or list what to change.
+- **554.** The page's 3D camera is the skin's pitch 60 (the whole map in view, flatter than the
+  mockup); the mockup comparison (`10-siege-mockup-angle.png`) was shot at pitch 42 through a
+  scratch override. Keep pitch 60 for play, or lower the page's camera to the mockup's angle
+  (`three.json`'s `camera3d.pitch`, with the zoom brought closer)?
+
+**Engine 0.16 part F: smaller build choices of F1-F10** (track 2, after its `T2-17`, item 484).
+Labelled `T2-18` to `T2-42` on the track; the merge numbered them 555-579 (`T2-n` is item 537+n).
+
+- **555.** Google Drive refused the pack downloads (quota) and poly.pizza is behind Cloudflare,
+  so every pack came from OpenGameArt mirrors; no pack was left out.
+- **556.** The OBJ, FBX and colour-map conversions to GLB were done by scratch scripts that are
+  not in the repo (a prebuilt FBX2glTF was blocked); `assets/CREDITS.md` describes each change.
+  Re-converting a pack needs those scripts rewritten.
+- **557.** Characters: `knight-male` soldiers, `knight-golden-male` Captain Hale, `viking-male`
+  raiders and guards, `worker-male` workers; `Soldier_Male` dropped (looks modern). Quaternius
+  files renamed lower-case with hyphens; Kenney names kept. The windmill's sails are part of its
+  one mesh and do not turn.
+- **558.** Ground view conventions (engine): zoom is camera distance (straight down shows
+  height/zoom world px, as in 2D); yaw 0 looks north; pitch is degrees below the horizon (10 to
+  90); a mesh part's `at.z` is the height of its bottom and `d` its height.
+- **559.** In ground view the map clamp is done by `RtsCamera` (the picture's four ground
+  corners kept inside the map), not by the scene's follower; a game that follows an entity in
+  ground view without `RtsCamera` is not clamped.
+- **560.** Clicks and box select pick the ground cell under the pointer, not the upright unit
+  body drawn above it.
+- **561.** 2D particles have no height, so in ground view they sit on the ground 8 px up (a
+  burst spreads over the ground, a rising flame drifts north).
+- **562.** Decor is a new engine content kind `decor` (text rows) with its legend in the skin.
+  The RTS kit gives every map the id `rts`, so a decor entry names its map with `map`.
+- **563.** Per-cell tile variation is opt-in (a tile's `vary`), so no existing picture moved;
+  its stream is `fxRng(seed, 0, ...)` (frame fixed at 0).
+- **564.** Render scale is a whole number 1-8 so pixel fonts stay sharp; the CLI's new
+  `--render-scale` is separate from `--scale` (a nearest-neighbour upscale on top). The page's
+  render scale is the skin's 6, capped to the window; `?scale=<n>` overrides it.
+- **565.** A clock is allowed on scenario entries only; the game puts it on frames through a
+  new `hostedSource` `status(world)` option, so no RTS kit rule changed. The day's parts start at
+  5, 7, 12, 15, 18 and 21 o'clock.
+- **566.** Time of day: the sky is one colour per key, not a gradient; a clock jump of more
+  than half an hour eases over 45 display frames (through the night for an overnight gap). The
+  optional Canvas2D/PixiJS evening tint was not done: the 2D page does not darken.
+- **567.** On the mission card, choosing Play or Delegate on an offer (or picking one of several
+  offers) launches it at once; there is no cancel. A small "mission result" card follows each
+  mission while the world keeps running.
+- **568.** The results' change lists (`worldChanges`) count a named death both as a loss and a
+  fate change and leave out scenario, carry and load changes; the card's hero and foes read only
+  the rooms' selector params (fortify's card shows none).
+- **569.** The scenery (decor) cannot change paths, so it is kept off the roads, every starting
+  cell and the battle rows; the castle ring is open to the east. `three.test.ts` checks this.
+- **570.** Engine features added that the tasks did not list: model recolour and tint, tag
+  looks that swap the model, decor stack, light and emit, `hitFlash`, HUD items shown by a
+  `when` test, and a presentation-only RTS status `key.<key>.hp|maxHp|progress|fate|name|alive`.
+  All optional.
+- **571.** The gem and the red banner are this build's own CC0 models
+  (`assets/mini-siege-marks`, text glTF from a script): the packs have no gem and their banners
+  are blue. `*.gltf` in games' assets is in `.prettierignore`, so the text stays as written.
+- **572.** The results screen's layout changed for every 16:9 picture in the engine (first
+  section full width, the code beside its label, two columns); at 320x180 the overflow still
+  reads "and N more".
+- **573.** No gold income is shown (the RTS kit has none; gold changes only through missions);
+  no new world-event sounds (no offer event to hang one on); no line from the offer marker to the
+  card (it needs 3D-to-UI projection).
+- **574.** Music: a `siege-danger` layer while a mission is open or raiders are within 3 cells
+  of a building, and a `siege-round` layer under the rounds (calm 0.35, danger 0.7, round 1). The
+  title plays the calm layer.
+- **575.** The title drifts by zooming in 1.9 times and circling, because at the start zoom the
+  whole map shows and the clamp leaves no room to move. The menus were restyled to the HUD's
+  colours and the title's 2D pixel art removed, which also changes the 2D page.
+- **576.** Kenney Tower Defense ships only 64/128 px tiles; they were scaled down to 16, 24 and
+  32 px with a box filter. The rooms' siege engines and the walls' gate and camp keep the game's
+  own text sprites; the old NES-style round art is kept but unused until C and E merge. Both
+  rooms use the `knight_m` hero, so Sergeant Mara Venn looks like the sabotage hero.
+- **577.** The iris into a round is started by the game's `main.ts` when `launch.playing()`
+  changes (the shell's push/pop transition does not fire under the 3D page's screens); an
+  engine-level fix could come later.
+- **578.** Changes outside part F's modules: `vite.config.ts` sets a global `testTimeout` of
+  20 s (CLI-heavy mini-siege tests sat just over 5 s under the full suite);
+  `engine/tools/main.test.ts` deletes the fx lab's `ground.json` from its copy;
+  `tests/build/game-files.test.ts` leaves `assets/` out of its glob comparison; `clock.ts` and
+  `round-layer.ts` joined `PURE_CORE` in `config/layers.js`.
+- **579.** 533 to 550 were written from F1-F9's commit messages and module docs, not from
+  those tasks' own decision lists; the orchestrator should check them against what F1-F9
+  reported.
+
+**Engine 0.16 polish P: parts C and F review notes, P1-P3** (on the track branch, merged in part
+E, E1; details in `docs/BUILD-LOG.md`, Engine 0.16 polish P). Labelled `P-1` to `P-5` on the
+track; the merge numbered them 580-584 (`P-n` is item 579+n).
+
+- **580.** The dawn skirt's before shot is a page shot, not a CLI one: `pnpm cli screenshot
+- **581.** The page shots come from a committed script, `tests/browser/siege-review-shots.ts`
+  (run with `pnpm exec tsx`, not a test), not a scratch one as in F10 (551), so P11 retakes the
+  after shots with the same steps.
+- **582.** The flash shot (F3) is the first loop step of world tick 41 after Delegate at 40: the
+  white `mission-open` flash lasts 12 loop steps (ticks 41 and 42), not one frame as part F's
+  notes say.
+- **583.** C2's shots cover all six rooms other than the crypt and the warden hall (01 and 02
+  show those two), more than the four the task asked for.
+- **584 (revisits item 436).** C1: The Old Crypt's skin goes from `lighting.bands: 6` (item 436's
+  stepped pixel-art falloff, which showed as hard rings round every torch) to `bands: 0` with
+  the new `lighting.dither: 8`: each light's falloff is drawn smooth (32 stops) and quantized by
+  picture pixel to 64 alpha steps with an 8x8 Bayer matrix (`LIGHT_DITHER_LEVELS`), no RNG, the
+  same in Canvas2D and PixiJS. 16 and 32 steps were tried and looked at full size: a strong
+  checker in the half-lit floor (16) and a busy one (32); at 64 the dither is a faint pixel
+  texture and no ring shows. A skin that wants the stepped look back with soft edges can give
+  `bands` with `dither` (it dithers between its bands). The smooth falloff ends darker towards
+  the radius than the banded one (a band kept its inner edge's value), so the rooms read a little
+  darker at their edges; no radius was changed. The fx lab's night level keeps its smooth,
+  undithered falloff (it had no bands and shows no rings).
+
+**Engine 0.16 part E, E2: the 0.15 Winding Road kept as `games/td-classic`**
+
+- **585.** Before the tower-defense sample becomes the ten-wave map of 0.16 (E8), its 0.15 round
+  (map, towers, waves, text art, skin, songs, sfx, fonts, title and menus, the page and the five
+  run files `build`, `won`, `target`, `leaked`, `tapped`) was **copied** to a new test game,
+  `games/td-classic` (id `td-classic`, its own page in the games index, `CLAUDE.md`, `AGENTS.md`
+  and module page), with every golden hash unchanged (only each `.hashes.json`'s `run` path
+  differs), as D2 did with `games/rts-classic`. The copy keeps the sample's content ids and glue
+  names (`loadTowerDefense`, `TdPlay`, `window.wwTd`) and PixiJS as its default backend; its test
+  file is renamed `td-classic.test.ts`. New: `tests/runs/td-classic-mutants.test.ts` (strict, no
+  weak run, and an `UNGUARDED` list, empty today, for kit rules E3 and E4 add that the classic
+  road cannot reach; with any listed the command exits 4, which the test expects), entries in
+  presentation invariance, backend parity, `tests/build/pages.test.ts`, the PixiJS pages and lazy
+  tests, and the PixiJS parity test's tower-defense case now plays `games/td-classic/runs/won`
+  (the sample's `won` will change in E8). The sample's own mutants test stays on the sample. OK?
+
+**Engine 0.16 part E: The Winding Road, owner review (E10)** (details in `docs/BUILD-LOG.md`,
+Engine 0.16 part E).
+
+- **586 (owner playtest).** Play The Winding Road from the title through all ten waves to the
+  star rating (`pnpm dev`, `/games/samples/tower-defense/`): the balance (three stars take a
+  thirteen-tower defence and only just; a thin one falls in wave 6), the feel of placing,
+  upgrading and the speed-up, the music. Accept, or list what to change.
+- **587 (owner screenshot review).** Review the ten 1920x1080 screenshots in
+  `docs/reports/screenshots/0.16-E/` (the build log's table): accept, or list what to change.
+- **588.** The mini siege's hosted walls round (`td-defence`, part F) still passes
+  (`fortify-played`, `fortify-delegated`) and keeps part F's looks: its towers fire `shot:<type>`
+  sprites over the target, with no flying projectiles, no impact emitters and no health bars
+  against `maxhp:`. Should the walls' skin (`canvas2d-td-defence.json`) adopt part E's
+  projectiles, impacts and health bars (skin only, no hash moves), as the roadmap's "the hosted
+  rounds use parts C and E's presentation" suggests, or stay as part F left it?
+
+**Engine 0.16 part E: build choices of E3-E9** (recorded by the close-out, E10).
+
+- **589.** E3, upgrades: the cursor on a tower is that tower selected (no extra state, so no hash
+  moves); Z or a second tap on a selected tower upgrades it, a tower of a type without levels
+  still refuses `occupied`. No separate upgrade button in the kit; the page's bar gained one (E9).
+- **590.** E3: a tower's `level` is in the snapshot only above 1 and sell values count what the
+  upgrades cost (half of all paid, the kit's default), so rounds without upgrades hash as before.
+- **591.** E3/E4: the mission round `td-defence` plays without the towers' levels unless its
+  params say `upgrades: true`, so the mini siege never moves; `games/td-classic` lists the new
+  rules as `UNGUARDED` in its mutants test instead of gaining re-recorded runs.
+- **592.** E4: `splash` and `slow` sit on a type or a level (a level's replaces the type's); an
+  enemy's slow is in the snapshot only while slowed; a splash hurts every other enemy within its
+  radius of the target (the target takes only the shot), kills credited to the tower.
+- **593.** E4: stars are the map's `{ three, two }` lives-left thresholds (any win is at least one
+  star); `stars` is in the status and `kit` only on a rated map, 0 until won.
+- **594.** E4: the wave preview is plain status strings (`nextWaveKinds` `runner,brute`,
+  `nextWaveGroups` `runner:8,brute:2`), not a structured value, so any HUD can read it.
+- **595.** E5, speed-up: the shell steps the scenes n times a loop step, each with a fresh input
+  frame, so ticks and hashes equal normal speed; menus, manual-loop mode and replays step at 1x;
+  speeds come from `menus.speeds` (whole, from 1, at most 8), F, gamepad RT and a `#ww-speed`
+  button cycle them, and the speed is never stored (each page load starts at 1x).
+- **596.** E5: sped up, a sound id plays at most once a drawn frame (the ticks between two draws
+  present together), so 3x is not three times as loud.
+- **597.** E6, projectiles: presentation only, started by events carrying `fromX`/`fromY` and timed
+  by frame numbers; a flight that a sped-up frame skips past still lands exactly once; at most
+  256 in the air (more land at once); 2D only (`wrong_backend_field` in a 3D skin).
+- **598.** E6: a kind's `ring` may take its radius from a tag (`range:` times `per`, default the
+  tile size) and a label bar its max from a tag (`maxhp:`); a ring draws only its rows inside
+  the picture, so a zoomed ring stays cheap.
+- **599.** E6: the end screen's stars are a row of 1-3 from the `stars` status (sheet frames or
+  font text), between the credits and the stat lines; an end trigger's `stars: false` (the loss)
+  leaves it out.
+- **600.** E7: the Kenney pack's sheets were copied from the mini siege's copy (games may not
+  import each other; kenney.nl blocks scripted downloads), box-filtered to 16 and 24 px; the cut
+  sheet `road-art.png` is made by `tools/road-art.ts` and checked byte for byte.
+- **601.** E7: cells stay 16 px (no run moved); towers and enemies are 24 px frames on the cell's
+  centre; runners are the pack's green soldier, brutes its green tank, the frost tower the pack's
+  turrets tinted ice blue; levels show as base plates and bigger turrets.
+- **602.** E7, a kit change (presentation only): with the cursor on a tower the ghost is tagged
+  `selected` and carries that tower's range, so the selected tower is ringed.
+- **603.** E7: the text art keeps only the cursor and the HUD icons; the hit flash and the blocked
+  ghost are silhouettes, so the palette recolours `td-ok`, `td-blocked`, `td-hit` were removed.
+- **604.** E8: a 480x270 picture over a 30 x 16 map (480x256), centred, so 7 px of grass lie above
+  and below; the HUD sits there and on the map's rows 0 and 15, which hold no path or pad.
+- **605.** E8: eighteen pads at the road's ten bends and beside its legs; three towers (arrow 10,
+  cannon 25, frost 15 gold) with two upgrades each; ten waves of two enemy kinds (runners and
+  brutes, 140 enemies), a 500-tick timer; stars at 18 and 10 lives left of 20.
+- **606.** E8: every earlier sample run was replaced (a rule change for all: their map is gone;
+  `games/td-classic` keeps them); the new runs were played by the kit's `TdBot`, their sync
+  hashes leave out the ticks a guarded mutant changes before a check fails, and all 18 kit rules
+  stay guarded (strict).
+- **607.** E8: the menus' controls screen gained Upgrade and Speed rows, the title art moved 96 px
+  in from the 480 px picture's sides, and `menus.speeds` is `[1, 2, 3]`.
+- **608.** E9, balance in data only: waves 9 and 10 toughened so E8's twelve-tower defence wins
+  with two stars, `WIN_PLAN` (a thirteenth arrow, upgraded) with exactly 18 lives (three stars, the
+  threshold) and `LOST_PLAN` (two arrows) loses in wave 6.
+- **609.** E9: `win` replaces E8's `won` (renamed with the new balance), `lost` is re-made as the
+  thin defence, and `sped-up` is the win's defence played on the page's scene at 2x and 3x and
+  exported by `TdPlay.recording()`: the same input and the same golden hashes as `win`, with no
+  `guards` of its own.
+- **610.** E9, music: a danger layer at full while an enemy is within 8 path cells of the gate
+  (`nearGate`), at 0.6 from wave 8 while enemies are on the road, silent once the round is over;
+  jingles `road-won` and `road-lost` on the end screen.
+- **611.** E9, a kit change (status only, no hash moved): `killed`, `wavesHeld` and `nearGate`.
+- **612.** E9: the end screen shows the stars (a win only), waves held, lives left, gold and
+  enemies stopped and the art credit; the page's bar's Build button reads `Upgrade <cost>` or
+  `Top level` on a tower and Sell `Sell <value>`.
+- **613.** E9: the page records every tick's merged input (`window.wwTd.recording()`), so a round
+  played at any speed exports as a run file's input (exact when presses have a released tick
+  between them).
+
+**Engine 0.16 part E: the close-out (E10)**
+
+- **614.** HUD fixes found in the screenshots (skin only, no hash moved): the `next` label shows
+  only with a next wave and `sell {value}` only with a selected tower (`when`); the `3x` speed
+  text moved from x 440 to 400, out from under the page's sound control.
+- **615.** The speed-up shot (06) is a page shot by a committed script,
+  `tests/browser/td-review-shots.ts` (run with `pnpm exec tsx`, not a test), in manual-loop mode:
+  there the scene steps at 1x, so the shot shows the control and the HUD at 3x, not its pace (the
+  page test checks the pace on the live loop).
+- **616.** Looks recorded, not fixed: the lives heart disappears at 0 lives (the engine's HUD
+  `icon` draws only on a truthy value; 09); the level-1 towers are grey and look alike (02, 03);
+  a hit brute's white flash is a full 24 px silhouette (07); on the page the pause and speed
+  buttons sit over the picture's right edge by the gate, as polish P's F2 found for the mini
+  siege (06), and the page draws at a non-whole scale at 1920x1080, so pixel fonts vary.
+- **617.** 589 to 613 were written by the close-out from E3-E9's commit messages and module docs,
+  not from those tasks' own decision lists; the orchestrator should check them against what E3-E9
+  reported.

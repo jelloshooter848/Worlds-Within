@@ -1,0 +1,9 @@
+{
+  "id": "road-lost",
+  "bpm": 100,
+  "loop": false,
+  "pulse1": "v9 @2 l8 o4 e d+ d c+ c4 < b4 a2 r2",
+  "pulse2": "v5 @1 l4 o3 a g+ g f+ e2 r2",
+  "triangle": "l4 o2 a e a e a2 r2",
+  "noise": "v4 l4 k r k r s2 r2"
+}

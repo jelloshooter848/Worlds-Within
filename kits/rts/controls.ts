@@ -11,6 +11,8 @@ import {
   type MissionLauncher,
   type OrderDraft,
 } from './commands';
+import { barkEvent } from './events';
+import { orderMarker, type RtsOrderFeedback } from './feedback';
 import type { RtsPlacing, RtsPresentOptions } from './present';
 import { cellOf, Selection, type WorldBox } from './selection';
 import type { RtsView } from './snapshot';
@@ -30,6 +32,9 @@ import type { RtsView } from './snapshot';
  *   project inside the dragged picture rectangle (`Selection.boxWhere`, `camera.inScreenBox`),
  *   and the box shown is the bounds of the ground under it.
  * - A secondary `tap` (right click, long-press) commands (`commandAt`); while placing it cancels.
+ *
+ * Feedback (Engine 0.16 part D, D5): once the game accepts a draft, `feedback(draft, view)` gives
+ * its order marker and its `bark` event, which the page hands to its `RtsPresentState.accept`.
  */
 export class RtsControls {
   readonly selection: Selection;
@@ -38,7 +43,7 @@ export class RtsControls {
   private hoverCell: { x: number; y: number } | null = null;
 
   constructor(
-    faction: string,
+    private readonly faction: string,
     readonly camera: RtsCamera,
     readonly tileSize: number,
     private readonly rules: RuleSwitch | null = null,
@@ -83,6 +88,16 @@ export class RtsControls {
       if (g.phase === 'end') this.selection.box(view, box, this.tileSize, additive);
     }
     return null;
+  }
+
+  /**
+   * The feedback of an order the game accepted: its marker at the command's target (`orderMarker`;
+   * none for `stop` and `train`) and its `bark` (`barkEvent`, side `own` for the player's order).
+   * Hand it to `RtsPresentState.accept(feedback, view.tick)`. Presentation only.
+   */
+  feedback(draft: OrderDraft, view: RtsView): RtsOrderFeedback {
+    const bark = barkEvent(view, draft, this.faction, this.tileSize);
+    return { marker: orderMarker(view, draft), events: bark === null ? [] : [bark] };
   }
 
   /** The hovering cursor (picture px), for the placing ghost; null when it left. */

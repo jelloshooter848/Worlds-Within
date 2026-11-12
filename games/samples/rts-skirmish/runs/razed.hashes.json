@@ -1,0 +1,41 @@
+{
+  "run": "games/samples/rts-skirmish/runs/razed.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "2bcd627b4a3eda65"
+    },
+    {
+      "tick": 20,
+      "hash": "892208d82771e134"
+    },
+    {
+      "tick": 40,
+      "hash": "cdb83406e3354130"
+    },
+    {
+      "tick": 60,
+      "hash": "faff864c8c6ab90a"
+    },
+    {
+      "tick": 80,
+      "hash": "c519fd0a5a75f625"
+    },
+    {
+      "tick": 100,
+      "hash": "c77fb583620f4b50"
+    },
+    {
+      "tick": 120,
+      "hash": "2379f8050e944206"
+    },
+    {
+      "tick": 140,
+      "hash": "f3fa8f8bfbe26ad3"
+    },
+    {
+      "tick": 160,
+      "hash": "bf1f52ad343cbbe3"
+    }
+  ]
+}

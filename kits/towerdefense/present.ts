@@ -14,7 +14,7 @@ import {
 } from '@engine/core/present';
 import type { Cell, CellKind } from './map';
 import { CELL_SUB } from './schema';
-import type { EnemyState, TdEvent, TdWorld } from './world';
+import { sellValue, upgradeCost, type EnemyState, type TdEvent, type TdWorld } from './world';
 
 /**
  * The tower-defense kit's side of the presentation contract (`@engine/core/present`): a round
@@ -29,8 +29,11 @@ import type { EnemyState, TdEvent, TdWorld } from './world';
  * `ghost`. Depths are `TD_DEPTH`.
  *
  * Events: each round event since the last frame becomes one present event (`TD_EVENT_TYPES`):
- * `td-place`, `td-sell`, `td-refused` (`code`), `td-wave-start` (`wave`, `by`), `td-spawn`,
- * `td-shot` (at the target, with `from`, `fromX`/`fromY`, `damage`, `hp`), `td-kill` (`bounty`),
+ * `td-place`, `td-sell`, `td-upgrade` (`level`, `cost`), `td-refused` (`code`), `td-wave-start` (`wave`, `by`), `td-spawn`,
+ * `td-shot` (at the target, with `from`, `fromX`/`fromY`, `damage`, `hp`, and for a splash tower
+ * `splash`, the other enemies the shot hurt), `td-splash` (at each enemy a splash hurt, `from` the
+ * tower, `target` the shot's target, `fromX`/`fromY` the target's centre, `damage`, `hp`),
+ * `td-slow` (at the slowed enemy, `factor`, `ticks`), `td-kill` (`bounty`),
  * `td-leak` (at the exit, `lives`), then `td-wave-clear` (`wave`; once per wave and stream, so only
  * with a `TdPresentState`) and `td-end` (`result`: `won` or `lost`, so a skin keys `td-end:won`).
  */
@@ -63,10 +66,13 @@ export const TD_TILES: Readonly<Record<CellKind, string>> = Object.freeze({
 export const TD_EVENT_TYPES = [
   'td-place',
   'td-sell',
+  'td-upgrade',
   'td-refused',
   'td-wave-start',
   'td-spawn',
   'td-shot',
+  'td-splash',
+  'td-slow',
   'td-kill',
   'td-leak',
   'td-wave-clear',
@@ -191,7 +197,7 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
     if (e.type === 'fire') {
       fired.set(e.tower, e.enemy);
       hit.add(e.enemy);
-    }
+    } else if (e.type === 'splash') hit.add(e.enemy);
 
   const enemyBoxes = new Map<number, { x: number; y: number }>();
   for (const e of world.enemies) {
@@ -213,13 +219,21 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
           })();
     const facing = target === null ? 'down' : facingToward(target.x - tw.col * ts, target.y - tw.row * ts);
     const anim = targetId !== undefined ? 'fire' : 'idle';
+    const stats = world.statsOf(tw);
     entities.push({
       id,
       kind: `tower:${tw.type}`,
       ...cellBox(tw.col, tw.row),
       facing,
       anim: { state: anim, t: t(id, anim) },
-      tags: [`type:${tw.type}`, tw.cooldown > 0 ? 'cooling' : 'ready'],
+      tags: [
+        `type:${tw.type}`,
+        tw.cooldown > 0 ? 'cooling' : 'ready',
+        `level:${tw.level}`,
+        `range:${stats.range}`,
+        ...(stats.splash ? [`splash:${stats.splash.radius}`] : []),
+        ...(stats.slow ? ['slows'] : []),
+      ],
       layer: TD_DEPTH.tower,
     });
   }
@@ -237,7 +251,13 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
       h: ts,
       facing: p.facing,
       anim: { state: 'walk', t: t(id, 'walk') },
-      tags: [`hp:${e.hp}`, `wave:${e.wave}`, ...(struck ? ['hit'] : [])],
+      tags: [
+        `hp:${e.hp}`,
+        `maxhp:${e.maxHp}`,
+        `wave:${e.wave}`,
+        ...(e.slowTicks > 0 ? ['slow'] : []),
+        ...(struck ? ['hit'] : []),
+      ],
       layer: TD_DEPTH.enemy,
     };
     if (struck) ent.fx = { tint: 'hit' };
@@ -266,13 +286,23 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
   if (cursor !== null) {
     if (world.outcome === 'playing') {
       const why = world.placeRefusal(cursor.tower, cursor.col, cursor.row);
+      // On a tower (selected, Engine 0.16 E7) the ghost carries that tower's range now, so a skin
+      // rings the selected tower; elsewhere the chosen type's own.
+      const standing = world.towerAt(cursor.col, cursor.row);
+      const type = world.towerTypes[cursor.tower];
+      const range =
+        standing !== undefined
+          ? ['selected', `range:${world.statsOf(standing).range}`]
+          : type === undefined
+            ? []
+            : [`range:${type.range}`];
       entities.push({
         id: 'ghost',
         kind: `ghost:${cursor.tower}`,
         ...cellBox(cursor.col, cursor.row),
         facing: 'down',
         anim: { state: why === null ? 'ok' : 'blocked', t: 0 },
-        tags: why === null ? ['ok'] : ['blocked', `why:${why}`],
+        tags: why === null ? ['ok', ...range] : ['blocked', `why:${why}`, ...range],
         layer: TD_DEPTH.ghost,
       });
     }
@@ -289,7 +319,7 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
 
   const presented: PresentEvent[] = [];
   const exit = world.path[world.path.length - 1]!;
-  for (const e of events) {
+  for (const [i, e] of events.entries()) {
     switch (e.type) {
       case 'placed':
         presented.push({
@@ -307,6 +337,16 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
           entity: `tower-${e.tower}`,
           tower: e.towerType,
           refund: e.refund,
+        });
+        break;
+      case 'upgraded':
+        presented.push({
+          type: 'td-upgrade',
+          ...centre(e.col, e.row),
+          entity: `tower-${e.tower}`,
+          tower: e.towerType,
+          level: e.level,
+          cost: e.cost,
         });
         break;
       case 'refused':
@@ -337,9 +377,41 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
           hp: e.hp,
         };
         if (at) Object.assign(ev, { x: at.x + ts / 2, y: at.y + ts / 2 });
-        if (tw)
+        if (tw) {
           Object.assign(ev, { tower: tw.type, fromX: tw.col * ts + ts / 2, fromY: tw.row * ts + ts / 2 });
+          if (world.statsOf(tw).splash) Object.assign(ev, { splash: splashHits(events, i) });
+        }
         presented.push(ev);
+        break;
+      }
+      case 'splash': {
+        const at = enemyAt(e.enemy);
+        const from = enemyAt(e.target);
+        const ev: PresentEvent = {
+          type: 'td-splash',
+          entity: `enemy-${e.enemy}`,
+          from: `tower-${e.tower}`,
+          target: `enemy-${e.target}`,
+          damage: e.damage,
+          hp: e.hp,
+        };
+        if (at) Object.assign(ev, { x: at.x + ts / 2, y: at.y + ts / 2 });
+        if (from) Object.assign(ev, { fromX: from.x + ts / 2, fromY: from.y + ts / 2 });
+        const tw = world.towers.find((x) => x.id === e.tower);
+        if (tw) Object.assign(ev, { tower: tw.type });
+        presented.push(ev);
+        break;
+      }
+      case 'slowed': {
+        const at = enemyAt(e.enemy);
+        presented.push({
+          type: 'td-slow',
+          ...(at ? { x: at.x + ts / 2, y: at.y + ts / 2 } : {}),
+          entity: `enemy-${e.enemy}`,
+          from: `tower-${e.tower}`,
+          factor: e.factor,
+          ticks: e.ticks,
+        });
         break;
       }
       case 'kill': {
@@ -393,6 +465,17 @@ export function describeWorld(world: TdWorld, opts: TdPresentOptions): PresentFr
   return frame;
 }
 
+/** The splash hits of the shot at `events[i]`: the `splash` events after it before the next shot. */
+function splashHits(events: readonly TdEvent[], i: number): number {
+  let n = 0;
+  for (let j = i + 1; j < events.length; j++) {
+    const e = events[j]!;
+    if (e.type === 'fire') break;
+    if (e.type === 'splash') n++;
+  }
+  return n;
+}
+
 /** The frame for the round now, frozen (`freezeFrame`): see `describeWorld`. */
 export function presentWorld(world: TdWorld, opts: TdPresentOptions): DeepReadonly<PresentFrame> {
   return freezeFrame(describeWorld(world, opts));
@@ -407,11 +490,35 @@ export function cameraHint(world: TdWorld, tileSize = TD_TILE_SIZE, zoom?: numbe
   return hint;
 }
 
+/** Path cells before the exit within which an enemy counts as near the gate (`nearGate`). */
+export const TD_NEAR_GATE_CELLS = 8;
+
+/** The started waves with no enemy left to come or on the path. */
+function wavesHeld(world: TdWorld): number {
+  let held = 0;
+  for (let n = 1; n <= world.wavesStarted; n++) if (world.waveLeft(n) === 0) held++;
+  return held;
+}
+
+/** The enemies on the path within `TD_NEAR_GATE_CELLS` cells of the exit. */
+function nearGate(world: TdWorld): number {
+  const from = world.pathEnd - TD_NEAR_GATE_CELLS * CELL_SUB;
+  return world.enemies.filter((e) => e.progress >= from).length;
+}
+
 /**
  * The HUD: `gold`, `lives`, `wave` (`n/m`: waves started of all), `waveNumber`, `waveCount`,
  * `enemies` (on the path), `outcome` (`playing`, `won`, `lost`), `nextWave` (ticks to the timer's
- * next wave, only with a timer and waves left), and with a cursor `tower` (the chosen type) and
- * `towerCost`.
+ * next wave, only with a timer and waves left), while a wave is still to start and the round is
+ * playing `nextWaveKinds` (its enemy kinds in the order they first come, `runner,brute`) and
+ * `nextWaveGroups` (each with its count, `runner:6,brute:1`; Engine 0.16 E4, for a HUD preview),
+ * `stars` only when the map has a rating (0 until won, then 1-3; `TdWorld.stars`), and (Engine 0.16
+ * E9, for the end screen's stats and the music's danger layer) `killed` (enemies killed so far),
+ * `wavesHeld` (started waves with no enemy left to come or on the path) and `nearGate` (enemies
+ * within `TD_NEAR_GATE_CELLS` path cells of the exit), and with a cursor `tower` (the chosen type) and
+ * `towerCost`; with the cursor on a tower (Engine 0.16 E3: that tower is selected) also
+ * `selected` (its entity id, `tower-<id>`), `sellValue` (what selling it gives back now) and, while
+ * it has a level above it, `upgradeCost`.
  */
 export function presentStatus(
   world: TdWorld,
@@ -426,13 +533,31 @@ export function presentStatus(
     waveCount: total,
     enemies: world.enemies.length,
     outcome: world.outcome,
+    killed: world.stats.killed,
+    wavesHeld: wavesHeld(world),
+    nearGate: nearGate(world),
   };
   const timer = world.waves.timer;
   if (timer !== undefined && world.wavesStarted < total && world.outcome === 'playing')
     status.nextWave = Math.max(0, timer - world.sinceWave);
+  const next = world.outcome === 'playing' ? world.nextWave() : null;
+  if (next !== null) {
+    status.nextWaveKinds = next.groups.map((g) => g.kind).join(',');
+    status.nextWaveGroups = next.groups.map((g) => `${g.kind}:${g.count}`).join(',');
+  }
+  const stars = world.stars();
+  if (stars !== null) status.stars = stars;
   if (cursor !== null) {
     status.tower = cursor.tower;
     status.towerCost = world.towerTypes[cursor.tower]?.cost ?? 0;
+    const tw = world.towerAt(cursor.col, cursor.row);
+    if (tw !== undefined) {
+      const type = world.towerTypes[tw.type]!;
+      status.selected = `tower-${tw.id}`;
+      status.sellValue = world.rules.isOn('sell-refunds') ? sellValue(type, tw.level) : 0;
+      const up = upgradeCost(type, tw.level);
+      if (up !== null) status.upgradeCost = world.rules.isOn('upgrade-costs-gold') ? up : 0;
+    }
   }
   return status;
 }

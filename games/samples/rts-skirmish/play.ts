@@ -4,17 +4,19 @@ import type { InputFrame } from '@engine/core/input/input-manager';
 import type { PointerGesture } from '@engine/core/input/pointer-logic';
 import { RtsCamera } from '@engine/core/present';
 import type { Scene } from '@engine/core/scene';
-import { RtsControls, RTS_TILE_SIZE, trainButtons, type OrderDraft, type RtsView } from '@kits/rts';
-import { PLAYER } from './content';
+import { minimapPointToWorld, type Box } from '@engine/core/ui';
 import {
-  createGame,
-  sidesOf,
-  skirmishResult,
-  type SideSummary,
-  type SkirmishGame,
-  type SkirmishResult,
-} from './headless';
-import type { InterfaceOptions, SkirmishPicture } from './picture';
+  RtsControls,
+  rtsEvents,
+  RTS_TILE_SIZE,
+  trainButtons,
+  type OrderDraft,
+  type RtsOrderFeedback,
+  type RtsView,
+} from '@kits/rts';
+import { PLAYER } from './content';
+import { createGame, sidesOf, type SideSummary, type SkirmishGame, type SkirmishResult } from './headless';
+import type { SkirmishFrameOptions, SkirmishPicture } from './picture';
 import { BattleRecorder, type RecordedRun } from './recording';
 
 /**
@@ -34,6 +36,12 @@ import { BattleRecorder, type RecordedRun } from './recording';
  * The controls' selection is the page's alone (presentation, like the camera): the game's own
  * interface selection (`ui.selection` in its snapshot, used by run files' interface actions) stays
  * empty, as it does when the recorded orders are replayed.
+ *
+ * The River Ford (Engine 0.16 part D, D8): a primary tap on the skin's minimap (or a drag that
+ * starts on it) centres the camera on that point of the map (`minimapPointToWorld`) and gives no
+ * order; every accepted order's feedback (`RtsControls.feedback`: its marker and bark) is handed to
+ * the picture; and `stats()` counts the match from the kit's presentation events (`rtsEvents`) for
+ * the end screen. None of it touches the game, so the page's hashes are still the replay's.
  */
 
 /** Sim ticks the page plays per second (the loop steps 60 times a second). */
@@ -55,6 +63,28 @@ export type PageButton =
   | { kind: 'heroes' }
   | { kind: 'cancel' };
 
+/** The match so far, for the end screen: counted from the kit's presentation events. */
+export interface MatchStats {
+  /** Own units trained. */
+  trained: number;
+  /** Own units lost. */
+  lost: number;
+  /** Enemy units slain. */
+  slain: number;
+  /** Own buildings finished. */
+  built: number;
+  /** Enemy buildings destroyed. */
+  razed: number;
+  /** Gold brought to the stockpile. */
+  gold: number;
+}
+
+/** The skin's minimap box (picture px) and scale (px per tile), `skinMinimap(skin)`. */
+export interface MinimapSpec {
+  box: Box;
+  scale?: number;
+}
+
 /** What the bar shows for the selection now. */
 export interface ButtonState {
   /** Building types the selected builders can put up (empty when no builder is selected). */
@@ -74,7 +104,9 @@ export interface SkirmishPlayOptions {
   /** The pointer, or null (buttons only). */
   pointer: GestureFeed | null;
   /** Makes the picture on the first render, with the frame options the interface adds. */
-  picture(r: Renderer, ui: InterfaceOptions): SkirmishPicture;
+  picture(r: Renderer, opts: SkirmishFrameOptions): SkirmishPicture;
+  /** The skin's minimap, whose taps move the camera (none: no minimap taps). */
+  minimap?: MinimapSpec | null;
   /** Loop steps per game tick (default `STEPS_PER_TICK`). */
   stepsPerTick?: number;
   /** True while the page's additive key (Shift) is held. */
@@ -93,6 +125,9 @@ export class SkirmishPlay implements Scene {
   private placingKind: string | null = null;
   private steps = 0;
   private picture: SkirmishPicture | null = null;
+  private readonly feedback: RtsOrderFeedback[] = [];
+  private minimapDrag = false;
+  private readonly counts: MatchStats = { trained: 0, lost: 0, slain: 0, built: 0, razed: 0, gold: 0 };
 
   constructor(private readonly opts: SkirmishPlayOptions) {
     this.game = createGame(opts.content, opts.seed);
@@ -126,9 +161,14 @@ export class SkirmishPlay implements Scene {
     return sidesOf(this.view(), this.game.factions);
   }
 
-  /** How the battle has ended (`skirmishResult`): `won`, `lost`, or null while it goes on. */
+  /** How the match has ended (the end rule, `skirmishResult`): `won`, `lost`, or null while it goes on. */
   result(): SkirmishResult {
-    return skirmishResult(this.view());
+    return this.game.result();
+  }
+
+  /** The match so far (`MatchStats`). */
+  stats(): MatchStats {
+    return { ...this.counts };
   }
 
   /** A bar button: carried out at the start of the next step. */
@@ -157,6 +197,7 @@ export class SkirmishPlay implements Scene {
     if (pointer) {
       const additive = this.opts.additive?.() ?? false;
       for (const g of pointer.gestures()) {
+        if (this.onMinimap(g)) continue;
         const placing = this.placingKind;
         const draft = this.controls.gesture(g, this.view(), additive);
         // A tap ends placing in the controls (placed or cancelled); keep the bar in step.
@@ -166,18 +207,62 @@ export class SkirmishPlay implements Scene {
       this.controls.hover(pointer.cursor());
     }
     if (++this.steps % this.stepsPerTick !== 0) return;
+    const before = this.view();
     this.game.step(input);
+    this.count(before, this.view());
     this.recorder.reached(this.tick, () => this.game.snapshot());
   }
 
   render(r: Renderer): void {
-    this.picture ??= this.opts.picture(r, () => this.controls.presentOptions(this.view()));
-    this.picture.draw(this.game.rts, []);
+    this.picture ??= this.opts.picture(r, {
+      ui: () => this.controls.presentOptions(this.view()),
+      feedback: () => this.feedback.splice(0),
+    });
+    this.picture.draw(this.game, []);
+  }
+
+  /** Where picture point (x, y) is on the map, through the minimap, or null when it is not on it. */
+  minimapPoint(x: number, y: number): { x: number; y: number } | null {
+    const spec = this.opts.minimap;
+    const terrain = this.view().terrain;
+    if (!spec || terrain === null) return null;
+    const map = { cols: terrain.width, rows: terrain.height, tileSize: RTS_TILE_SIZE };
+    return minimapPointToWorld(spec, map, x, y);
+  }
+
+  /** A gesture on the minimap: a primary tap or a drag from it centres the camera there. */
+  private onMinimap(g: PointerGesture): boolean {
+    if (g.type === 'box') {
+      if (!this.minimapDrag && this.minimapPoint(g.x0, g.y0) === null) return false;
+      this.minimapDrag = g.phase === 'move';
+      const at = this.minimapPoint(g.x1, g.y1);
+      if (at !== null) this.camera.centreOn(at.x, at.y);
+      return true;
+    }
+    if (g.type !== 'tap' || g.button !== 'primary') return false;
+    const at = this.minimapPoint(g.x, g.y);
+    if (at === null) return false;
+    this.camera.centreOn(at.x, at.y);
+    return true;
+  }
+
+  private count(before: RtsView, after: RtsView): void {
+    const c = this.counts;
+    for (const e of rtsEvents(before, after, PLAYER, RTS_TILE_SIZE)) {
+      const own = e.side === 'own';
+      if (e.type === 'unit-ready' && own) c.trained += 1;
+      else if (e.type === 'unit-down') {
+        if (own) c.lost += 1;
+        else if (e.side === 'enemy') c.slain += 1;
+      } else if (e.type === 'building-done' && own) c.built += 1;
+      else if (e.type === 'building-down' && e.side === 'enemy') c.razed += 1;
+      else if (e.type === 'stock-up' && own) c.gold += Number(e['amount'] ?? 0);
+    }
   }
 
   /** The battle so far as a run file (`recording.ts`), or null before tick 20. */
   exportRun(game?: string): Promise<RecordedRun | null> {
-    return this.recorder.runFile(this.game.rts.recorded(), game);
+    return this.recorder.runFile(this.game.recorded(), game);
   }
 
   private button(b: PageButton): void {
@@ -205,7 +290,10 @@ export class SkirmishPlay implements Scene {
 
   private issue(draft: OrderDraft | null): void {
     if (draft === null) return;
-    this.message = this.game.rts.issue(draft).error ?? '';
+    const view = this.view();
+    const error = this.game.rts.issue(draft).error;
+    this.message = error ?? '';
+    if (error === null) this.feedback.push(this.controls.feedback(draft, view));
   }
 }
 

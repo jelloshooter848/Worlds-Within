@@ -21,6 +21,7 @@ import {
   pauseScreen,
   settingsScreen,
   titleScreen,
+  starsWon,
   type MenuBuildContext,
   type MenuSettingsValues,
   type MenusSpec,
@@ -405,6 +406,23 @@ describe("validate: game.json's menus (Engine 0.16 T9)", () => {
       'font "small" has no glyph for ":", "-"',
     ]);
   });
+  it("checks an end screen's star frames, sheet and glyphs (Engine 0.16 E6)", () => {
+    const errors = (stars: unknown) =>
+      loadContent(game({ ...good, end: { lines: [], stars } }), engineContentKinds())
+        .errors.filter((e) => e.path.startsWith('menus.end.stars'))
+        .map((e) => [e.path, e.code]);
+    expect(errors({ sheet: 'art', filled: 'hero', empty: 'hero' })).toEqual([]);
+    expect(errors({ sheet: 'art', filled: 'hero', empty: 'dim', palette: 'grey' })).toEqual([
+      ['menus.end.stars.empty', 'missing_frame'],
+      ['menus.end.stars.palette', 'missing_ref'],
+    ]);
+    expect(errors({ sheet: 'icons', filled: 'a', empty: 'b' })).toEqual([
+      ['menus.end.stars.sheet', 'missing_ref'],
+    ]);
+    expect(errors({ filled: 'A', empty: 'a' })).toEqual([]);
+    expect(errors({ filled: '*', empty: 'a' })).toEqual([['menus.end.stars.filled', 'missing_glyph']]);
+  });
+
   it('checks the dialogs and their triggers: portraits, glyphs and dialog ids (Engine 0.16 part C)', () => {
     const intro = { speaker: 'Pip', portrait: { sheet: 'art', frame: 'hero' }, pages: ['Hello there'] };
     expect(
@@ -487,5 +505,58 @@ describe('shell dialogs (Engine 0.16 part C T7)', () => {
     const file = endScreen(SPEC, CTX, {}, { heading: 'You won', credits: 'By us' });
     const texts = file.widgets.flatMap((w) => (w.type === 'text' ? [w.text] : []));
     expect(texts).toEqual(expect.arrayContaining(['You won', 'By us']));
+  });
+});
+
+describe("the end screen's stars (Engine 0.16 E6)", () => {
+  const spec = (stars: unknown) =>
+    menusSchema.parse({
+      font: 't',
+      title: { name: 'TD', items: ['start'] },
+      pause: { items: ['resume'] },
+      end: { heading: 'Won', lines: [{ label: 'Lives', status: 'lives' }], stars },
+    });
+  const texts = (file: ReturnType<typeof endScreen>) =>
+    file.widgets.flatMap((w) => (w.type === 'text' ? [w] : []));
+
+  it('reads the stars won from the status, held to the count', () => {
+    expect(starsWon({}, { stars: 2 })).toBe(2);
+    expect(starsWon({ count: 3 }, { stars: 7 })).toBe(3);
+    expect(starsWon({ status: 'rating' }, { rating: '1' })).toBe(1);
+    expect(starsWon({}, { stars: -1 })).toBe(0);
+    expect(starsWon({}, {})).toBeNull();
+    expect(starsWon({}, { stars: 'none' })).toBeNull();
+  });
+
+  it('shows a row of filled then empty text stars in the title font, centred, over the stats', () => {
+    const file = endScreen(spec({ filled: 'A', empty: 'a', gap: 3 }), CTX, { stars: 2, lives: 7 });
+    const stars = texts(file).filter((w) => w.text === 'A' || w.text === 'a');
+    expect(stars.map((w) => [w.text, w.color])).toEqual([
+      ['A', '#f8b800'],
+      ['A', '#f8b800'],
+      ['a', '#7c7c7c'],
+    ]);
+    // Laid out on the picture: three 3 px glyphs 3 px apart (15 px), centred on 128.
+    const ui = new UiScreen(file, { screen: CTX.screen, fonts: FONTS });
+    expect([0, 1, 2].map((i) => ui.box(`star-${i}`)!.x)).toEqual([121, 127, 133]);
+    const lives = texts(file).find((w) => w.text === 'Lives')!;
+    expect(lives.y!).toBeGreaterThan(stars[0]!.y!);
+  });
+
+  it('shows frames from a sheet, and no row without the status or for an end that says so', () => {
+    const file = endScreen(spec({ sheet: 'art', filled: 'hero', empty: 'hero', count: 2, scale: 2 }), CTX, {
+      stars: 1,
+    });
+    const images = file.widgets.filter((w) => w.type === 'image');
+    expect(images.map((w) => [w.type === 'image' && w.frame, w.type === 'image' && w.scale])).toEqual([
+      ['hero', 2],
+      ['hero', 2],
+    ]);
+    const s = spec({ filled: 'A', empty: 'a' });
+    const plain = endScreen(s, CTX, {});
+    expect(texts(plain).some((w) => w.text === 'A' || w.text === 'a')).toBe(false);
+    const lost = endScreen(s, CTX, { stars: 0 }, { stars: false });
+    expect(texts(lost).some((w) => w.text === 'A' || w.text === 'a')).toBe(false);
+    expect(texts(endScreen(s, CTX, { stars: 0 })).filter((w) => w.text === 'a')).toHaveLength(3);
   });
 });

@@ -70,6 +70,7 @@ function fixture(): PresentFrame {
     events: [{ type: 'hit', x: 18, y: 20, entity: 'hero', damage: 1, by: { kind: 'bat' } }],
     status: { health: 3, room: 'Hall', paused: false },
     camera: { x: 128, y: 120, zoom: 1, follow: 'hero' },
+    fog: { cols: 4, rows: 3, cells: ['0011', '1222', '0012'] },
   };
 }
 

@@ -530,3 +530,26 @@ describe('the td-defence mission by scenario key (Engine 0.15 T7: D6, D10, D7, D
     expect(round.game.world.waves.waves[0]!.groups).toHaveLength(3);
   });
 });
+
+describe('tower upgrades in a td-defence round (Engine 0.16 E3)', () => {
+  const LEVELED = { ...TINY.towers, arrow: { ...TINY.towers.arrow!, levels: [{ cost: 5, damage: 3 }] } };
+  const def = tdDefence({ maps: [TINY.map], towers: LEVELED });
+  const round = (mission: MissionDef) =>
+    def.create(
+      { params: towerdefenseMissionAdapter.input(SNAPSHOT, mission) as TdDefenceInput, attempt: 1 },
+      5,
+    ) as TdDefenceRound;
+
+  it('plays without levels unless the params give `upgrades`', () => {
+    expect(input().upgrades).toBeUndefined();
+    expect(input(withParams({ upgrades: true })).upgrades).toBe(true);
+    expect(round(MISSION).game.world.towerTypes.arrow!.levels).toBeUndefined();
+    expect(round(withParams({ upgrades: true })).game.world.towerTypes.arrow!.levels).toEqual([
+      { cost: 5, damage: 3 },
+    ]);
+  });
+
+  it('leaves upgrading out of its key hint', () => {
+    expect(def.controls!.map((c) => c.label)).not.toContain('upgrade');
+  });
+});

@@ -71,6 +71,7 @@ interface Pace {
 export class SceneStack {
   private readonly stack: Scene[] = [];
   private readonly paces = new WeakMap<Scene, Pace>();
+  private gameSpeed = 1;
 
   /** `loopHz`: the loop steps a second `update` is called at (a scene's `tickRate` is paced on it). */
   constructor(private readonly loopHz = LOOP_HZ) {}
@@ -99,6 +100,33 @@ export class SceneStack {
   }
   clear(): void {
     while (this.stack.length) this.pop();
+  }
+
+  /**
+   * The game speed (Engine 0.16 E5): scene ticks per tick interval, a whole number from 1 (normal).
+   * `advance` steps the stack this many times a loop step, so a scene at 60 ticks a second runs
+   * `speed` ticks a step and one with a `tickRate` `speed` ticks a `tickRate` interval. The
+   * browser shell sets it from its speed control; it never reaches a game's state.
+   */
+  get speed(): number {
+    return this.gameSpeed;
+  }
+  set speed(n: number) {
+    if (!Number.isInteger(n) || n < 1)
+      throw new Error(`the game speed must be a whole number >= 1 (got ${n})`);
+    this.gameSpeed = n;
+  }
+
+  /**
+   * One loop step at the stack's `speed` (Engine 0.16 E5): `update(first)`, then `speed - 1`
+   * more updates, each with its own frame from `next()` (the page samples its input again, so a
+   * key still down is held there but its press and the step's taps are not repeated). Each update
+   * is one scene step as at normal speed, so the ticks, their input and every state hash are the
+   * same as playing the same input at speed 1; only more of them fit in a second.
+   */
+  advance(first: InputFrame[], next: () => InputFrame[]): void {
+    this.update(first);
+    for (let i = 1; i < this.gameSpeed; i++) this.update(next());
   }
 
   /** The topmost scene `pred` accepts, or undefined. */

@@ -476,6 +476,29 @@ transition, music?, restart, ... })` (`booted.menus`) puts each screen on the st
     close, the ending from a presented status, `?debug=step` alone, `?dialogs=show`,
     `dialogsFromQuery`) and `tests/browser/menus.test.ts` (The Old Crypt by keyboard: the intro,
     a fall played from `lost-in-the-guard-room`'s input, the `fallen` dialog, the end screen).
+- **The speed-up control** (Engine 0.16 E5, `game-speed.ts`, pure, on `PURE_CORE`):
+  `bootBrowserGame({ speeds })` (default `menus.spec.speeds`, `game.json`'s `menus.speeds`;
+  `../ui/menus.ts`'s `speedsProblem` and `SPEED_MAX`: at least two whole speeds, going up, from 1,
+  at most 8) makes a `GameSpeed` (`booted.speed`: `speed`, `cycle()`, `set(n)`, `label`). F
+  (`SPEED_CODES`), gamepad RT (`SPEED_PAD_BUTTON` 7, an edge read each loop step), the `#ww-speed`
+  button (`SPEED_BUTTON_ID`, under `#ww-pause`, shown in play only; click or tap, never keeps the
+  focus) and `booted.cycleSpeed()` cycle it; `body[data-speed]` shows it.
+  - **Steps:** each loop step sets `scenes.speed` and calls `SceneStack.advance(first, next)`
+    (`../scene.ts`): n updates, the first with the step's frame, each further one with a fresh
+    `sample()` (keyboard, gamepad, touch, pointer: a held key stays held, its press and the taps
+    come once). A scene with a `tickRate` so runs n ticks a tickRate interval, each with its own
+    merged input. Every tick and hash is the one normal speed gives the same input.
+  - **At 1x regardless:** under a menu (title, pause, dialog, end), in manual-loop mode
+    (`__ww.step(n)` stays n ticks) and while `__ww.replay` plays. Recording (`?record`) and run
+    exports keep ticks, never the speed.
+  - **Presentation only:** every presented frame's status gets `speed` (`SPEED_STATUS`, a copy
+    of the frame; never in the game's snapshot) for a skin's HUD; above 1x a sound id plays at
+    most once a drawn frame (the ticks between two draws present together). Never stored.
+  - Tested in `game-speed.test.ts` (the list, cycling, `menus.speeds`, `SceneStack` at 1x, 2x
+    and 3x over a scripted input with taps through the null backend: identical per-tick hashes,
+    paced and unpaced), `shell.test.ts` (a boot: the hashes at 2x and 3x, F, the button, RT, the
+    HUD status, nothing stored, manual mode) and `tests/runs/sped-up-shell.test.ts` (every run
+    file through the shell's loop with the speed changing: the golden hashes).
 - `index.ts`: re-exports all of the above (`@engine/core/shell`), `volume-control.ts` and `tapsOf` included.
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and
@@ -489,7 +512,7 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 - Imports: `engine/core` only. Never a backend (the displays come in as factories), the sim,
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
-- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts`, `game-menus.ts` and `round-layer.ts` are on `PURE_CORE` (and so is
+- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts`, `game-menus.ts`, `round-layer.ts` and `game-speed.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
   (it alone touches `window.__ww`), `volume-control.ts` (the volume control's DOM and storage) and
   `mission-bar.ts` (the mission-launch scene's DOM). `campaign-session.ts`

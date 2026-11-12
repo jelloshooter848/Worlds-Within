@@ -318,3 +318,90 @@ describe('presentWorld: missions (Engine 0.11)', () => {
     for (const key of MISSION_KEYS) expect(Object.hasOwn(frame.status, key), key).toBe(false);
   });
 });
+
+describe('in-world feedback (Engine 0.16 part D, D5)', () => {
+  const ids = (frame: PresentFrame) => frame.entities.map((e) => e.id);
+
+  it("shows an own building's training as a progress bar under it, tagged with the queue", () => {
+    const view = readWorld(battleSnapshot({ tick: 5 }));
+    // The hall trains a worker: 3 of 12 ticks; two more queued.
+    view.buildings
+      .find((b) => b.id === 3)!
+      .producer!.queue.push({ unit: 'worker', ticks: 12 }, { unit: 'worker', ticks: 12 });
+    const frame = presentWorld(view, { faction: 'red', size: SIZE });
+    valid(frame);
+    const bar = frame.entities.find((e) => e.id === 'building-3/train')!;
+    expect(bar).toMatchObject({ kind: 'progress-bar', x: 0, y: 33, w: 32, h: 2, layer: RTS_DEPTH.bar });
+    expect(bar.anim.state).toBe('p-2');
+    expect(bar.tags).toEqual(['train', 'training:worker', 'queue:3']);
+    // The enemy's training is not shown, nor an idle building's.
+    expect(ids(presentWorld(view, { faction: 'blue', size: SIZE }))).not.toContain('building-3/train');
+    view.buildings.find((b) => b.id === 3)!.producer!.queue.length = 0;
+    expect(ids(presentWorld(view, { faction: 'red', size: SIZE }))).not.toContain('building-3/train');
+  });
+
+  it("shows a selected own unit's path as dots, the goal last", () => {
+    const view = readWorld(battleSnapshot({ tick: 5 }));
+    const soldier = view.units.find((u) => u.id === 6)!;
+    soldier.goal = { x: 4, y: 3 };
+    soldier.path = [
+      { x: 2, y: 4 },
+      { x: 3, y: 4 },
+      { x: 4, y: 3 },
+    ];
+    expect(ids(presentWorld(view, { faction: 'red', size: SIZE })).some((id) => id.includes('/path-'))).toBe(
+      false,
+    );
+    const frame = presentWorld(view, { faction: 'red', size: SIZE, selection: [6, 9] });
+    valid(frame);
+    const dots = frame.entities.filter((e) => e.kind === 'path-dot');
+    expect(dots.map((d) => [d.id, d.x, d.y, d.anim.state])).toEqual([
+      ['unit-6/path-0', 38, 70, 'idle'],
+      ['unit-6/path-1', 54, 70, 'idle'],
+      ['unit-6/path-2', 70, 54, 'goal'],
+    ]);
+    expect(dots[2]!.tags).toEqual(['own', 'goal']);
+    expect(dots.every((d) => d.w === 4 && d.layer === RTS_DEPTH.path)).toBe(true);
+    // Blue's unit 9 has a move goal but is not the player's: no dots. A goal without a path is one dot.
+    delete soldier.path;
+    const goalOnly = presentWorld(view, { faction: 'red', size: SIZE, selection: [6] });
+    expect(goalOnly.entities.filter((e) => e.kind === 'path-dot').map((d) => d.id)).toEqual([
+      'unit-6/path-0',
+    ]);
+  });
+
+  it('shows accepted orders as fading markers and sends their barks once', () => {
+    const state = new RtsPresentState();
+    const view = (tick: number) => readWorld(battleSnapshot({ tick }));
+    const bark = {
+      type: 'bark',
+      side: 'own',
+      order: 'move',
+      unitType: 'soldier',
+      entity: 'unit-6',
+      x: 24,
+      y: 56,
+    };
+    state.accept({ marker: { kind: 'move', x: 4, y: 4, w: 1, h: 1, entity: null }, events: [bark] }, 5);
+    state.accept({ marker: { kind: 'attack', x: 0, y: 0, w: 1, h: 1, entity: 9 }, events: [] }, 6);
+    const first = presentWorld(view(6), { faction: 'red', size: SIZE, state, events: [{ type: 'hit' }] });
+    valid(first);
+    expect(first.events).toEqual([{ type: 'hit' }, bark]);
+    const markers = first.entities.filter((e) => e.kind === 'order-marker');
+    expect(markers.map((m) => [m.id, m.anim.state, m.anim.t, m.x, m.y, m.tags])).toEqual([
+      ['marker-1', 'move', 1, 64, 64, ['move', 'fade:7']],
+      // The attack marker follows its target, blue's soldier at (6,4).
+      ['marker-2', 'attack', 0, 96, 64, ['attack', 'fade:8']],
+    ]);
+    expect(markers.every((m) => m.layer === RTS_DEPTH.marker)).toBe(true);
+    // The barks went with the first frame; the move marker is gone after 8 ticks.
+    const later = presentWorld(view(13), { faction: 'red', size: SIZE, state });
+    expect(later.events).toEqual([]);
+    expect(later.entities.filter((e) => e.kind === 'order-marker').map((m) => m.id)).toEqual(['marker-2']);
+    expect(
+      presentWorld(view(14), { faction: 'red', size: SIZE, state }).entities.some(
+        (e) => e.kind === 'order-marker',
+      ),
+    ).toBe(false);
+  });
+});

@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
     />
     <meta name="theme-color" content="#000000" />
-    <title>Tower defense: The Winding Road, hold it against three waves</title>
+    <title>Tower defense: The Winding Road, hold it against ten waves</title>
     <style>
       html,
       body {
@@ -86,9 +86,10 @@
   </head>
   <body>
     <canvas id="screen"></canvas>
-    <!-- The bar: the same buttons as Enter (Wave), X (Tower) and C (Sell), and the status line. -->
+    <!-- The bar: the same buttons as Enter (Wave), Z (Build or Upgrade), X (Tower) and C (Sell), and the status line. -->
     <div id="bar">
       <button id="wave" type="button" title="Start the next wave (Enter)">Wave</button>
+      <button id="build" type="button" title="Build here, or upgrade the tower here (Z)">Build</button>
       <button id="tower" type="button" title="Choose the next tower type (X)">Tower</button>
       <button id="sell" type="button" title="Sell the tower under the cursor (C)">Sell</button>
       <span id="status"></span>

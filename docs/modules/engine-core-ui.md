@@ -41,7 +41,14 @@ Import from `@engine/core/ui` (`index.ts`).
 - Panels: `nineSlice(frame, insets, box, fill?)`, `sliceInsets`, `panelDraws`.
 - Drawing contract: `UiDraw` (`UiFill`, `UiImage`, `UiGlyph`), `UiPainter`, `paintUi`.
 - Widgets: `barRatio`, `barFill`, `CounterRoll`, `minimapDraws`, `minimapScale`, `SkinHud`
-  (`usesUi`, `layout(input)`), `hudValueText`. Engine 0.16 F7: a `panel` item with a `color`
+  (`usesUi`, `layout(input)`), `hudValueText`. Engine 0.16 part D (D3): `minimapDraws(spec, map,
+entities, extras?)` (`MinimapExtras` `{ fog?, view? }`) draws the frame's fog over the tiles
+  (a spec's `fog` look; the skin item's `fog: true`), colours dots by `teams` (tag -> colour, over
+  the dot entry's) and outlines the camera's `view` (world box, one px, cut to the box);
+  `SkinHudInput` takes `fog` and `view`; `minimapPointToWorld(spec, map, x, y)` maps a picture
+  point on the minimap back to world px (null off the box or the map) and `skinMinimap(skin)`
+  gives the first minimap item's `{ box, scale? }`, for a page's clicks. A minimap without the
+  new fields draws exactly as before. Engine 0.16 F7: a `panel` item with a `color`
   and no `frame` is a flat box (`alpha`, `border`), and any HUD item's `when` (`{ status, eq?,
 ne?, lt?, lte?, gt?, gte? }`, the mixer's status test) draws it only while the test holds
   (`hudItemShown` in `@engine/core/present`, so classic items honour it too).
@@ -62,6 +69,11 @@ ne?, lt?, lte?, gt?, gte? }`, the mixer's status test) draws it only while the t
   box across the bottom, widget `DIALOG_WIDGET`, `DIALOG_BOTTOM` px up, tall enough for its
   portrait), `endScreen`'s optional end trigger (its heading and credits), `MenuDialog`,
   `EndTrigger`; `checkMenus` checks portraits, page and speaker glyphs and trigger ids.
+  Engine 0.16 E6: `end.stars` (`{ status? (\`stars\`), count? (3), filled, empty, sheet?, palette?,
+  scale?, gap? }`, `EndStars`, `starsWon`, `STARS_STATUS`, `DEFAULT_STAR_COUNT`,
+`DEFAULT_STAR_GAP`): a centred row of frames from a sheet or texts in the title font under the
+credits, the first `stars`-many filled, none while the status lacks it; an end trigger's
+`stars: false`leaves it out;`checkMenus` checks its frames, sheet, palette and glyphs.
 - UI screens (T7): `UI_KIND`, `uiScreenSchema`, `checkUiWidgets`, `checkUiRefs`, `UiScreen`
   (`update(input)`, `draws()`, `open`, `close`, `focused`, `value`, `itemBox`), `Menu`, `Button`,
   `DialogBox`, `UiNav` (commands from actions with repeat), `UiInput`, `UiEvent`, `uiLook`,
@@ -107,6 +119,14 @@ day bar with coloured bands, tick marks and a marker at the time now along the b
       "dayBar": { "h": 3, "bands": [{ "hour": 5, "color": "#f0a070" }, { "hour": 7, "color": "#88c8f0" },
         { "hour": 19.5, "color": "#a05848" }, { "hour": 21, "color": "#101830" }], "marks": [6, 12, 18] } }
 
+From Engine 0.16 E6 the `preview` widget shows a `kind:count` status list (the tower defense's
+`nextWaveGroups`) as icons by kind (`frames`, else `frame`; a stand-in box otherwise) each with
+its count in the item's font through `format`, `gap` px after the icon and `spacing` px between
+groups (`previewGroups`, `DEFAULT_PREVIEW_SPACING`):
+
+    { "status": "nextWaveGroups", "as": "preview", "x": 4, "y": 4, "font": "small",
+      "frames": { "runner": "runner-icon", "brute": "brute-icon" }, "format": "x{value}" }
+
 Backends take the fonts as `fonts` (`SkinnedCanvasPresenter`, `canvasDisplay`,
 `skinSetCanvasPresenter`, `ThreeScene`, `ThreePresenter`, `threeDisplay`, `threeScenePresenter`);
 `pnpm cli validate` reports `missing_glyph` at the skin file and field for HUD text a font lacks.
@@ -124,5 +144,6 @@ On `PURE_CORE`. Kits and `engine/sim` may not import it (`FORBIDDEN_CORE`): kits
 keyboard and touch (`WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`);
 `pnpm test tests/browser/fx-lab-ui.test.ts` drives the fx lab's menu and dialog by keyboard, mouse and
 touch (`WW_SHOTS_DIR=<folder>` keeps its screenshots);
+the minimap's fog, team dots, camera view and `minimapPointToWorld` are in `hud.test.ts`, and both 2D backends draw them alike in `tests/browser/fog-parity.test.ts`;
 look at the fx lab's HUD with `pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 300 --json`
 (add `--backend three --allow-software-gl` for 3D).

@@ -1,0 +1,231 @@
+{
+  "game": "..",
+  "ticks": 180,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1,
+        "hold": []
+      },
+      {
+        "frame": 2,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 3,
+        "hold": []
+      },
+      {
+        "frame": 4,
+        "hold": ["right"]
+      },
+      {
+        "frame": 5,
+        "hold": []
+      },
+      {
+        "frame": 6,
+        "hold": ["down"]
+      },
+      {
+        "frame": 7,
+        "hold": []
+      },
+      {
+        "frame": 8,
+        "hold": ["down"]
+      },
+      {
+        "frame": 9,
+        "hold": []
+      },
+      {
+        "frame": 10,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 11,
+        "hold": []
+      },
+      {
+        "frame": 12,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 13,
+        "hold": []
+      },
+      {
+        "frame": 14,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 15,
+        "hold": []
+      },
+      {
+        "frame": 16,
+        "hold": ["right"]
+      },
+      {
+        "frame": 17,
+        "hold": []
+      },
+      {
+        "frame": 18,
+        "hold": ["right"]
+      },
+      {
+        "frame": 19,
+        "hold": []
+      },
+      {
+        "frame": 20,
+        "hold": ["down"]
+      },
+      {
+        "frame": 21,
+        "hold": []
+      },
+      {
+        "frame": 22,
+        "hold": ["down"]
+      },
+      {
+        "frame": 23,
+        "hold": []
+      },
+      {
+        "frame": 24,
+        "hold": ["down"]
+      },
+      {
+        "frame": 25,
+        "hold": []
+      },
+      {
+        "frame": 26,
+        "hold": ["down"]
+      },
+      {
+        "frame": 27,
+        "hold": []
+      },
+      {
+        "frame": 28,
+        "hold": ["down"]
+      },
+      {
+        "frame": 29,
+        "hold": []
+      },
+      {
+        "frame": 30,
+        "hold": ["down"]
+      },
+      {
+        "frame": 31,
+        "hold": []
+      },
+      {
+        "frame": 32,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 33,
+        "hold": []
+      },
+      {
+        "frame": 34,
+        "hold": ["start"]
+      },
+      {
+        "frame": 35,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 33,
+      "path": "kit.gold",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 160,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "splash",
+        "tower": 2,
+        "enemy": 5,
+        "target": 6,
+        "damage": 1,
+        "hp": 0
+      }
+    },
+    {
+      "tick": 160,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "kill",
+        "enemy": 5,
+        "kind": "runner",
+        "tower": 2,
+        "bounty": 2
+      }
+    },
+    {
+      "tick": 180,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 8
+    }
+  ],
+  "hashEvery": 20,
+  "guards": ["splash-damage"],
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d02aa6bb19e82982"
+    },
+    {
+      "tick": 20,
+      "hash": "0054b610c452fa80"
+    },
+    {
+      "tick": 40,
+      "hash": "d5a4675d1da92864"
+    },
+    {
+      "tick": 60,
+      "hash": "9c03b0335599da07"
+    },
+    {
+      "tick": 80,
+      "hash": "bf6e3c225b963216"
+    },
+    {
+      "tick": 100,
+      "hash": "ecc8e0cf5af76d3e"
+    },
+    {
+      "tick": 120,
+      "hash": "fac97515d6c0f60b"
+    },
+    {
+      "tick": 140,
+      "hash": "90d0387aeb56290c"
+    },
+    {
+      "tick": 180,
+      "hash": "8067adb2ff4c5297"
+    }
+  ]
+}

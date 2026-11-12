@@ -1,0 +1,9 @@
+{
+  "id": "road-danger",
+  "bpm": 132,
+  "loop": true,
+  "pulse1": "v6 @1 l16 o5 L [a r a r e r a r]4 [f r f r c r f r]2 [g r g r d r g r]2",
+  "pulse2": "v5 @2 l8 o3 L [a a a a]4 [f f f f]2 [g g g g]2",
+  "triangle": "l16 o2 L [a > a <]16 [f > f <]8 [g > g <]8",
+  "noise": "v6 l16 L [k h s h]16"
+}

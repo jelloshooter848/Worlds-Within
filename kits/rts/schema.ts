@@ -3,7 +3,8 @@ import { carryFromSchema } from '@engine/core/carried';
 import type { ContentKind, ContentLookup, KindIssue } from '@engine/core/content/kinds';
 import { addGridIssues } from '@engine/core/content/text-grid';
 import { rtsTypesSchema, type RtsTypes } from '@engine/core/rts-types';
-import { enemyPlanSchema, type EnemyPlan } from './enemy';
+import { enemyPlanSchema, type EnemyPlan, type PlanCondition } from './enemy';
+import { rtsEndSchema, type RtsEnd } from './end';
 
 /**
  * The RTS kit's content kinds (docs/BUILD-LOG.md, Engine 0.9, decision 7, item 131):
@@ -19,6 +20,8 @@ import { enemyPlanSchema, type EnemyPlan } from './enemy';
  * - `rts-enemy`: a scripted enemy's plan (`enemy.ts`). Across files (`checkAll`), every unit and
  *   building type a plan names must be in the game's types: an `rts-types` file or an `RtsTypes`
  *   component in an `rts-map` (when the game has either).
+ * - `rts-end` (Engine 0.16 part D, D6): a game's end rule (`end.ts`), `won` and `lost` in the
+ *   plan's conditions; its unit and building types are checked across files the same way.
  */
 
 const Key = z
@@ -126,16 +129,27 @@ function gameTypes(others: ContentLookup, types: readonly { value: RtsTypes }[] 
   return out;
 }
 
-/** Problems with the types a plan names (none when the game has no types to check against). */
-export function planTypeIssues(name: string, plan: EnemyPlan, types: readonly RtsTypes[]): KindIssue[] {
-  if (types.length === 0) return [];
+/** Checks type ids against the game's types, pushing an `unknown_type` issue for each it lacks. */
+function typeChecker(name: string, types: readonly RtsTypes[], issues: KindIssue[]) {
   const units = new Set(types.flatMap((t) => Object.keys(t.units)));
   const buildings = new Set(types.flatMap((t) => Object.keys(t.buildings)));
-  const issues: KindIssue[] = [];
   const check = (set: Set<string>, id: string | undefined, path: PropertyKey[], what: string) => {
     if (id !== undefined && !set.has(id))
       issues.push({ name, path, code: 'unknown_type', message: `${what} type "${id}" is in no types table` });
   };
+  const condition = (c: PlanCondition, path: PropertyKey[]) => {
+    if (c.count === 'stock' || c.type === undefined) return;
+    const set = c.count === 'units' ? units : buildings;
+    check(set, c.type, [...path, 'type'], c.count === 'units' ? 'unit' : 'building');
+  };
+  return { units, buildings, check, condition };
+}
+
+/** Problems with the types a plan names (none when the game has no types to check against). */
+export function planTypeIssues(name: string, plan: EnemyPlan, types: readonly RtsTypes[]): KindIssue[] {
+  if (types.length === 0) return [];
+  const issues: KindIssue[] = [];
+  const { units, buildings, check, condition } = typeChecker(name, types, issues);
   plan.steps.forEach((s, i) => {
     const at = ['steps', i, 'order'];
     const o = s.order;
@@ -146,11 +160,18 @@ export function planTypeIssues(name: string, plan: EnemyPlan, types: readonly Rt
       check(units, o.units.type, [...at, 'units', 'type'], 'unit');
       if (o.type === 'build') check(buildings, o.building, [...at, 'building'], 'building');
     }
-    if (s.when !== undefined && s.when.count !== 'stock' && s.when.type !== undefined) {
-      const set = s.when.count === 'units' ? units : buildings;
-      check(set, s.when.type, ['steps', i, 'when', 'type'], s.when.count === 'units' ? 'unit' : 'building');
-    }
+    if (s.when !== undefined) condition(s.when, ['steps', i, 'when']);
   });
+  return issues;
+}
+
+/** Problems with the types an end rule names (none when the game has no types to check against). */
+export function endTypeIssues(name: string, end: RtsEnd, types: readonly RtsTypes[]): KindIssue[] {
+  if (types.length === 0) return [];
+  const issues: KindIssue[] = [];
+  const { condition } = typeChecker(name, types, issues);
+  end.won.forEach((c, i) => condition(c, ['won', i]));
+  end.lost.forEach((c, i) => condition(c, ['lost', i]));
   return issues;
 }
 
@@ -183,6 +204,19 @@ export function rtsEnemyKind(): ContentKind<typeof enemyPlanSchema> {
     checkAll(entries, others) {
       const types = gameTypes(others, others('rts-types') as { name: string; value: RtsTypes }[]);
       return entries.flatMap((e) => planTypeIssues(e.name, e.value, types));
+    },
+  };
+}
+
+/** The `rts-end` content kind: a game's end rule, its types checked across files. */
+export function rtsEndKind(): ContentKind<typeof rtsEndSchema> {
+  return {
+    name: 'rts-end',
+    description: "A match's end rule: the conditions that win it and the conditions that lose it",
+    schema: rtsEndSchema,
+    checkAll(entries, others) {
+      const types = gameTypes(others, others('rts-types') as { name: string; value: RtsTypes }[]);
+      return entries.flatMap((e) => endTypeIssues(e.name, e.value, types));
     },
   };
 }

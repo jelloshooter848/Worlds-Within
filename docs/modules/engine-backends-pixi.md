@@ -35,6 +35,13 @@ backdrop? })` implements the core `Renderer` contract (`clear`, `rect`, `sprite`
   `lighting.dither`) is one whole-pixel sprite of `ditheredRadial`'s bytes from a per-frame pool
   of buffer textures, the same bytes the Canvas2D backend draws.
 - `PoolCounts`: the pool counts' shape.
+- Fog of war (Engine 0.16 part D, D3): drawn by the core walk (translucent boxes, a minimap's
+  fills), so nothing here is new; `tests/browser/fog-parity.test.ts` holds it to Canvas2D's
+  picture within the strict parity bound.
+- Outlines, team colours and zoom-stable looks (Engine 0.16 part D, D4): drawn by the core walk;
+  `PixiPresenter` passes `canvasRecolor` (`@engine/core/assets/canvas-recolor`) as its default
+  `recolor`, so a recoloured sheet is a canvas the renderer wraps like any sheet image;
+  `tests/browser/readability-parity.test.ts` holds it to Canvas2D's picture at zoom 1 and 2.
 
 - `TintedImage`: a sheet `image` (a texture and a colour) drawn with that sprite tint; a sheet
   whose `image` is a PixiJS `Texture` is cut from it. `PixiRenderer.sourceOf(sheet)`.

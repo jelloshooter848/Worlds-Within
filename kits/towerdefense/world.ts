@@ -3,7 +3,16 @@ import { Rng } from '@engine/core/rng';
 import { RuleSwitch } from '@engine/core/rules';
 import { cellKinds, tracePath, type Cell, type CellKind } from './map';
 import { TOWERDEFENSE_RULES } from './rules';
-import { CELL_SUB, tdMapSchema, type TdMap, type TdWaves, type TowerTable, type TowerType } from './schema';
+import {
+  CELL_SUB,
+  tdMapSchema,
+  type TdMap,
+  type TdWaves,
+  type TowerSlow,
+  type TowerSplash,
+  type TowerTable,
+  type TowerType,
+} from './schema';
 
 /** What a round is played from: its map, the tower types and its wave list (checked content). */
 export interface TdRoundDef {
@@ -25,6 +34,7 @@ export interface TdWorldOptions {
 export type TdCommand =
   | { type: 'place'; tower: string; col: number; row: number }
   | { type: 'sell'; col: number; row: number }
+  | { type: 'upgrade'; col: number; row: number }
   | { type: 'start-wave' };
 
 /** Why a command was refused (a `refused` event's `code`). */
@@ -36,16 +46,28 @@ export type TdRefusal =
   | 'occupied'
   | 'too_poor'
   | 'no_tower'
+  | 'max_level'
   | 'no_more_waves';
 
 /** What happened on a step, for sounds, presentation, reports and run-file checks. */
 export type TdEvent =
   | { type: 'placed'; tower: number; towerType: string; col: number; row: number; cost: number }
   | { type: 'sold'; tower: number; towerType: string; col: number; row: number; refund: number }
+  | {
+      type: 'upgraded';
+      tower: number;
+      towerType: string;
+      col: number;
+      row: number;
+      level: number;
+      cost: number;
+    }
   | { type: 'refused'; command: TdCommand['type']; code: TdRefusal }
   | { type: 'wave'; wave: number; by: 'button' | 'timer' }
   | { type: 'spawn'; enemy: number; kind: string; wave: number }
   | { type: 'fire'; tower: number; enemy: number; damage: number; hp: number }
+  | { type: 'splash'; tower: number; enemy: number; target: number; damage: number; hp: number }
+  | { type: 'slowed'; tower: number; enemy: number; factor: number; ticks: number }
   | { type: 'kill'; enemy: number; kind: string; tower: number; bounty: number }
   | { type: 'leak'; enemy: number; kind: string; lives: number }
   | { type: 'won' }
@@ -61,6 +83,8 @@ export interface TowerState {
   readonly row: number;
   /** Ticks before it can fire again (0: ready). */
   cooldown: number;
+  /** Its upgrade level: 1 as placed, one more per upgrade (Engine 0.16 E3). */
+  level: number;
 }
 
 export interface EnemyState {
@@ -68,10 +92,16 @@ export interface EnemyState {
   readonly kind: string;
   readonly wave: number;
   hp: number;
+  /** The hit points it came with (Engine 0.16 E4, for a health bar; not in the snapshot). */
+  readonly maxHp: number;
   readonly speed: number;
   readonly bounty: number;
   /** Sub-cell units walked from the entry cell (`CELL_SUB` to a cell). */
   progress: number;
+  /** Ticks of walking slowed still to come (Engine 0.16 E4; 0: not slowed). */
+  slowTicks: number;
+  /** While slowed, the percent of its speed it keeps. */
+  slowFactor: number;
 }
 
 /** An enemy still to come: its group's numbers and the ticks after the one before it. */
@@ -89,8 +119,10 @@ interface PendingSpawn {
  * file can check: `tick`, `map`, `outcome`, `gold`, `lives`, `rng`, `wave.started` (waves started
  * so far), `wave.total`, `wave.sinceStart` (ticks since the last wave started, or the round
  * started), `wave.pending` (enemies still to come), `wave.spawnIn` (ticks to the next one),
- * `towers` (`id`, `type`, `col`, `row`, `cooldown`), `enemies` (`id`, `kind`, `wave`, `hp`,
- * `progress`, `col`, `row`), `stats` (`spent`, `refunded`, `earned`, `killed`, `leaked`) and
+ * `towers` (`id`, `type`, `col`, `row`, `cooldown`, and `level` only once upgraded past 1, so a
+ * round without upgrades hashes as before), `enemies` (`id`, `kind`, `wave`, `hp`,
+ * `progress`, `col`, `row`, and only while slowed `slow` (ticks left) and `slowFactor`, Engine
+ * 0.16 E4, so a round without slow towers hashes as before), `stats` (`spent`, `refunded`, `earned`, `killed`, `leaked`) and
  * `events` (the last step's `TdEvent`s).
  */
 export interface TdSnapshot extends JsonObject {
@@ -101,7 +133,7 @@ export interface TdSnapshot extends JsonObject {
   lives: number;
   rng: number;
   wave: { started: number; total: number; sinceStart: number; pending: number; spawnIn: number };
-  towers: { id: number; type: string; col: number; row: number; cooldown: number }[];
+  towers: { id: number; type: string; col: number; row: number; cooldown: number; level?: number }[];
   enemies: {
     id: number;
     kind: string;
@@ -110,14 +142,71 @@ export interface TdSnapshot extends JsonObject {
     progress: number;
     col: number;
     row: number;
+    slow?: number;
+    slowFactor?: number;
   }[];
   stats: { spent: number; refunded: number; earned: number; killed: number; leaked: number };
   events: JsonObject[];
 }
 
-/** The gold selling a tower of this type gives back. */
-export function sellValue(type: TowerType): number {
-  return type.sell ?? Math.floor(type.cost / 2);
+/** A tower's numbers at one level: what it fires with, what it cost in all and what selling gives. */
+export interface TowerStats {
+  range: number;
+  damage: number;
+  cooldown: number;
+  /** The gold paid for it: the type's cost and every upgrade's up to this level. */
+  spent: number;
+  /** The gold selling it gives back (`sellValue`). */
+  sell: number;
+  /** Its splash, if any (Engine 0.16 E4). */
+  splash?: TowerSplash;
+  /** Its slow, if any (Engine 0.16 E4). */
+  slow?: TowerSlow;
+}
+
+/** The levels a tower type has: 1, plus one per entry of its `levels`. */
+export function maxLevel(type: TowerType): number {
+  return 1 + (type.levels?.length ?? 0);
+}
+
+/**
+ * A tower type's numbers at `level` (1-based; clamped to the type's levels): level 1 is the type
+ * itself, each later level the one below with its own fields put over it. A level's sell value is
+ * its `sell`, else the level below's plus half that level's cost (rounded down), so what selling
+ * gives back counts the upgrades paid.
+ */
+export function towerStats(type: TowerType, level = 1): TowerStats {
+  const out: TowerStats = {
+    range: type.range,
+    damage: type.damage,
+    cooldown: type.cooldown,
+    spent: type.cost,
+    sell: type.sell ?? Math.floor(type.cost / 2),
+  };
+  if (type.splash !== undefined) out.splash = type.splash;
+  if (type.slow !== undefined) out.slow = type.slow;
+  const levels = type.levels ?? [];
+  for (let i = 0; i < Math.min(level, maxLevel(type)) - 1; i++) {
+    const l = levels[i]!;
+    out.range = l.range ?? out.range;
+    out.damage = l.damage ?? out.damage;
+    out.cooldown = l.cooldown ?? out.cooldown;
+    out.spent += l.cost;
+    out.sell = l.sell ?? out.sell + Math.floor(l.cost / 2);
+    if (l.splash !== undefined) out.splash = l.splash;
+    if (l.slow !== undefined) out.slow = l.slow;
+  }
+  return out;
+}
+
+/** The gold selling a tower of this type at `level` (default 1) gives back (`towerStats`). */
+export function sellValue(type: TowerType, level = 1): number {
+  return towerStats(type, level).sell;
+}
+
+/** The gold upgrading a tower of this type from `level` costs, or null at its last level. */
+export function upgradeCost(type: TowerType, level: number): number | null {
+  return type.levels?.[level - 1]?.cost ?? null;
 }
 
 /**
@@ -125,14 +214,15 @@ export function sellValue(type: TowerType): number {
  * tick. Whole numbers only: cells, sub-cell units (`CELL_SUB` to a cell) and ticks. Everything
  * random (a group's `jitter`) comes from the RNG it is given.
  *
- * Commands (`command`, or `place`, `sell`, `startWave`) are queued and carried out, in the order
+ * Commands (`command`, or `place`, `sell`, `upgrade`, `startWave`) are queued and carried out, in the order
  * given, at the start of the next step. One step, in this fixed order (once the round is won or lost
  * only the tick counts and every command is refused with `round_over`):
  *
  *   1. commands: `place` puts a tower on a free build cell (`build-on-build-cells`) if the gold
  *      covers its cost, and pays it (`build-costs-gold`); `sell` takes a tower away and gives back
- *      its sell value (`sell-refunds`); `start-wave` starts the next wave. A refusal is a `refused`
- *      event, never thrown;
+ *      its sell value at its level (`sell-refunds`); `upgrade` raises a tower one level if its type
+ *      has one more and the gold covers that level's cost, and pays it (`upgrade-costs-gold`);
+ *      `start-wave` starts the next wave. A refusal is a `refused` event, never thrown;
  *   2. the wave timer: with the wave list's `timer`, the next wave starts once `timer` ticks have
  *      passed since the last wave started, or the round did (`wave-timer`);
  *   3. spawning: the enemies still to come enter at the entry, each `spacing` (plus a drawn
@@ -142,8 +232,15 @@ export function sellValue(type: TowerType): number {
  *   5. towers, in id order: the cooldown counts down; a ready tower fires at its target, an enemy
  *      within `range` cells (squared cell distance, `tower-range`): the one furthest along the
  *      path, ties to the lowest id (`target-first`), for `damage`, and waits `cooldown` ticks
- *      (`tower-cooldown`; off, it can fire every tick). An enemy at 0 hp is killed and pays its
- *      bounty (`kill-bounty`). With `towers-fire` off no tower fires;
+ *      (`tower-cooldown`; off, it can fire every tick). An upgraded tower uses its level's range,
+ *      damage and cooldown (`upgrade-improves`; off, its type's own). An enemy at 0 hp is killed and pays its
+ *      bounty (`kill-bounty`). A tower with `splash` then hurts every other enemy whose cell is
+ *      within the splash radius of the target's cell, in id order, for the splash damage, each
+ *      one killed at 0 hp (`splash-damage`); one with `slow` slows a target it hit and did not
+ *      kill (`slow-enemies`: the stronger slow, the lower factor, wins; the same factor takes the
+ *      longer ticks). With `towers-fire` off no tower fires. A slowed enemy walks at its factor
+ *      percent of its speed (rounded down, at least 1), and each tick it walks counts the slow
+ *      down;
  *   6. the end: 0 lives loses the round (`lose-at-zero-lives`); otherwise every wave started, none
  *      still to come and no enemy left wins it (`win-on-clear`);
  *   7. the tick counts up.
@@ -210,6 +307,10 @@ export class TdWorld {
     this.command({ type: 'sell', col, row });
   }
 
+  upgrade(col: number, row: number): void {
+    this.command({ type: 'upgrade', col, row });
+  }
+
   startWave(): void {
     this.command({ type: 'start-wave' });
   }
@@ -237,11 +338,60 @@ export class TdWorld {
     return null;
   }
 
+  /** Why upgrading the tower on the cell would be refused now, or null when it can be upgraded. */
+  upgradeRefusal(col: number, row: number): TdRefusal | null {
+    if (this.outcome !== 'playing') return 'round_over';
+    const t = this.towerAt(col, row);
+    if (t === undefined) return 'no_tower';
+    const cost = upgradeCost(this.towerTypes[t.type]!, t.level);
+    if (cost === null) return 'max_level';
+    if (this.rules.isOn('upgrade-costs-gold') && this.gold < cost) return 'too_poor';
+    return null;
+  }
+
+  /** The numbers a tower fires with now: its level's (`upgrade-improves`; off, its type's own). */
+  statsOf(t: Pick<TowerState, 'type' | 'level'>): TowerStats {
+    const type = this.towerTypes[t.type]!;
+    const at = towerStats(type, t.level);
+    if (this.rules.isOn('upgrade-improves')) return at;
+    const base = towerStats(type, 1);
+    return { ...base, spent: at.spent, sell: at.sell };
+  }
+
   /** The enemies of wave `wave` (1-based) still to come or on the path: 0 once it is cleared. */
   waveLeft(wave: number): number {
     return (
       this.pending.filter((p) => p.wave === wave).length + this.enemies.filter((e) => e.wave === wave).length
     );
+  }
+
+  /**
+   * The round's star rating (Engine 0.16 E4), or null when the map has no `stars`: 0 while playing
+   * and on a loss; on a win 3 with at least `stars.three` lives left, 2 with at least `stars.two`,
+   * else 1. A reading of the round, not a rule: it changes nothing.
+   */
+  stars(): number | null {
+    const s = this.map.stars;
+    if (s === undefined) return null;
+    if (this.outcome !== 'won') return 0;
+    return this.lives >= s.three ? 3 : this.lives >= s.two ? 2 : 1;
+  }
+
+  /**
+   * The next wave to start (Engine 0.16 E4, for a HUD preview): its number (1-based) and its
+   * enemies' kinds with their counts, in the order each kind first comes (a kind in two groups is
+   * counted once, summed); null once every wave has started.
+   */
+  nextWave(): { wave: number; groups: { kind: string; count: number }[] } | null {
+    const wave = this.waves.waves[this.wavesStarted];
+    if (wave === undefined) return null;
+    const groups: { kind: string; count: number }[] = [];
+    for (const g of wave.groups) {
+      const had = groups.find((x) => x.kind === g.kind);
+      if (had) had.count += g.count;
+      else groups.push({ kind: g.kind, count: g.count });
+    }
+    return { wave: this.wavesStarted + 1, groups };
   }
 
   /** The path's last progress: an enemy at or past it has reached the exit. */
@@ -306,17 +456,42 @@ export class TdWorld {
       const cost = this.rules.isOn('build-costs-gold') ? type.cost : 0;
       this.gold -= cost;
       this.stats.spent += cost;
-      const t: TowerState = { id: this.nextTower++, type: c.tower, col: c.col, row: c.row, cooldown: 0 };
+      const t: TowerState = {
+        id: this.nextTower++,
+        type: c.tower,
+        col: c.col,
+        row: c.row,
+        cooldown: 0,
+        level: 1,
+      };
       this.towers.push(t);
       this.events.push({ type: 'placed', tower: t.id, towerType: t.type, col: t.col, row: t.row, cost });
     } else if (c.type === 'sell') {
       const t = this.towerAt(c.col, c.row);
       if (t === undefined) return this.refuse('sell', 'no_tower');
       this.towers.splice(this.towers.indexOf(t), 1);
-      const refund = this.rules.isOn('sell-refunds') ? sellValue(this.towerTypes[t.type]!) : 0;
+      const refund = this.rules.isOn('sell-refunds') ? sellValue(this.towerTypes[t.type]!, t.level) : 0;
       this.gold += refund;
       this.stats.refunded += refund;
       this.events.push({ type: 'sold', tower: t.id, towerType: t.type, col: t.col, row: t.row, refund });
+    } else if (c.type === 'upgrade') {
+      const why = this.upgradeRefusal(c.col, c.row);
+      if (why !== null) return this.refuse('upgrade', why);
+      const t = this.towerAt(c.col, c.row)!;
+      const price = upgradeCost(this.towerTypes[t.type]!, t.level)!;
+      const cost = this.rules.isOn('upgrade-costs-gold') ? price : 0;
+      this.gold -= cost;
+      this.stats.spent += cost;
+      t.level++;
+      this.events.push({
+        type: 'upgraded',
+        tower: t.id,
+        towerType: t.type,
+        col: t.col,
+        row: t.row,
+        level: t.level,
+        cost,
+      });
     } else {
       if (this.wavesStarted >= this.waves.waves.length) return this.refuse('start-wave', 'no_more_waves');
       this.beginWave('button');
@@ -357,9 +532,12 @@ export class TdWorld {
         kind: p.kind,
         wave: p.wave,
         hp: p.hp,
+        maxHp: p.hp,
         speed: p.speed,
         bounty: p.bounty,
         progress: 0,
+        slowTicks: 0,
+        slowFactor: 100,
       };
       this.enemies.push(e);
       this.events.push({ type: 'spawn', enemy: e.id, kind: e.kind, wave: e.wave });
@@ -371,7 +549,8 @@ export class TdWorld {
   private walk(): void {
     if (!this.rules.isOn('enemies-walk')) return;
     for (const e of [...this.enemies]) {
-      e.progress = Math.min(e.progress + e.speed, this.pathEnd);
+      e.progress = Math.min(e.progress + this.speedOf(e), this.pathEnd);
+      if (e.slowTicks > 0 && --e.slowTicks === 0) e.slowFactor = 100;
       if (e.progress < this.pathEnd) continue;
       this.enemies.splice(this.enemies.indexOf(e), 1);
       this.stats.leaked++;
@@ -380,9 +559,15 @@ export class TdWorld {
     }
   }
 
+  /** Sub-cell units an enemy walks this tick: its speed, or while slowed its factor's share of it. */
+  speedOf(e: Pick<EnemyState, 'speed' | 'slowTicks' | 'slowFactor'>): number {
+    if (e.slowTicks <= 0) return e.speed;
+    return Math.max(1, Math.floor((e.speed * e.slowFactor) / 100));
+  }
+
   /** A tower's target now, or undefined when no enemy is in reach. */
   targetOf(t: TowerState): EnemyState | undefined {
-    const range = this.towerTypes[t.type]!.range;
+    const range = this.statsOf(t).range;
     const ranged = this.rules.isOn('tower-range');
     const inReach = this.enemies.filter((e) => {
       if (!ranged) return true;
@@ -412,18 +597,55 @@ export class TdWorld {
       if (!fires || t.cooldown > 0) continue;
       const e = this.targetOf(t);
       if (e === undefined) continue;
-      const type = this.towerTypes[t.type]!;
-      e.hp = Math.max(0, e.hp - type.damage);
-      t.cooldown = this.rules.isOn('tower-cooldown') ? type.cooldown : 0;
-      this.events.push({ type: 'fire', tower: t.id, enemy: e.id, damage: type.damage, hp: e.hp });
-      if (e.hp > 0) continue;
-      this.enemies.splice(this.enemies.indexOf(e), 1);
-      this.stats.killed++;
-      const bounty = this.rules.isOn('kill-bounty') ? e.bounty : 0;
-      this.gold += bounty;
-      this.stats.earned += bounty;
-      this.events.push({ type: 'kill', enemy: e.id, kind: e.kind, tower: t.id, bounty });
+      const stats = this.statsOf(t);
+      const at = this.enemyCell(e);
+      e.hp = Math.max(0, e.hp - stats.damage);
+      t.cooldown = this.rules.isOn('tower-cooldown') ? stats.cooldown : 0;
+      this.events.push({ type: 'fire', tower: t.id, enemy: e.id, damage: stats.damage, hp: e.hp });
+      if (e.hp > 0) this.slowBy(t, e, stats.slow);
+      else this.kill(e, t);
+      const splash = stats.splash;
+      if (splash === undefined || !this.rules.isOn('splash-damage')) continue;
+      const r2 = splash.radius * splash.radius;
+      for (const o of [...this.enemies]) {
+        if (o.id === e.id) continue;
+        const c = this.enemyCell(o);
+        const dc = c.col - at.col;
+        const dr = c.row - at.row;
+        if (dc * dc + dr * dr > r2) continue;
+        o.hp = Math.max(0, o.hp - splash.damage);
+        this.events.push({
+          type: 'splash',
+          tower: t.id,
+          enemy: o.id,
+          target: e.id,
+          damage: splash.damage,
+          hp: o.hp,
+        });
+        if (o.hp === 0) this.kill(o, t);
+      }
     }
+  }
+
+  /** Slows an enemy a tower hit (`slow-enemies`): the lower factor wins, the same one the longer ticks. */
+  private slowBy(t: TowerState, e: EnemyState, slow: TowerSlow | undefined): void {
+    if (slow === undefined || !this.rules.isOn('slow-enemies')) return;
+    const slowed = e.slowTicks > 0;
+    if (slowed && slow.factor > e.slowFactor) return;
+    if (slowed && slow.factor === e.slowFactor && slow.ticks <= e.slowTicks) return;
+    e.slowFactor = slow.factor;
+    e.slowTicks = slow.ticks;
+    this.events.push({ type: 'slowed', tower: t.id, enemy: e.id, factor: slow.factor, ticks: slow.ticks });
+  }
+
+  /** An enemy at 0 hp leaves the path and pays its bounty (`kill-bounty`). */
+  private kill(e: EnemyState, t: TowerState): void {
+    this.enemies.splice(this.enemies.indexOf(e), 1);
+    this.stats.killed++;
+    const bounty = this.rules.isOn('kill-bounty') ? e.bounty : 0;
+    this.gold += bounty;
+    this.stats.earned += bounty;
+    this.events.push({ type: 'kill', enemy: e.id, kind: e.kind, tower: t.id, bounty });
   }
 
   /** The round as plain, JSON-safe data (`TdSnapshot`): it reads the world and changes nothing. */
@@ -448,6 +670,7 @@ export class TdWorld {
         col: t.col,
         row: t.row,
         cooldown: t.cooldown,
+        ...(t.level > 1 ? { level: t.level } : {}),
       })),
       enemies: this.enemies.map((e) => {
         const c = this.enemyCell(e);
@@ -459,6 +682,7 @@ export class TdWorld {
           progress: e.progress,
           col: c.col,
           row: c.row,
+          ...(e.slowTicks > 0 ? { slow: e.slowTicks, slowFactor: e.slowFactor } : {}),
         };
       }),
       stats: { ...this.stats },

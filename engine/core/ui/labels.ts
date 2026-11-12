@@ -75,7 +75,7 @@ export function layoutLabels(
     const point = project(anchor);
     if (point === null) continue;
     const value = labelValue(label, entity, status);
-    const item = labelItem(label, value, status, fonts);
+    const item = labelItem(label, value, status, fonts, entity);
     if (item === null) continue;
     const offset = label.offset ?? DEFAULT_LABEL_OFFSET;
     const used = stacked.get(anchor) ?? 0;
@@ -129,9 +129,10 @@ function labelItem(
   value: string | number | boolean | undefined,
   status: DeepReadonly<PresentFrame['status']>,
   fonts: FontLookup | undefined,
+  entity: DeepReadonly<PresentEntity>,
 ): LabelItem | null {
   if (label.as === 'bar') {
-    const bar = labelBar(label, value, status);
+    const bar = labelBar(label, value, status, entity);
     if (bar === null) return null;
     const w = label.w ?? DEFAULT_LABEL_BAR.w;
     const h = label.h ?? DEFAULT_LABEL_BAR.h;
