@@ -2281,7 +2281,11 @@ Labelled `T2-18` to `T2-42` on the track; the merge numbered them 555-579 (`T2-n
 E, E1; details in `docs/BUILD-LOG.md`, Engine 0.16 polish P). Labelled `P-1` to `P-5` on the
 track; the merge numbered them 580-584 (`P-n` is item 579+n).
 
-- **580.** The dawn skirt's before shot is a page shot, not a CLI one: `pnpm cli screenshot
+- **580.** The dawn skirt's before shot is a page shot, not a CLI one:
+  `pnpm cli screenshot dawn-fresh.run.json --tick 30 --backend three` draws the dawn at 06:00 but
+  lit and framed nearly as the afternoon (a closer camera than the page's, the map running past the
+  picture), so the darkened map and the lighter skirt do not show in it. P9's after shot uses the
+  page too.
 - **581.** The page shots come from a committed script, `tests/browser/siege-review-shots.ts`
   (run with `pnpm exec tsx`, not a test), not a scratch one as in F10 (551), so P11 retakes the
   after shots with the same steps.
