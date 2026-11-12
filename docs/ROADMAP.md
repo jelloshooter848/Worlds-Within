@@ -1082,22 +1082,22 @@ are not touched.
 
 - [x] C1: the crypt's and the warden hall's lights fall off without visible rings, the same on
       every run, in both 2D backends. ([Build log](BUILD-LOG.md#engine-016-polish-p), shots
-      01-02; P3's dithered falloff, decision P-5.)
+      01-02; P3's dithered falloff, decision 584.)
 - [x] C2: each of the crypt's eight rooms is dressed from its data, and no dungeon hash moved.
       ([Build log](BUILD-LOG.md#engine-016-polish-p), shots 01-08; P4's decor grid, P5's eight
       `rooms/<id>.decor.txt`.)
 - [x] F1: no world label is cut at the picture's edge (M45 closed).
       ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 09; P6.)
 - [x] F2: the page's controls do not cover a round's picture (the fortify and sabotage rounds).
-      ([Build log](BUILD-LOG.md#engine-016-polish-p), shots 12-13; P7, decision P-7.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shots 12-13; P7, decision 634.)
 - [x] F3: the mission-open flash after Delegate no longer whites out the picture.
-      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 14; P7, decision P-6.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 14; P7, decision 633.)
 - [x] F4: the results' losses use plurals ("4 raiders", "2 soldiers").
-      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 15; P8, decision P-8.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 15; P8, decision 635.)
 - [x] F5: at dawn the skirt matches the map's light past its edges.
-      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 11; P9, decision P-9.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 11; P9, decision 636.)
 - [x] F6: the siege's open fields are fuller, from decor data, with no hash moved.
-      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 10; P10, decision P-13.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-p), shot 10; P10, decision 640.)
 - [x] Before and after shots of every item sit side by side in the build log, and the checks
       pass: `pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test && pnpm build`.
       ([Build log](BUILD-LOG.md#engine-016-polish-p): "Before and after shots" and "Finalize
@@ -1137,21 +1137,21 @@ and its pages are not touched.
 **Done when:**
 
 - [x] D1: The River Ford's map is dressed from data (decor, trees, rocks, ground variation and
-      river banks), with no hash moved. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 01; Q5, Q6, decisions Q-3 and Q-4.)
+      river banks), with no hash moved. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 01; Q5, Q6, decisions 668 and 669.)
 - [x] D2: the selection panel shows display names from data, not ids. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 02; Q3,
-      decision Q-1.)
+      decision 666.)
 - [x] D3: the top resource bar sits on a UI-kit panel, with no sprite showing under its counters.
-      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 03; Q4, decision Q-2.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 03; Q4, decision 667.)
 - [x] D4: the big-fight zoomed-out shot shows a real battle, with no rule change.
-      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 04 and "D4: the big fight (Q7)"; decisions Q-5 and Q-6.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 04 and "D4: the big fight (Q7)"; decisions 670 and 671.)
 - [x] P1: "Vosk" no longer wraps onto a line of its own in the siege's results.
-      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 05; Q8, decision Q-7.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 05; Q8, decision 672.)
 - [x] P2: no empty black bar over a soldier at the dawn. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 06; Q9,
-      decision Q-9.)
+      decision 674.)
 - [x] P3: the page's controls do not cover the key-hint panel on the centred screens.
-      ([Build log](BUILD-LOG.md#engine-016-polish-q), shots 07 and 05; Q8, decision Q-8.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shots 07 and 05; Q8, decision 673.)
 - [x] P4: the 2D skin's mission-open flash after Delegate is a gentle warm wash, as in 3D.
-      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 08; Q9, decision Q-10.)
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 08; Q9, decision 675.)
 - [x] Before and after shots of every item sit side by side in the build log, and the checks
       pass: `pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test && pnpm build`.
       ([Build log](BUILD-LOG.md#engine-016-polish-q): "Before and after shots" and "Finalize pass (checks)".)

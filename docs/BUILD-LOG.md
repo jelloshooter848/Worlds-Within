@@ -131,7 +131,8 @@ the API review listed (`1.0-1` to `1.0-11`).
   world labels kept inside the picture (M45 closed); the mini siege page's controls clear of a
   round; a gentle mission-open flash; plurals in the losses; the dawn skirt matching the map;
   fuller siege fields from decor data. Fifteen before and after shot pairs in its section; no hash or run
-  file moved. Not met: the owner's review of the shots and of decisions 580-584 and P-6 to P-15.
+  file moved. Not met: the owner's review of the shots (item 700) and of decisions 580-584,
+  633-642 and 643-665.
 - **0.16 polish Q Part D review notes and polish P leftovers: done, awaiting review.** Built on
   the track branch `engine/0.16-track2` (Q1 merged track 1's parts D and E so far). The River
   Ford's map dressed from a new presentation-only RTS decoration grid (forest, boulders, grass
@@ -141,8 +142,8 @@ the API review listed (`1.0-1` to `1.0-11`).
   wraps), no empty black bar at the dawn, the page's controls clear of the key hints on the
   centred screens, the 2D skin's gentle mission-open flash, and the 2D walls drawn instead of
   magenta boxes. Eight before and after shot pairs in its section; no existing hash or run file
-  moved. Not met: the owner's review of the shots and of decisions Q-1 to Q-11 and T2-66 to
-  T2-88.
+  moved. Not met: the owner's review of the shots (item 701) and of decisions 666-676 and
+  677-699.
 
 ### How to try each sample
 
@@ -190,7 +191,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 632** (next unused 633). Awaiting the owner's answer, by release (an answer by number is
+used is 701** (next unused 702). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -227,12 +228,17 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.16 part F (merged in part E, E1; `F-n` and `T2-n` on the track): **533-554** (part
   F's build decisions; **553** the owner's playtest and screenshot review), **555-579** (the
   smaller build choices of F1-F10).
-- Engine 0.16 polish P (P1-P3 merged in part E, E1; `P-n` on the track): **580-584** (the before
-  shots and the crypt's dithered light); **P-6 to P-15** and **T2-43 to T2-65** in its section
-  (with a question on P-6, the flash, and one on 584, the light's look), not yet numbered into
-  FEEDBACK-LOG.md.
-- Engine 0.16 polish Q (on track 2; `Q-n` and `T2-n` there): **Q-1 to Q-11** and **T2-66 to
-  T2-88** in [its section](#engine-016-polish-q), not yet numbered into FEEDBACK-LOG.md.
+- Engine 0.16 polish P (P1-P3 merged in part E, E1; P4-P11 merged with polish Q; `P-n` and
+  `T2-n` on the track): **580-584** (the before shots and the crypt's dithered light; **584**
+  asks whether to keep the smooth, dithered light or bring back the stepped look with soft
+  edges), **633-642** (the build decisions of P4-P11 and the release review; **633** asks about
+  the warm `mission-open` flash: keep it, dim it or drop it; polish Q's 675 made the 2D skin's
+  flash match the 3D warm wash), **643-665** (smaller build choices of P1-P11), **700** (the
+  owner's review of the fifteen before and after shot pairs).
+- Engine 0.16 polish Q (on track 2; `Q-n` and `T2-n` there): **666-676** (the build decisions
+  of Q1-Q10), **677-699** (smaller build choices of Q1-Q10), **701** (the owner's review of the
+  eight before and after shot pairs). The merge of polish P and Q mapped their labels to these
+  numbers ([below](#the-merge-into-enginebuild-015-polish-p-and-q)).
 - Engine 0.16 part E: **585** (E2, `games/td-classic`), **586** (the owner's playtest), **587**
   (the owner's screenshot review), **588** (the walls round's looks), **589-613** (build choices
   of E3-E9), **614-617** (E10: the HUD fixes, the page shot, the looks left, how 589-613 were
@@ -320,7 +326,7 @@ playtest.
   drawn as the sheet's missing-frame colour (at Q1 too, hidden under the white flash in the
   before shot). Two original 16x16 frames, `wall` and `wall-tower`, in the watchtower's stone,
   now end `content/sprites/siege.txt`, with their kinds in the 2D skin; `play.test.ts` checks
-  that every unit type and building kind has a 2D look drawn from the sheet (Q-11).
+  that every unit type and building kind has a 2D look drawn from the sheet (676).
 
 ### How to try it
 
@@ -356,16 +362,16 @@ below). Each pair was looked at full size side by side.
 
 What each pair shows (`before-<nn>` / `after-<nn>`):
 
-| Pair                         | Item | Before                                                                                                                           | After                                                                                                                                     |
-| ---------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `01-ford-scenery.png`        | D1   | `match-won` at 164 (0.16-D's 03): red's base on plain flat grass, a few rocks and pines at the edges, no ground variation        | The same frame dressed: a pine forest with boulders down the west edge, darker and lighter grass patches, tufts, flowers and mushrooms    |
-| `02-selection-name.png`      | D2   | `match-won` at 4 (0.16-D's 02): the selection panel reads the ids "town-centre" and "worker"                                     | "Town Centre" and the training line "Worker" (and the Q4 panel and Q6 scenery)                                                            |
-| `03-resource-bar.png`        | D3   | `match-won` at 5790: the gold, unit and enemy counters bare on the map, red's soldiers showing under "64" and "8"                | The counters on an opaque bordered panel; red's soldiers pass by its edge, none under the counters                                        |
-| `04-big-fight.png`           | D4   | `match-won` at 5790, byte for byte 0.16-D's 08: a thin line of units at blue's town centre, the wide fogged ford bare            | `big-fight` at 1763: red's line charging blue's army on blue's bank, red soldiers at both barracks, archers behind, bars on the hurt      |
-| `05-results-vosk.png`        | P1   | The 3D page's siege results at 260 (polish P's 15): "Raiders: 4 raiders, ram, Grell," and "Vosk" alone on the next line          | "Raiders: 4 raiders, ram, Grell, Vosk" on one line in a wider left column, "Hall: 120 hp lost (280/400)" whole in the right               |
-| `06-dawn-black-bar.png`      | P2   | The 3D page at the dawn, tick 30 (polish P's 11): an empty black bar over the soldier by the hall's gate                         | The same soldier's bar shows its green fill inside the border; no empty bar anywhere                                                      |
-| `07-controls-over-hints.png` | P3   | The dawn's briefing, a centred screen: the pause, 2D and sound controls over the HUD's "ESC PAUSE RMB ORDER" panel (05 the same) | The controls in one row just over the key-hint panel, which shows whole (05 the same)                                                     |
-| `08-flash-2d.png`            | P4   | The 2D page (`?backend=canvas2d`) at the first loop step of world tick 41 after Delegate at 40: the picture all white            | The same step: the battle readable under the faint warm wash; the walls and wall tower at the top drawn in stone, not magenta (Q10, Q-11) |
+| Pair                         | Item | Before                                                                                                                           | After                                                                                                                                    |
+| ---------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `01-ford-scenery.png`        | D1   | `match-won` at 164 (0.16-D's 03): red's base on plain flat grass, a few rocks and pines at the edges, no ground variation        | The same frame dressed: a pine forest with boulders down the west edge, darker and lighter grass patches, tufts, flowers and mushrooms   |
+| `02-selection-name.png`      | D2   | `match-won` at 4 (0.16-D's 02): the selection panel reads the ids "town-centre" and "worker"                                     | "Town Centre" and the training line "Worker" (and the Q4 panel and Q6 scenery)                                                           |
+| `03-resource-bar.png`        | D3   | `match-won` at 5790: the gold, unit and enemy counters bare on the map, red's soldiers showing under "64" and "8"                | The counters on an opaque bordered panel; red's soldiers pass by its edge, none under the counters                                       |
+| `04-big-fight.png`           | D4   | `match-won` at 5790, byte for byte 0.16-D's 08: a thin line of units at blue's town centre, the wide fogged ford bare            | `big-fight` at 1763: red's line charging blue's army on blue's bank, red soldiers at both barracks, archers behind, bars on the hurt     |
+| `05-results-vosk.png`        | P1   | The 3D page's siege results at 260 (polish P's 15): "Raiders: 4 raiders, ram, Grell," and "Vosk" alone on the next line          | "Raiders: 4 raiders, ram, Grell, Vosk" on one line in a wider left column, "Hall: 120 hp lost (280/400)" whole in the right              |
+| `06-dawn-black-bar.png`      | P2   | The 3D page at the dawn, tick 30 (polish P's 11): an empty black bar over the soldier by the hall's gate                         | The same soldier's bar shows its green fill inside the border; no empty bar anywhere                                                     |
+| `07-controls-over-hints.png` | P3   | The dawn's briefing, a centred screen: the pause, 2D and sound controls over the HUD's "ESC PAUSE RMB ORDER" panel (05 the same) | The controls in one row just over the key-hint panel, which shows whole (05 the same)                                                    |
+| `08-flash-2d.png`            | P4   | The 2D page (`?backend=canvas2d`) at the first loop step of world tick 41 after Delegate at 40: the picture all white            | The same step: the battle readable under the faint warm wash; the walls and wall tower at the top drawn in stone, not magenta (Q10, 676) |
 
 ### Commands
 
@@ -513,47 +519,47 @@ passes for every module touched (`kits/rts`, `engine/core/fx`, `engine/core/ui`,
 
 ### Build decisions to review (polish Q)
 
-Labelled `Q-1` to `Q-11` on the track, to be numbered into FEEDBACK-LOG.md at the next merge (as
-P-6 to P-15 and the `T2-n` items are).
+Labelled `Q-1` to `Q-11` on the track; the merge of polish P and Q into `engine/build-0.15`
+copied them into FEEDBACK-LOG.md as items 666-676 (`Q-n` is item 665+n).
 
-- **Q-1.** D2: display names are their own content kind (`rts-names`, one table a game), not a
+- **666.** D2: display names are their own content kind (`rts-names`, one table a game), not a
   field of the types: `content/types/skirmish.json` is copied into the world, so a name there
   would move every hash. `selectedType` and `training` keep the ids for `when` conditions; the
   names are new statuses (`selectedName` now the name, `trainingName`); an id the table lacks
   shows as itself.
-- **Q-2.** D3: the bar's panel is skin data only (the HUD's `panel` item), opaque, in the
+- **667.** D3: the bar's panel is skin data only (the HUD's `panel` item), opaque, in the
   selected-unit panel's colours and border, sized for 4-digit gold and 2-digit counts; no
   engine or kit change.
-- **Q-3.** D1: the RTS kit takes a decoration grid as its own kind (`rts-decor`, a `.txt` grid
-  per map), as polish P gave the top-down kit (P-10), rather than a field of the map: the map is a
+- **668.** D1: the RTS kit takes a decoration grid as its own kind (`rts-decor`, a `.txt` grid
+  per map), as polish P gave the top-down kit (637), rather than a field of the map: the map is a
   plain `engine/sim` scenario whose schema is strict, and keeping the grid out of the world keeps
   every hash. The grid is mixed into the presented map's `version` only when given.
-- **Q-4.** D1: the scenery is cut from the CC0 Medieval RTS pack already in the game (its trees
+- **669.** D1: the scenery is cut from the CC0 Medieval RTS pack already in the game (its trees
   at their own size, bushes and rocks at half, as the map's rock cells), with the small things the
   pack lacks (tufts, flowers, mushrooms, reeds, grass patches) laid in its colours by
   `tools/ford-tiles.ts` into the same checked sheet; no new pack.
-- **Q-5.** D4: no existing run has a real battle in the director's frame (all six were searched
+- **670.** D4: no existing run has a real battle in the director's frame (all six were searched
   every 5 ticks), so the shot comes from a new scripted run, `big-fight`, made only of recorded
   orders on the unchanged game, rather than from a later tick. 0.16-D's own 08 was retaken from it
   too (its old bytes are `before-04`).
-- **Q-6.** D4: `CameraFx` now holds the product of stacked zoom punches between `1 / FX_ZOOM_MAX`
+- **671.** D4: `CameraFx` now holds the product of stacked zoom punches between `1 / FX_ZOOM_MAX`
   and `FX_ZOOM_MAX` (4): the battle's dozens of punches on one frame ran the presentation test
   out of memory. An engine change, presentation only.
-- **Q-7.** P1: the results' two columns move their split (the gap from 8 px to no less than 6)
+- **672.** P1: the results' two columns move their split (the gap from 8 px to no less than 6)
   when a line would wrap in its half and both columns' widest lines then fit, rather than
-  shortening the losses text or widening the panel again (polish P widened it once, P-8). With no
+  shortening the losses text or widening the panel again (polish P widened it once, 635). With no
   line too wide the halves are as before.
-- **Q-8.** P3: the page's controls move from CSS alone (`games/samples/mini-siege/index.html`),
-  as P-7's rule: over a centred screen and the menus they stand in one row at the bottom right, in
+- **673.** P3: the page's controls move from CSS alone (`games/samples/mini-siege/index.html`),
+  as 634's rule: over a centred screen and the menus they stand in one row at the bottom right, in
   the letterbox when it is at least 36 px high, else just over the HUD's key-hint panel. The
   rounds keep P7's column.
-- **Q-9.** P2: fixed in the UI kit for every game (`barBorder`: a bar 2 px or less high or wide
+- **674.** P2: fixed in the UI kit for every game (`barBorder`: a bar 2 px or less high or wide
   takes no border, so its back and fill cover it) and in the siege's 3D skin (bar labels 3 px
   high, so a 1-px fill shows inside the border).
-- **Q-10.** P4: the 2D skin's `mission-open` takes the 3D skin's event flash exactly (`#fce0a8`,
-  alpha 0.25, 18 frames); this answers the second half of polish P's question on P-6 ("should the
+- **675.** P4: the 2D skin's `mission-open` takes the 3D skin's event flash exactly (`#fce0a8`,
+  alpha 0.25, 18 frames); this answers the second half of polish P's question on 633 ("should the
   2D skin's white flash follow?") with yes, pending the owner.
-- **Q-11.** Q10: the 2D skin's walls and wall towers, missing since Engine 0.12 and found in the
+- **676.** Q10: the 2D skin's walls and wall towers, missing since Engine 0.12 and found in the
   retaken after shot 08, get two original 16x16 frames in the watchtower's grey stone (`wall`, a
   low block; `wall-tower`, crenellated with a door) rather than reusing the `rock` tile; the
   frozen look like the other buildings'. Presentation only.
@@ -565,99 +571,132 @@ P-6 to P-15 and the `T2-n` items are).
   checked against the real folders.
 - D4 adds a run file and its golden file (`big-fight`, new), which the rules' "no run file hash
   moves" allows: no existing one moved.
-- D4 also changed the engine's camera effects (Q-6) and the stepped-shell test's loop bound, both
+- D4 also changed the engine's camera effects (671) and the stepped-shell test's loop bound, both
   presentation or test only.
-- Q10 fixed one defect outside the eight items, the 2D page's magenta walls (Q-11), found in the
+- Q10 fixed one defect outside the eight items, the 2D page's magenta walls (676), found in the
   after shots.
 
 ### Build decisions to review (track 2)
 
-Smaller choices the Q1-Q10 builders made, for the owner to check; labelled after T2-65 and, like
-the `Q-n` items, to be numbered into FEEDBACK-LOG.md at merge. Those already covered by a `Q-n`
-item are not repeated.
+Smaller choices the Q1-Q10 builders made, for the owner to check; labelled `T2-66` to `T2-88`
+on the track and copied into FEEDBACK-LOG.md at the merge of polish P and Q as items 677-699
+(`T2-n` is item 611+n). Those already covered by an item in 666-676 are not repeated.
 
-- **T2-66.** Q2: the before shots are numbered 01-08 by item (D1-D4, then P1-P4), and the page
+- **677.** Q2: the before shots are numbered 01-08 by item (D1-D4, then P1-P4), and the page
   shots come from a new committed script (`siege-q-shots.ts`) with polish P's page helpers moved
   to a shared `siege-page.ts`, so both scripts drive the page the same way.
-- **T2-67.** Q2: `before-03` and `before-04` are the same image (`match-won` at 5790, 0.16-D's
+- **678.** Q2: `before-03` and `before-04` are the same image (`match-won` at 5790, 0.16-D's
   08), since D3's and D4's problems were both in that shot.
-- **T2-68.** Q3: a name for a type or kind the game lacks is an error (`unknown_type`), as for
+- **679.** Q3: a name for a type or kind the game lacks is an error (`unknown_type`), as for
   plans, since the loader has no warnings; `skirmish.test.ts` checks the table covers every type.
-- **T2-69.** Q5: the decoration characters include no digit (2D skins key terrain tiles by type
+- **680.** Q5: the decoration characters include no digit (2D skins key terrain tiles by type
   digits) and `.` reaches the presenter as a space, which no skin lists, so nothing is drawn
   there; without a grid the map has no layers, exactly as before.
-- **T2-70.** Q6: the placement rules `decor.test.ts` keeps: only on grass; nothing standing on or
+- **681.** Q6: the placement rules `decor.test.ts` keeps: only on grass; nothing standing on or
   beside a road or ford, within 2 cells of gold, within a cell of a building, an AI or run
   building site or a starting cell (a big tree, which covers the two cells above it, keeps those
   clear too); the standing props over 90% point-symmetric like the map. The grid was laid by
   hand-tuned noise, then edited by hand. The minimap stays terrain colours only.
-- **T2-71.** Q6: the grass patches are 32 px frames anchored at their centre so neighbours
+- **682.** Q6: the grass patches are 32 px frames anchored at their centre so neighbours
   overlap into one rounded shape, and opaque, so an overlap never darkens twice.
-- **T2-72.** Q7: `big-fight` guards the same six kit rules as `match-won` and checks both armies
+- **683.** Q7: `big-fight` guards the same six kit rules as `match-won` and checks both armies
   at 1650, 1750 and 1800; it is in the run-files, fog and decor tests and `skirmish.test.ts`'s
   run list. Blue's units still stack on 5 cells in the shot (the sim lets units share a cell);
   spreading them in the picture would be kit presentation work, left out.
-- **T2-73.** Q7: the stepped-shell test's loop bound went from 4 to 6 display frames a tick, as
+- **684.** Q7: the stepped-shell test's loop bound went from 4 to 6 display frames a tick, as
   the battle's hit-pauses hold more ticks than any other run's.
-- **T2-74.** Q8: with the split moved, the delegated siege's people stay together in the left
+- **685.** Q8: with the split moved, the delegated siege's people stay together in the left
   column (Buildings starts the right one), and the quit siege's "Captain Hale: captured by
   raiders" no longer wraps either.
-- **T2-75.** Q9: `barBorder` is exported from the UI kit and used by both HUD bars and world
+- **686.** Q9: `barBorder` is exported from the UI kit and used by both HUD bars and world
   labels, so the rule is one function for every game, not a fix in the siege's skin alone.
-- **T2-76.** Q10: `after-02` and `after-03`, first taken in Q3 and Q4, were retaken on the final
+- **687.** Q10: `after-02` and `after-03`, first taken in Q3 and Q4, were retaken on the final
   tree, so they also show Q6's scenery (and 02 Q4's panel); 05-07 came out byte for byte as Q8
   and Q9 saved them, and 08 changed only by the walls' frames.
-- **T2-77.** Q10: the new 2D check (`play.test.ts`) asks every unit type and building kind of
+- **688.** Q10: the new 2D check (`play.test.ts`) asks every unit type and building kind of
   the siege's types for a 2D `idle` look whose frames are all in `siege.txt`; it fails without
   the two new kinds.
-- **T2-78.** Q1: the build log keeps build-0.15's section order (part E, polish P, part F, part
+- **689.** Q1: the build log keeps build-0.15's section order (part E, polish P, part F, part
   D, part C ...) rather than ordering by date, as part E is the newest work and polish P overlaps
   it in time.
-- **T2-79.** Q1: in the polish P, part F and part C sections, labels build-0.15 had already
+- **690.** Q1: in the polish P, part F and part C sections, labels build-0.15 had already
   numbered were rewritten to their numbers (P-1 to P-5 as 580-584, F-16 to F-19 as 548-551); P-6
-  to P-15 and T2-43 to T2-65 keep their track labels. The summary's polish P entry takes track
+  to P-15 and T2-43 to T2-65 kept their track labels (numbered 633-642 and 643-665 at the merge
+  of polish P and Q). The summary's polish P entry takes track
   2's "done, awaiting review", with P1-P3 merged in part E (E1) and P4-P11 here.
-- **T2-80.** Q2: the bar is written "owner item 316 (b)" (FEEDBACK-LOG has item 316 with answer
+- **691.** Q2: the bar is written "owner item 316 (b)" (FEEDBACK-LOG has item 316 with answer
   b, no "316b"), and the rules name the folders that exist (`games/td-classic`,
   `kits/towerdefense`, `games/samples/tower-defense`), as there is no `games/td`.
-- **T2-81.** Q2: D1 has one before shot (tick 164), so there are eight before shots; the 2D
+- **692.** Q2: D1 has one before shot (tick 164), so there are eight before shots; the 2D
   shot opens the page with `?ui=picture` so the shared hooks can click Begin and Delegate (in 2D
   the mission screens are otherwise in the DOM bar); the flash is the skin's either way.
-- **T2-82.** Q3: the names file has two optional tables, `units` and `buildings`, so a unit's and
+- **693.** Q3: the names file has two optional tables, `units` and `buildings`, so a unit's and
   a building's name never collide; `selectedName` was changed in place (the function is
   `presentStatus`, which the task called `hudStatus`), and `trainingName` is only added with the
   `names` option, so games without names see no change.
-- **T2-83.** Q4: one panel under all three counters, not one each (separate panels would leave
+- **694.** Q4: one panel under all three counters, not one each (separate panels would leave
   about 2 px between them), opaque rather than the selected-unit panel's 0.8 so nothing shows
   through, and flat (the sheet has no framed 9-slice panel).
-- **T2-84.** Q5: the engine's 3D `decor` kind was not reused (it is only checked when a 3D skin
+- **695.** Q5: the engine's 3D `decor` kind was not reused (it is only checked when a 3D skin
   names it and has no fixed character set); a grid with no `rts-map` of its name is a fourth
   error, `missing_ref`.
-- **T2-85.** Q6: tufts, flowers, mushrooms and reeds are drawn pixel by pixel in
+- **696.** Q6: tufts, flowers, mushrooms and reeds are drawn pixel by pixel in
   `tools/ford-tiles.ts` in the pack's colours, no new source files (CREDITS.md's Use, Changed and
   sizes updated: 4 files, 320 KB). The grid was laid by an uncommitted noise script that also
   played all six runs and kept standing props off every cell a unit stands on; that path check
   (about 70 s) is not a test, only the fixed rules are.
-- **T2-86.** Q7: the CLI's screenshot has no zoom option, so the shot's zoom is the director's
+- **697.** Q7: the CLI's screenshot has no zoom option, so the shot's zoom is the director's
   0.84, not the 0.6 asked for; none was added. The run's line cells avoid every tree, bush and
   rock of the decor grid.
-- **T2-87.** Q8: the controls' place over the key hints is CSS with the key-hint panel's top
+- **698.** Q8: the controls' place over the key hints is CSS with the key-hint panel's top
   hardcoded as picture y 166 from `three.json`; if that HUD panel moves, the `index.html` comment
   and the page test's `KEY_HINTS` box must move with it.
-- **T2-88.** Q9: no skin-validation error for bordered bars under 3 px, as the UI kit's fallback
+- **699.** Q9: no skin-validation error for bordered bars under 3 px, as the UI kit's fallback
   covers them; the 3 px bar labels are a small look change for every hurt unit's bar in 3D.
 
 ### Outstanding issues
 
-- **The owner's review of polish Q**: the sixteen shots above and decisions Q-1 to Q-11 and
-  T2-66 to T2-88, with part D's playtest and screenshot review (items 504, 505).
+- **The owner's review of polish Q** (item 701): the sixteen shots above and decisions 666-676
+  and 677-699, with part D's playtest and screenshot review (items 504, 505).
 - The River Ford's selected-unit panel is 80% opaque (`alpha: 0.8`), so the new scenery shows
   faintly through it (01, 03, 04, bottom left); making it opaque like the bar's panel is a
   one-line skin change, left as it would change every 0.16-D shot with a selection.
-- In the big fight blue's soldiers stand in a few stacks (five cells for twenty units; T2-72).
+- In the big fight blue's soldiers stand in a few stacks (five cells for twenty units; 683).
 - On the 2D siege page the battle's opening camera puts the hall's north wall and tower on the
   picture's top row, under the HUD's counters (08); the HUD has no panel there.
 - 3D frames on hardware WebGL are still not measured (item 75); the 3D shots use SwiftShader.
+
+### The merge into engine/build-0.15 (polish P and Q)
+
+Track 2's head `b089f29` (polish P's P4-P11 and its release review, and polish Q's Q1-Q10) was
+merged into the build branch at `e97e523` (part E's finalize) with a merge commit, no rebase.
+Track 2's Q1 had already merged build-0.15 up to part E's finalize base, so git merged every
+file without a conflict, `docs/BUILD-LOG.md`, `docs/ROADMAP.md`, `llms.txt` and `docs/modules/`
+included; `docs/FEEDBACK-LOG.md` is build-0.15's (the track never changed it). The lockfile did
+not change.
+
+**Numbering.** Every track label still unnumbered became a feedback item from 633 on and was
+copied into FEEDBACK-LOG.md with its full text; the labels were replaced by their numbers in
+this log and the roadmap (and `F-15` in `engine/backends/three/decor.test.ts`'s comment by
+item 547). Two owner reviews were added after them:
+
+| Track labels       | Items   | Rule                                  |
+| ------------------ | ------- | ------------------------------------- |
+| `P-6` to `P-15`    | 633-642 | `P-n` is item 627+n                   |
+| `T2-43` to `T2-65` | 643-665 | `T2-n` is item 600+n                  |
+| `Q-1` to `Q-11`    | 666-676 | `Q-n` is item 665+n                   |
+| `T2-66` to `T2-88` | 677-699 | `T2-n` is item 611+n                  |
+| (new)              | 700-701 | polish P's and Q's screenshot reviews |
+
+The owner questions are 584 (polish P's `P-5`: the smooth, dithered light or the stepped look)
+and 633 (`P-6`: the warm mission-open flash; 675, Q9, made the 2D flash match the 3D warm wash).
+Next unused: 702.
+
+No golden hash moved in the merge. On the merged and renumbered tree `pnpm lint`, `pnpm
+typecheck`, `pnpm docs:check`, `pnpm build` and `pnpm test` pass (318 files, 4027 passed, 1
+skipped); all 92 run files (`git ls-files '*.run.json'`) exit 0 through `pnpm -s cli run`;
+`pnpm -s cli validate` passes for every game folder; `pnpm -s cli mutants` exits 0 for
+`games/samples/rts-skirmish`, `games/samples/dungeon` and `games/samples/mini-siege`.
 
 ## Engine 0.16 part E
 
@@ -965,13 +1004,13 @@ owner's playtest.
   picture size and moves an entity's name and bar as one box; the 3D scene and the shared 2D walk
   (Canvas2D, PixiJS) pass it.
 - **P7, F2 and F3, the mini siege's page:** while a round shows, the pause, 2D and sound controls
-  stand in one narrow column in the picture's bottom-right margin, clear of the round (P-7); the
-  `mission-open` flash is a warm, low-alpha event flash instead of a full-white picture (P-6).
+  stand in one narrow column in the picture's bottom-right margin, clear of the round (634); the
+  `mission-open` flash is a warm, low-alpha event flash instead of a full-white picture (633).
 - **P8, F4, plurals:** `engine/core/plural.ts` (`plural`, `countText`) for the results' losses
-  and the mission card's foes: "4 raiders", "2 soldiers" (P-8).
+  and the mission card's foes: "4 raiders", "2 soldiers" (635).
 - **P9, F5, the skirt at dawn:** the skirt copies the material of the map's most common tile's
   model (`skirtMaterial`) in its own colour, so it takes the same light as the map at every hour
-  (P-9).
+  (636).
 - **P10, F6, fuller siege fields:** the village, dawn and ridge decor grids dressed round the
   battle rows (a fenced corn plot north of the corridor, hay bales, flowers, grass, bushes, small
   rocks, stumps and trees on the banks and field edges), two new legend entries (`v` flowers,
@@ -986,7 +1025,7 @@ owner's playtest.
   table steps are kept by radius and the centre's place in it (reused when a light moves by whole
   pixels or dims in place), recent stamps are kept by their inputs (a steady light gets the same
   stamp every frame; Canvas2D keeps its coloured image data and PixiJS skips the rewrite and the
-  upload), and with a dither a light's radius is whole and its flicker steps (P-15). A rough time
+  upload), and with a dither a light's radius is whole and its flicker steps (642). A rough time
   budget test runs 240 frames of the crypt's lights in well under a second (about 10 s before).
 
 ### How to try it
@@ -1048,7 +1087,7 @@ What each pair shows (`before-<nn>` / `after-<nn>`):
 | `12-fortify-round-controls.png`  | F2   | The page's walls round mid-wave: the pause, 2D and sound controls over the round's bottom panel         | The controls in one column in the bottom-right margin, clear of the panel and the field                       |
 | `13-sabotage-round-controls.png` | F2   | The page's sabotage room mid-round: the controls over the room's progress bar and bottom wall           | The progress bar and bottom wall whole, the controls in the right margin                                      |
 | `14-mission-open-flash.png`      | F3   | The page at the first loop step of world tick 41 after Delegate at 40: the 3D picture all white         | The same step: the siege readable under a faint warm wash                                                     |
-| `15-results-losses.png`          | F4   | The page's siege results at 260: "Raiders: 4 raider, ram, Grell, Vosk", "Village: 2 soldier"            | "Raiders: 4 raiders, ram, Grell, Vosk", "Village: 2 soldiers" (the wider panel, P-8)                          |
+| `15-results-losses.png`          | F4   | The page's siege results at 260: "Raiders: 4 raider, ram, Grell, Vosk", "Village: 2 soldier"            | "Raiders: 4 raiders, ram, Grell, Vosk", "Village: 2 soldiers" (the wider panel, 635)                          |
 
 ### Commands
 
@@ -1102,9 +1141,9 @@ Checked against "0.16 polish P: parts C and F review notes" in the roadmap.
   layout and presenter tests in all three backends.
 - **F2, the page's controls do not cover a round's picture: met.** After shots 12 and 13; the
   page test checks the boxes at 640x520 and 960x540.
-- **F3, the mission-open flash no longer whites out the picture: met.** After shot 14 (P-6).
-- **F4, the losses use plurals: met.** After shot 15 (P-8).
-- **F5, at dawn the skirt matches the map's light: met.** After shot 11 (P-9's measurements).
+- **F3, the mission-open flash no longer whites out the picture: met.** After shot 14 (633).
+- **F4, the losses use plurals: met.** After shot 15 (635).
+- **F5, at dawn the skirt matches the map's light: met.** After shot 11 (636's measurements).
 - **F6, fuller fields from decor data, no hash moved: met.** After shot 10 (and 09, 14).
 - **Before and after shots side by side, and the checks pass: met** (the tables above, the
   finalize pass below).
@@ -1127,8 +1166,9 @@ run`; `pnpm -s cli mutants games/samples/dungeon` and `games/samples/mini-siege`
 ### Build decisions to review (polish P)
 
 Labelled `P-1` to `P-5` on the track; the merge into `engine/build-0.15` (Engine 0.16 part E, E1)
-copied them into FEEDBACK-LOG.md as items 580-584 (`P-n` is item 579+n); P-6 to P-15, built after that merge, keep their `P-n` labels until the
-next numbering. The merge itself is described under part F
+copied them into FEEDBACK-LOG.md as items 580-584 (`P-n` is item 579+n); `P-6` to `P-15`, built
+after that merge, were numbered 633-642 (`P-n` is item 627+n) at the merge of polish P and Q
+([below polish Q](#the-merge-into-enginebuild-015-polish-p-and-q)). The first merge is described under part F
 ([The merge into engine/build-0.15 (Engine 0.16 part E, E1)](#the-merge-into-enginebuild-015-engine-016-part-e-e1)).
 
 - **580.** The dawn skirt's before shot is a page shot, not a CLI one:
@@ -1155,20 +1195,20 @@ next numbering. The merge itself is described under part F
   the radius than the banded one (a band kept its inner edge's value), so the rooms read a little
   darker at their edges; no radius was changed. The fx lab's night level keeps its smooth,
   undithered falloff (it had no bands and shows no rings).
-- **P-6.** F3: the 3D skin's `mission-open` keeps its `launch` sound and swaps the full-white
+- **633.** F3: the 3D skin's `mission-open` keeps its `launch` sound and swaps the full-white
   two-tick `effect` flash for an event `flash` (`#fce0a8`, a warm cream, at alpha 0.25 fading
   linearly over 18 presentation frames, three world ticks on the page): kept rather than dropped,
   so opening a mission still reads as a beat, but the picture stays readable under it.
   Reduced flashing skips it as it skips every flash. The 2D skin (`canvas2d.json`) keeps its
   white two-tick flash (the task names the 3D picture only).
-- **P-7.** F2: the controls' rule stays in the page's CSS, not the shell: the shell already marks
+- **634.** F2: the controls' rule stays in the page's CSS, not the shell: the shell already marks
   a round on its 2D layer (`body[data-round='layer']`) and places its controls top right by
   default; the bottom-centre placement they move away from is the mini siege's own. While a
   round shows, the controls stand in one narrow column in the bottom-right corner (pause, 2D, the
   sound button over an upright slider), about 52 px wide, so they fit the picture's side margin
   beside the 256 px round (a tenth of the picture's width) on windows down to 640 px wide; the
   page test checks the boxes at 640x520 and at a 16:9 960x540.
-- **P-8.** F4: counted units take English plurals from a small pure helper,
+- **635.** F4: counted units take English plurals from a small pure helper,
   `engine/core/plural.ts` (`plural`: + s, consonant + y -> ies, s/x/ch/sh -> es; `countText(n,
 word, plural?)`), used by `lossText` and so by the mission card's foes. No unit type in any game
   needs another plural (soldier, raider, worker, captain, engine, ram, hero, catapult, archer), so
@@ -1179,7 +1219,7 @@ word, plural?)`), used by `lossText` and so by the mission card's foes. No unit 
   The delegated siege's longer line still wraps `Vosk` as before. After shot:
   `after-15-results-losses.png` (P11 retakes it with the rest). No text with the counts is in a
   run file, golden hash or save code.
-- **P-9.** F5: the cause was the material, not the light: the Kenney nature kit's ground tiles
+- **636.** F5: the cause was the material, not the light: the Kenney nature kit's ground tiles
   (`ground_grass.glb`, `ground_pathOpen.glb`) are glTF rough metals (`metallicFactor` 1, roughness
   1), which in three.js take no ambient or hemisphere light, only the sun; the skirt was Lambert
   (all diffuse), so at dawn and night, when the sun is weak and the ambient and hemisphere carry
@@ -1193,31 +1233,31 @@ word, plural?)`), used by `lossText` and so by the mission card's foes. No unit 
   against (17, 30, 1) after; the afternoon (15:10) goes from (93, 128, 30) against (100, 133, 32)
   to (92, 127, 30) against (95, 129, 30), within the grass's own `vary.tint`. Both looked at full
   size: no step at the edge. P11 retakes `after-11-dawn-skirt.png` with the rest.
-- **P-10.** P4: the top-down kit's decoration is its own optional grid file per room
+- **637.** P4: the top-down kit's decoration is its own optional grid file per room
   (`rooms/<id>.decor.txt`, the room's size, `.` for nothing and `DECOR_CHARS` for props), not
   more characters in the map grid, so a room's rules and its dressing never share a cell's
   meaning; it is presentation only (the map layer `decor`, not in the room's `version`), so
   dressing a room never moves a hash.
-- **P-11.** P5: one theme per room (the courtyard's moss and rubble, the guard room's weapon
+- **638.** P5: one theme per room (the courtyard's moss and rubble, the guard room's weapon
   racks and blood, the ossuary's skull piles, and so on), drawn with new original `dec-*` frames
   at the end of `crypt-art.txt` or the pack's banners; the moss greens reuse three near-unused
   palette slots so the palette keeps its 32 colours. The skulls and banners that were placed
   lights without light (item 439) moved into the grids; one faint cold glow lights the chasm's
   pits. Only flat decals on walkable floor, none on a cell any run walks.
-- **P-12.** P6 (M45): a label that would run past the picture's edge is moved inside it (2 px
+- **639.** P6 (M45): a label that would run past the picture's edge is moved inside it (2 px
   margin), not hidden or shortened; an entity's name and bar move together as one box, and the
   3D scene's labels and place names are still checked against the HUD panels after the move.
-- **P-13.** P10: the fields are dressed with the models the skin already loads (no new pack, no
+- **640.** P10: the fields are dressed with the models the skin already loads (no new pack, no
   new model): 166 to 199 more decor instances per scenario (489, 486 and 519 to 667,
   685 and 685), two new legend entries (`v` flowers,
   `z` hay) and a stump size range. At the page's camera (pitch 60, zoom 0.42) most of the new
   props are small, so the fields read as fuller grass rather than as new landmarks; larger
   landmarks would need new models (owner call).
-- **P-14.** P11: the after shots were retaken with P2's commands; nothing looked wrong enough in
+- **641.** P11: the after shots were retaken with P2's commands; nothing looked wrong enough in
   them to fix in P11. What they still show that is outside polish P's scope is listed under
   outstanding issues below rather than changed.
 
-- **P-15.** Release review fix: with a skin's `dither`, `SkinLighting.layout` rounds each light's
+- **642.** Release review fix: with a skin's `dither`, `SkinLighting.layout` rounds each light's
   radius to whole pixels and steps a flicker's noise to quarters (`LIGHT_DITHER_FLICKER_STEPS`,
   nine values from -1 to 1), so a flickering torch repeats a few falloffs that `ditheredRadial`
   keeps instead of a new one every frame; the torches now flicker in small steps, which suits the
@@ -1225,19 +1265,19 @@ word, plural?)`), used by `lossText` and so by the mission card's foes. No unit 
   lands one alpha step off the exact per-pixel value; both backends still draw the same bytes.
   Smooth and banded lighting (no `dither`) are unchanged.
 
-Questions for the owner (answer by number once numbered into FEEDBACK-LOG.md):
+Questions for the owner (answer by number):
 
 - On **584** (item 436 revisited): keep the smooth, dithered falloff, or bring back item 436's
   stepped look with soft edges (`bands` with `dither`)?
-- On **P-6** (the flash): keep the warm, low-alpha `mission-open` flash, dim it further, or drop
+- On **633** (the flash): keep the warm, low-alpha `mission-open` flash, dim it further, or drop
   it (and should the 2D skin's white flash follow)?
 
 ### Deviations from the roadmap
 
 - The roadmap had no polish P section when the polish started; P2 wrote it from the task's item
   list, with a last Done when item for the before and after shots and the full checks.
-- F5 is fixed in the skirt's material, not by matching its colour per time of day (P-9).
-- F4 also widens the wide results panel from 304 to 312 px so the longer losses line fits (P-8),
+- F5 is fixed in the skirt's material, not by matching its colour per time of day (636).
+- F4 also widens the wide results panel from 304 to 312 px so the longer losses line fits (635),
   a shell layout change beyond the plural text.
 - C2's shots cover all eight rooms, not four (583).
 - The rule "`games/rts` and `games/rts-classic` are not touched" holds trivially: neither folder
@@ -1246,78 +1286,79 @@ Questions for the owner (answer by number once numbered into FEEDBACK-LOG.md):
 ### Build decisions to review (track 2)
 
 Smaller choices the P1-P11 builders and the release review made, for the owner to check;
-labelled after T2-42 and, like the `P-n` items, to be numbered into FEEDBACK-LOG.md at merge.
-Those already covered by a `P-n` item are not repeated.
+labelled `T2-43` to `T2-65` on the track and copied into FEEDBACK-LOG.md at the merge of polish
+P and Q as items 643-665 (`T2-n` is item 600+n). Those already covered by an item in 580-584 or
+633-642 are not repeated.
 
-- **T2-43.** The 2D presenter draws the light map before the world labels, so the darkness dims
+- **643.** The 2D presenter draws the light map before the world labels, so the darkness dims
   the world but not the F8 labels (names, bars) over it.
-- **T2-44.** P1's merge of the skin schema: `labels` is no longer 3D-only (F8 made it work in
+- **644.** P1's merge of the skin schema: `labels` is no longer 3D-only (F8 made it work in
   2D); part B's `scenery` is 3D-only; `join` stays a sprite field (part B allows it in 3D).
-- **T2-45.** P1's merge kept track 1's 30 s global `testTimeout` over track 2's 20 s (T2-41), the
+- **645.** P1's merge kept track 1's 30 s global `testTimeout` over track 2's 20 s (578), the
   larger of the two, so both suites' slow tests fit.
-- **T2-46.** P1 regenerated `docs/reference/schemas.md` with `pnpm docs:gen` rather than merging
+- **646.** P1 regenerated `docs/reference/schemas.md` with `pnpm docs:gen` rather than merging
   it by hand, since it is generated from the schemas.
-- **T2-47.** P1's merge of this log: the header names parts A (with A2), B, C and F; the summary
+- **647.** P1's merge of this log: the header names parts A (with A2), B, C and F; the summary
   keeps part F's "built, awaiting review" line; the samples table takes track 1's rows plus the
   3D mini siege's. The `F-n`, `T2-n` and `P-n` items stay unnumbered for the orchestrator.
-- **T2-48.** The shots are numbered 01 to 15 in one sequence (the dungeon 01-08, the siege's CLI
+- **648.** The shots are numbered 01 to 15 in one sequence (the dungeon 01-08, the siege's CLI
   shots 09-10, the page shots 11-15), not grouped by item; the tables map each to its item.
-- **T2-49.** The F3 shot shows the old white flash lasting 12 loop steps (world ticks 41 and 42),
+- **649.** The F3 shot shows the old white flash lasting 12 loop steps (world ticks 41 and 42),
   which matches the roadmap's "two world ticks" rather than part F's "one frame" note.
-- **T2-50.** The dithered fill is an optional `dither` on the core `RadialFill`; both backends
+- **650.** The dithered fill is an optional `dither` on the core `RadialFill`; both backends
   draw the same alpha bytes from `ditheredRadial`, dithered by absolute picture position so
   overlapping lights line up. PixiJS keeps one buffer texture per dithered fill and rewrites it,
   so a flickering light makes no new GPU texture; its gradient builder now uses the core
   `stopsAlpha`.
-- **T2-51.** Without `dither`, `lightStops` is unchanged (8 stops), so the fx lab and every other
+- **651.** Without `dither`, `lightStops` is unchanged (8 stops), so the fx lab and every other
   skin draw exactly as before.
-- **T2-52.** Empty decor cells reach the presenter as spaces, not `.` (the platformer sends its
+- **652.** Empty decor cells reach the presenter as spaces, not `.` (the platformer sends its
   decor grid as written): top-down skins map `.` to the floor tile, which would redraw floor over
   walls and doors.
-- **T2-53.** Decor characters may not clash with the kit's `LEGEND` or the presented tiles
+- **653.** Decor characters may not clash with the kit's `LEGEND` or the presented tiles
   (`PRESENT_TILES`, adding `d`); a game's own `extraLegend` is not excluded, as it never reaches
   the presented tiles. One fixed set keeps the docs simple.
-- **T2-54.** A wrongly sized or malformed decor grid is reported alongside the room's own map
+- **654.** A wrongly sized or malformed decor grid is reported alongside the room's own map
   errors, not instead of them; `docs/reference/examples/room.decor.txt` was added because
   `pnpm docs:gen` needs an example for every grid part.
-- **T2-55.** The crypt's moss greens reuse palette slots 10, 11 and 15 so the palette keeps 32
+- **655.** The crypt's moss greens reuse palette slots 10, 11 and 15 so the palette keeps 32
   colours (`edit.test.ts` expects a 33rd at index 32): two door-frame pixels became `#222222` and
   one statue shade moved to its near twin, index 14. The `dec-*` frames are original (the pack has
   no cobwebs, chains, bones, moss, puddles or blood) and live in `crypt-art.txt`, not a new sprite
   file, since `dungeon.test.ts` lists the content ids.
-- **T2-56.** Moving the chasm's lightless skull and banner "lights" into its decor grid left it
+- **656.** Moving the chasm's lightless skull and banner "lights" into its decor grid left it
   two lights, under `dungeon.test.ts`'s minimum of three, so a real faint cold glow over the pits
   was added (radius 64, `#5fcde4`, intensity 0.3).
-- **T2-57.** Crypt placement rules: wall props only on the top wall, off doors and torch columns;
+- **657.** Crypt placement rules: wall props only on the top wall, off doors and torch columns;
   no solid-looking props anywhere; floor decals never under the HUD panel or on a cell the hero's
   box covers in any run (one ossuary and one warden-hall skull moved for this); rubble sits by the
   store room's cracked wall on purpose; in the warden hall two banners by the right wall stay
   visible under the boss bar.
-- **T2-58.** A label box wider or taller than the picture starts at the left or top margin, so
+- **658.** A label box wider or taller than the picture starts at the left or top margin, so
   the start of the text shows.
-- **T2-59.** F2's page test uses a fixed round box (picture x 32 to 288, full height) and also
+- **659.** F2's page test uses a fixed round box (picture x 32 to 288, full height) and also
   checks a 16:9 960x540 window, saving an extra shot `mini-siege-page-walls-16x9` when
   `WW_SHOTS_DIR` is set. The sound slider stands upright during a round (still 0-100).
-- **T2-60.** The sim's refusal "cannot afford 2 soldier" (`engine/sim/economy.ts`) keeps its
+- **660.** The sim's refusal "cannot afford 2 soldier" (`engine/sim/economy.ts`) keeps its
   singular wording: it is a sim refusal message, not results or mission text.
-- **T2-61.** The skirt's material copy drops the floor model's texture and vertex colours (its
+- **661.** The skirt's material copy drops the floor model's texture and vertex colours (its
   colour is the skirt colour); the floor is the most common tile key in the base grid.
-- **T2-62.** P9 made `tests/browser/mini-siege-page.test.ts` wait two animation frames after
+- **662.** P9 made `tests/browser/mini-siege-page.test.ts` wait two animation frames after
   resizing to 640x520, because that P7 test failed with and without P9's change.
-- **T2-63.** No decor at all on the siege's battle rows (rows 12-19, columns 13-44), not even
+- **663.** No decor at all on the siege's battle rows (rows 12-19, columns 13-44), not even
   flowers, so that strip stays bare grass while the mockup has flowers there; adding some is a
   data-only change. Roads, starting cells, rock, the river and the castle ring stay clear too.
-- **T2-64.** The siege fields were scattered once by a throwaway seeded script kept out of the
+- **664.** The siege fields were scattered once by a throwaway seeded script kept out of the
   repo, then the corn plot and hay bales placed by hand; the grids are plain text to edit by
   hand. New legend characters `v` and `z` were added rather than enlarging `g` and `b`, which
   would have changed every place already using them. The 2D siege skins have no decor and are
   unchanged.
-- **T2-65.** `after-15-results-losses.png` from P8 was replaced by P11's retake; the summary has
+- **665.** `after-15-results-losses.png` from P8 was replaced by P11's retake; the summary has
   no table, so polish P went into its state list and open items instead.
 
 ### Outstanding issues
 
-- **The owner's review of polish P**: the thirty shots above, with part F's playtest and
+- **The owner's review of polish P** (item 700): the thirty shots above, with part F's playtest and
   screenshot review (item 553) and part C's (items 455, 456).
 - The results' losses still wrap "Vosk" onto its own line in the left column (15, before and
   after). Fixed in polish Q (P1, Q8).
@@ -1329,7 +1370,7 @@ Those already covered by a `P-n` item are not repeated.
 - The bat hall stays a mostly dark room (08): its new dressing shows only in the torch's and the
   key's reach, as the room's darkness is meant.
 - The mini siege's 2D skin (`canvas2d.json`, `?backend=canvas2d`) keeps its white two-tick
-  `mission-open` flash (P-6). Fixed in polish Q (P4, Q9).
+  `mission-open` flash (633). Fixed in polish Q (P4, Q9).
 - 3D frames on hardware WebGL are still not measured (item 75); the 3D shots use SwiftShader.
 
 ## Engine 0.16 part F: the mini siege in 3D low-poly
@@ -1506,16 +1547,16 @@ Checked against "0.16 part F: the mini siege in 3D low-poly" in the roadmap.
 ### Outstanding issues
 
 - **M45**: a world label whose anchor is in the picture but whose box runs past its edge was cut
-  at the edge. **Fixed in polish P** (P6: labels are moved inside the picture; P-12).
+  at the edge. **Fixed in polish P** (P6: labels are moved inside the picture; 639).
 - The page's controls (pause, 2D, sound) sat at the bottom centre over a round's picture (the
   room's bar, the walls' panel). **Fixed in polish P** (P7: one column in the picture's
-  bottom-right margin while a round shows; P-7).
+  bottom-right margin while a round shows; 634).
 - The `mission-open` flash (`three.json`'s events, `#fcfcfc` for 2 ticks) whited out the whole
-  3D picture after Delegate. **Fixed in polish P** (P7: a warm, low-alpha flash; P-6).
+  3D picture after Delegate. **Fixed in polish P** (P7: a warm, low-alpha flash; 633).
 - The results' losses had no plurals ("4 raider", "2 soldier"). **Fixed in polish P** (P8:
-  "4 raiders", "2 soldiers"; P-8).
+  "4 raiders", "2 soldiers"; 635).
 - At dawn the skirt (`scene3d.skirt`) was lighter than the darkened map past its bottom-right
-  edge. **Fixed in polish P** (P9: the skirt takes the map's tile material; P-9).
+  edge. **Fixed in polish P** (P9: the skirt takes the map's tile material; 636).
 - The plain grass between the village, the river and the camp: **fuller in polish P** (P10,
   from the decor grids).
 - The look against the mockup (the HUD's pixel fonts, the flatter camera, the plainer grass)
@@ -1577,7 +1618,7 @@ E1) copied them into FEEDBACK-LOG.md as items 533-554 (`F-n` is item 532+n).
   of the time of day were lightened so the dawn's start reads (gaps M43, M44; F9).
 - **550.** M45 (labels cut at the picture's edge) was left open for the owner's review (F9).
   Since fixed in polish P, with the controls over the rounds, the flash, the plurals and the
-  skirt (P6-P9; decisions P-6 to P-9 and P-12).
+  skirt (P6-P9; decisions 633-636 and 639).
 - **551.** The F10 screenshots were taken with a scratch script on `tests/browser/serve.ts` and
   the page's hooks, not a committed tool; the page test's `WW_SHOTS_DIR` shoots the same screens
   at 640x520.
@@ -2217,7 +2258,7 @@ only the build log and the feedback log changed.
 - From part B: the owner's playtest and screenshot review (393, 394), which parts C-F wait for,
   and the looks recorded there (398, 399).
 - From the orchestrator's review: the lights' hard rings (436's banding) and the bare rooms.
-  **Fixed in polish P** (P3, P5; decisions 584, P-10 and P-11).
+  **Fixed in polish P** (P3, P5; decisions 584, 637 and 638).
 
 ## Engine 0.16 part B
 

@@ -449,7 +449,7 @@ describe('the whole campaign in 3D: skirt and labels clear of the HUD (Engine 0.
     const [view] = views([]);
     expect(view!.text).toBe('THE HALL');
     expect([view!.box.x, view!.box.y]).toEqual([LABEL_EDGE_MARGIN, LABEL_EDGE_MARGIN]);
-    // Clamped into the top band, the name would cover a panel there, so it is left out (F-15).
+    // Clamped into the top band, the name would cover a panel there, so it is left out (item 547).
     expect(views([{ as: 'panel', x: 0, y: 0, w: 320, h: 20, color: '#000000' }])).toEqual([]);
     expect(views([{ as: 'panel', x: 0, y: 160, w: 320, h: 20, color: '#000000' }])).toHaveLength(1);
   });
