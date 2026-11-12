@@ -38,7 +38,9 @@ function pattern(view: RtsView): string[] {
 describe('RTS map decoration never changes the state', () => {
   it('finds the rts-classic and rts-skirmish runs', () => {
     expect(runFiles).toContain('games/rts-classic/runs/battle.run.json');
-    expect(runFiles.length).toBe(11);
+    // Five of rts-classic's, seven of the skirmish's (polish Q, Q7 added `big-fight`).
+    expect(runFiles).toContain('games/samples/rts-skirmish/runs/big-fight.run.json');
+    expect(runFiles.length).toBe(12);
   });
 
   it.each(runFiles)('%s: the same hashes with a decorated map', async (file) => {

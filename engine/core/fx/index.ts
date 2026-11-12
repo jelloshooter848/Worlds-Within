@@ -92,6 +92,7 @@ export {
   CameraFx,
   FLASH_DEFAULT_COLOR,
   flashAlpha,
+  FX_ZOOM_MAX,
   shakeStrength,
   zoomFactor,
   zoomLength,

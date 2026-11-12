@@ -148,7 +148,8 @@ AI's knowledge only: no world rule reads it.
   the map (over 90%). Laid out by hand-tuned noise: forest and boulders thick at the map's
   edges and round the rock outcrops between the bases, darker patches and flower meadows in the
   open, light by the roads, reeds on both banks, the fords bare; and clear of every cell a
-  unit stands on in the six runs (played in full when it was laid). To change it, edit the
+  unit stands on in the six runs (played in full when it was laid; Q7's `big-fight` lines stand
+  clear of standing props too). To change it, edit the
   grid; keep the tests green and look at it (`pnpm -s cli screenshot ... --scale 4`).
 - Art (Engine 0.16 part D, D7): the CC0 pack in `assets/kenney-medieval-rts/` (below) for the
   units, buildings, ground and props, and the text sheet `content/sprites/skirmish.txt` (palette
@@ -378,22 +379,25 @@ it: re-record the run files (below).
 
 The 0.15 runs (`battle`, `commands`, `hold`, `economy`, `lost`) were removed in D8; they live on,
 unchanged, in `games/rts-classic`. D8's runs are short guards of the AI and the interface; D9 added
-the ten-minute win and loss.
+the ten-minute win and loss; polish Q (Q7) added `big-fight`, a scripted battle for the
+zoomed-out review shot (no rule, type or plan changed).
 
-| run           | ticks | what happens                                                                                                                                                                                                                                                                                                 | guards                         |
-| ------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| `opening`     | 200   | the opening economy: a box over red's workers sends them to the northern gold (5), a click on the town centre and Train worker; gold 200 to 270, four workers                                                                                                                                                | gathers, the three enemy rules |
-| `ai-barracks` | 400   | no orders: blue gathers, its sentry scouts red's home box (19,17; 19,11; 13,11; 7,11; 7,17) and finds the town centre at 209, then rallies home; blue's barracks (22) is placed by 110 and done by 130; three soldiers by 400                                                                                | the three enemy rules          |
-| `fog`         | 480   | the hero walks to 40,8, near blue's base but out of its sight: by 420 blue has three idle soldiers and has not attacked him; he steps into sight (46,17), a box there selects only him, he attacks soldier 17, `defend` fires at 439, he falls                                                               | all six but gathers            |
-| `razed`       | 160   | a worker places a barracks site (20) on the scout's first cell (18,16) and stops; the sentry finds it at 69 and razes it at 80 (hp 1); blue forgets it and scouts on                                                                                                                                         | the three enemy rules          |
-| `match-won`   | 5900  | D9, a reasonable player: the opening through the interface, nine workers, two barracks, soldiers and archers held at a rally point (13,19) that fight what comes within 14 cells, all three waves and the push beaten at home, the army over the centre ford at 5700, blue's town centre down at 5803 (9:40) | all six                        |
-| `match-lost`  | 5700  | D9, a careless player: six workers, one barracks late (900), eight soldiers, the hero off to the far gold, the soldiers thrown at blue's town centre at 4600; the push takes red's town centre at 5681 (9:28) with seven units still standing                                                                | all six                        |
+| run           | ticks | what happens                                                                                                                                                                                                                                                                                                                                    | guards                         |
+| ------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `opening`     | 200   | the opening economy: a box over red's workers sends them to the northern gold (5), a click on the town centre and Train worker; gold 200 to 270, four workers                                                                                                                                                                                   | gathers, the three enemy rules |
+| `ai-barracks` | 400   | no orders: blue gathers, its sentry scouts red's home box (19,17; 19,11; 13,11; 7,11; 7,17) and finds the town centre at 209, then rallies home; blue's barracks (22) is placed by 110 and done by 130; three soldiers by 400                                                                                                                   | the three enemy rules          |
+| `fog`         | 480   | the hero walks to 40,8, near blue's base but out of its sight: by 420 blue has three idle soldiers and has not attacked him; he steps into sight (46,17), a box there selects only him, he attacks soldier 17, `defend` fires at 439, he falls                                                                                                  | all six but gathers            |
+| `razed`       | 160   | a worker places a barracks site (20) on the scout's first cell (18,16) and stops; the sentry finds it at 69 and razes it at 80 (hp 1); blue forgets it and scouts on                                                                                                                                                                            | the three enemy rules          |
+| `match-won`   | 5900  | D9, a reasonable player: the opening through the interface, nine workers, two barracks, soldiers and archers held at a rally point (13,19) that fight what comes within 14 cells, all three waves and the push beaten at home, the army over the centre ford at 5700, blue's town centre down at 5803 (9:40)                                    | all six                        |
+| `match-lost`  | 5700  | D9, a careless player: six workers, one barracks late (900), eight soldiers, the hero off to the far gold, the soldiers thrown at blue's town centre at 4600; the push takes red's town centre at 5681 (9:28) with seven units still standing                                                                                                   | all six                        |
+| `big-fight`   | 1800  | polish Q, Q7, for the review's big-fight shot: `match-won`'s orders to 1650, then red's 19 soldiers and the hero in a line at column 43 (rows 9-30) and its 9 archers at column 40, on blue's bank; blue's `defend` sends its soldiers at the line, and at 1755 each red unit attacks the nearest blue unit or building (the shot is tick 1763) | all six                        |
 
 - Every run file carries its sync `hashes` (every 20 ticks; every 100 for the two matches, D9) and
   has golden `<name>.hashes.json`; final hashes (D9, after the balance moved every one: the
   types, the map's gold and the plan's steps are in the world and the kit's snapshot):
   `opening` `5f5724b4b03cbf28`, `ai-barracks` `19b073e4e362ab13`, `fog` `606269cfac74a8bb`,
-  `razed` `bf1f52ad343cbbe3`, `match-won` `b55be4ea560a4f79`, `match-lost` `02facfba6cc041cc`.
+  `razed` `bf1f52ad343cbbe3`, `match-won` `b55be4ea560a4f79`, `match-lost` `02facfba6cc041cc`;
+  `big-fight` (Q7, hashes every 100) `261ddd7a36e67968`.
   D8's were `opening` `ba3cccd15c1aa5de`, `ai-barracks` `c5f146d0b4836da5`, `fog`
   `82fc61891e2e80b8`, `razed` `3c8ae6c8450507ff`; every assertion of the four held. Removed with the 0.15 map: `battle`
   `588fe33bb3ecfcfd`, `commands` `9f8fc0dc11549b95`, `hold` `dcf2c02f2cb6d266`, `economy`

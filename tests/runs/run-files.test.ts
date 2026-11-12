@@ -66,6 +66,10 @@ describe('run files', () => {
     expect(files).toContain('engine/sim/__fixtures__/battle.run.json');
   });
 
+  it("finds The River Ford's big fight (Engine 0.16 polish Q, Q7: match-won's opening, then both armies at blue's bank)", () => {
+    expect(files).toContain('games/samples/rts-skirmish/runs/big-fight.run.json');
+  });
+
   it.each(files)('%s passes, twice with the same hashes, matching its golden file', async (file) => {
     const first = await run(file);
     expect(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CameraFx, flashAlpha, shakeStrength, zoomFactor, zoomLength } from './camera-fx';
+import { CameraFx, flashAlpha, FX_ZOOM_MAX, shakeStrength, zoomFactor, zoomLength } from './camera-fx';
 import { HitPause } from './hit-pause';
 import { flashSpecSchema, hitPauseSpecSchema, shakeSpecSchema, zoomSpecSchema } from './schema';
 
@@ -70,6 +70,15 @@ describe('zoom punches', () => {
     fx.zoom({ to: 2, ticks: 1, hold: 5 }, 0);
     fx.zoom({ to: 1.5, ticks: 1, hold: 5 }, 0);
     expect(fx.state(2).zoom).toBe(3);
+  });
+
+  it('holds the product of many punches at once to FX_ZOOM_MAX in and out (polish Q, Q7)', () => {
+    const fx = new CameraFx();
+    for (let i = 0; i < 60; i++) fx.zoom({ to: 1.5, ticks: 1, hold: 5 }, 0);
+    expect(fx.state(2).zoom).toBe(FX_ZOOM_MAX);
+    const out = new CameraFx();
+    for (let i = 0; i < 60; i++) out.zoom({ to: 0.5, ticks: 1, hold: 5 }, 0);
+    expect(out.state(2).zoom).toBe(1 / FX_ZOOM_MAX);
   });
 });
 

@@ -78,7 +78,9 @@ kit, sides, ui }`, the kit part with the AI's memory `seen`; `view()`, `result()
   (`tests/runs/rts-skirmish-mutants.test.ts`). D9: `match-won` (5900 ticks, blue's town centre
   down at 5803) and `match-lost` (5700, red's taken at 5681), hashes every 100, opening with
   interface actions that fail every kit rule by tick 2; the presentation tests play their first
-  600 ticks (`tests/runs/view-play.ts`, `presentedRun`).
+  600 ticks (`tests/runs/view-play.ts`, `presentedRun`). Polish Q (Q7): `big-fight` (1800 ticks,
+  hashes every 100), `match-won`'s opening then both armies fighting on blue's bank, for the
+  review's zoomed-out big-fight shot (tick 1763).
 
 ## Imports allowed
 

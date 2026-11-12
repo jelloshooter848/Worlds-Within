@@ -1,0 +1,81 @@
+{
+  "run": "games/samples/rts-skirmish/runs/big-fight.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "2bcd627b4a3eda65"
+    },
+    {
+      "tick": 100,
+      "hash": "f651c3f7de3631e3"
+    },
+    {
+      "tick": 200,
+      "hash": "6edbe4b16ec1ef5a"
+    },
+    {
+      "tick": 300,
+      "hash": "384637cd829de1bd"
+    },
+    {
+      "tick": 400,
+      "hash": "6cc4846636345cf8"
+    },
+    {
+      "tick": 500,
+      "hash": "066dfdc3abd2fa2e"
+    },
+    {
+      "tick": 600,
+      "hash": "1159942c82429ce6"
+    },
+    {
+      "tick": 700,
+      "hash": "0f1b9b7ffc63b51b"
+    },
+    {
+      "tick": 800,
+      "hash": "ba25f7b09cdcbf08"
+    },
+    {
+      "tick": 900,
+      "hash": "19aed4ee3fd6e900"
+    },
+    {
+      "tick": 1000,
+      "hash": "ea7339e17cf01c14"
+    },
+    {
+      "tick": 1100,
+      "hash": "cc320312c720de1c"
+    },
+    {
+      "tick": 1200,
+      "hash": "373504aa55e759b4"
+    },
+    {
+      "tick": 1300,
+      "hash": "264baa969efc8c86"
+    },
+    {
+      "tick": 1400,
+      "hash": "bb2544e2cb09e545"
+    },
+    {
+      "tick": 1500,
+      "hash": "854649a326f0d5a2"
+    },
+    {
+      "tick": 1600,
+      "hash": "755f7eb3b31beafd"
+    },
+    {
+      "tick": 1700,
+      "hash": "e444d992b01780c7"
+    },
+    {
+      "tick": 1800,
+      "hash": "261ddd7a36e67968"
+    }
+  ]
+}

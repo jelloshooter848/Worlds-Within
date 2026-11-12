@@ -293,8 +293,55 @@ pnpm exec tsx tests/browser/siege-q-shots.ts $O before
 `tests/browser/siege-page.ts`: in 3D, Begin, Delegate at 40 and on to the results at 260 (05),
 Continue to the dawn's briefing (07), Begin and the dawn at tick 30 (06); in 2D
 (`?backend=canvas2d&ui=picture`, the mission screens in the picture so the hooks can click them),
-Begin, Delegate at 40 and the first loop step of tick 41 (08). D4's after shot may come from a
-later tick or a scripted scenario instead of 5790 (Q7); the build log will say which.
+Begin, Delegate at 40 and the first loop step of tick 41 (08). D4's after shot comes from a
+scripted scenario instead of 5790 (Q7, below).
+
+### D4: the big fight (Q7)
+
+No existing run has a real battle in the director's frame: a throwaway script (not committed)
+stepped every skirmish run headless and counted each side's units in the frame every 5 ticks; the
+best moments (`match-won` near 1860, `match-lost` near 3095) are a few soldiers at red's base
+with workers round them, and the old 5790 is red's army marching in a stack. So Q7 added a run
+file, `games/samples/rts-skirmish/runs/big-fight.run.json` (1800 ticks, seed 9, its own
+`big-fight.hashes.json`; no existing hash moved), with only the game's types, map, AI plan and end
+rule: `match-won`'s orders up to tick 1650 (so its hashes up to 1600 are `match-won`'s), then
+recorded `move` orders that stand red's 19 soldiers and the hero in a line at column 43 (rows 9-30)
+and its 9 archers at column 40 on blue's bank of the centre ford, where blue's `defend` step
+sends its soldiers at them, and at 1755 recorded `attack` orders sending each of them at the
+nearest blue unit or building. It guards the same six kit rules as `match-won` (its checks at
+ticks 1 and 2) and checks both armies at 1650, 1750 and 1800; it is in the run-files,
+fog and decor tests and `skirmish.test.ts`'s run list.
+
+The shot, tick 1763, framed by the view's director at zoom 0.84 (the fight's box; the CLI has no
+zoom option): red's line charging into blue's army on the road at 44-45, red soldiers at both
+blue barracks, blue's archers by them, red's archers behind, health bars on the hurt, the dressed
+map, the display name and the bar panel. In the picture (in the frame and seen through red's fog;
+counted by the same script), against the old 08 at 5790:
+
+| Shot                     | Red units (cells) | Red fighting | Blue units (cells) | Blue soldiers and archers   | Blue fighting |
+| ------------------------ | ----------------- | ------------ | ------------------ | --------------------------- | ------------- |
+| Old 08, `match-won` 5790 | 64 (8)            | 55           | 8 (5)              | 1                           | 1             |
+| New 08, `big-fight` 1763 | 22 (21)           | 20           | 20 (5)             | 20 (13 soldiers, 7 archers) | 16            |
+
+Red's units now stand on 21 cells, not 8, and blue's army is in the fight (20 soldiers and
+archers, not one), but blue's still stands on 5 cells: the sim lets units share a cell and
+blue's AI sends its soldiers out in groups of up to six at one target, so each group is one
+stack. Spreading stacked units in the picture would be presentation work for the kit, not this
+shot (decision in Q7's report).
+
+```sh
+R=games/samples/rts-skirmish/runs; O=docs/reports/screenshots/0.16-Q
+pnpm -s cli screenshot $R/big-fight.run.json --tick 1763 --scale 4 --out $O/after-04-big-fight.png --json
+```
+
+It is byte for byte the new 0.16-D 08 (the same sha256, `d3263b5e...`).
+
+Two fixes the run's battle needed in the presentation tests (no hash moved): with every effect on
+(`tests/runs/effects.ts`), the dozens of zoom punches on one frame (every unit's footsteps and
+hits) multiplied the effect zoom past any picture and ran `presentation-invariance.test.ts` out of
+memory, so `CameraFx` now holds the punches' product to `FX_ZOOM_MAX` (4) in and out
+(`engine/core/fx/camera-fx.ts`, with a test); and the stepped-shell test's loop bound is 6 display
+frames a tick, not 4, as the battle's hit-pauses hold more ticks than any other run's.
 
 ## Engine 0.16 part E
 
@@ -1476,18 +1523,18 @@ Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-D/`](reports/screenshots/0
 hashes matching the headless run's (`matchesHeadless: true`). The camera is the view's director
 (item 506): it frames the fight, else the run's selection, else red's units.
 
-| File                                                                                  | What it shows                                                                                                                           |
-| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| [01-title.png](reports/screenshots/0.16-D/01-title.png)                               | The title: name, subtitle, Wren and a worker against two blue soldiers, the menu over the dimmed opening                                |
-| [02-orders-and-bark.png](reports/screenshots/0.16-D/02-orders-and-bark.png)           | Tick 4: the gather marker on the northern gold, the town centre selected and training (panel and bar), the bark line "Training begins." |
-| [03-building-site.png](reports/screenshots/0.16-D/03-building-site.png)               | Tick 164: the barracks half built (the pack's fresh boards) with its progress bar, two workers building, Wren back from the scout       |
-| [04-fog-and-minimap.png](reports/screenshots/0.16-D/04-fog-and-minimap.png)           | `fog`, tick 420: Wren alone on blue's bank, the explored road behind him dimmed, unexplored dark, the minimap's explored trail          |
-| [05-attack-marker-path.png](reports/screenshots/0.16-D/05-attack-marker-path.png)     | `fog`, tick 436: the attack marker on the sentry, Wren's path dots, "To arms!", the Wren panel                                          |
-| [06-wave-from-the-ford.png](reports/screenshots/0.16-D/06-wave-from-the-ford.png)     | `match-lost`, tick 4270: the AI's third wave on the road from the centre ford, met by red's first soldier                               |
-| [07-defending-home.png](reports/screenshots/0.16-D/07-defending-home.png)             | `match-won`, tick 4535: red's army and barracks holding the third wave at home, health bars on the hurt                                 |
-| [08-big-fight-zoomed-out.png](reports/screenshots/0.16-D/08-big-fight-zoomed-out.png) | `match-won`, tick 5790, zoomed out (about 0.6): red's assault on blue's town centre across the centre ford, a raider at home            |
-| [09-victory.png](reports/screenshots/0.16-D/09-victory.png)                           | `match-won`, tick 5806: blue's town centre down, the gold tint and the VICTORY banner                                                   |
-| [10-defeat.png](reports/screenshots/0.16-D/10-defeat.png)                             | `match-lost`, tick 5690: red's town centre taken by the push, the red tint and the DEFEAT banner                                        |
+| File                                                                                  | What it shows                                                                                                                                                     |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [01-title.png](reports/screenshots/0.16-D/01-title.png)                               | The title: name, subtitle, Wren and a worker against two blue soldiers, the menu over the dimmed opening                                                          |
+| [02-orders-and-bark.png](reports/screenshots/0.16-D/02-orders-and-bark.png)           | Tick 4: the gather marker on the northern gold, the town centre selected and training (panel and bar), the bark line "Training begins."                           |
+| [03-building-site.png](reports/screenshots/0.16-D/03-building-site.png)               | Tick 164: the barracks half built (the pack's fresh boards) with its progress bar, two workers building, Wren back from the scout                                 |
+| [04-fog-and-minimap.png](reports/screenshots/0.16-D/04-fog-and-minimap.png)           | `fog`, tick 420: Wren alone on blue's bank, the explored road behind him dimmed, unexplored dark, the minimap's explored trail                                    |
+| [05-attack-marker-path.png](reports/screenshots/0.16-D/05-attack-marker-path.png)     | `fog`, tick 436: the attack marker on the sentry, Wren's path dots, "To arms!", the Wren panel                                                                    |
+| [06-wave-from-the-ford.png](reports/screenshots/0.16-D/06-wave-from-the-ford.png)     | `match-lost`, tick 4270: the AI's third wave on the road from the centre ford, met by red's first soldier                                                         |
+| [07-defending-home.png](reports/screenshots/0.16-D/07-defending-home.png)             | `match-won`, tick 4535: red's army and barracks holding the third wave at home, health bars on the hurt                                                           |
+| [08-big-fight-zoomed-out.png](reports/screenshots/0.16-D/08-big-fight-zoomed-out.png) | `big-fight`, tick 1763, zoomed out (0.84): red's line charging blue's army on blue's bank, archers behind, blue's barracks under attack (retaken in polish Q, Q7) |
+| [09-victory.png](reports/screenshots/0.16-D/09-victory.png)                           | `match-won`, tick 5806: blue's town centre down, the gold tint and the VICTORY banner                                                                             |
+| [10-defeat.png](reports/screenshots/0.16-D/10-defeat.png)                             | `match-lost`, tick 5690: red's town centre taken by the push, the red tint and the DEFEAT banner                                                                  |
 
 Made with (from the repo root):
 
@@ -1500,10 +1547,17 @@ pnpm -s cli screenshot $R/fog.run.json --tick 420 --scale 4 --out $O/04-fog-and-
 pnpm -s cli screenshot $R/fog.run.json --tick 436 --scale 4 --out $O/05-attack-marker-path.png --json
 pnpm -s cli screenshot $R/match-lost.run.json --tick 4270 --scale 4 --out $O/06-wave-from-the-ford.png --json
 pnpm -s cli screenshot $R/match-won.run.json --tick 4535 --scale 4 --out $O/07-defending-home.png --json
-pnpm -s cli screenshot $R/match-won.run.json --tick 5790 --scale 4 --out $O/08-big-fight-zoomed-out.png --json
+pnpm -s cli screenshot $R/big-fight.run.json --tick 1763 --scale 4 --out $O/08-big-fight-zoomed-out.png --json
 pnpm -s cli screenshot $R/match-won.run.json --tick 5806 --scale 4 --out $O/09-victory.png --json
 pnpm -s cli screenshot $R/match-lost.run.json --tick 5690 --scale 4 --out $O/10-defeat.png --json
 ```
+
+**08 retaken (Engine 0.16 polish Q, Q7, D4):** the first 08 was `match-won` at 5790, a thin
+line of units at blue's town centre (red's 64 units stacked on 8 cells, mostly marching; blue's
+seven workers and one soldier), the wide ford bare. No moment of the six runs had a real battle
+(a throwaway script stepped each run headless and counted each side's units in the director's
+frame), so 08 is now tick 1763 of the scripted run `big-fight` (below, in polish Q). The table row
+and command above are the new ones; the old shot is kept as polish Q's `before-04-big-fight.png`.
 
 Each was looked at in full. **Fixed:** before D10 the CLI's view sat on the map's centre (neither
 base, mostly fog), showed no selection, markers or barks, and drew no HUD text (no fonts); it

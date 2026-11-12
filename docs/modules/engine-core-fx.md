@@ -34,7 +34,7 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
   `hitPauseSpecSchema`; `CameraFx` (`event`, `shake`, `zoom`, `flash`, `update`,
   `state(frame, { reduceFlashing?, shakeScale? })` -> `{ shakeX, shakeY, zoom, flashes }`; trauma
   shake from `fxRng`, whole px unless `subPixel`), `shakeStrength`, `zoomFactor`, `zoomLength`,
-  `flashAlpha`; `HitPause` (`request`, `hold`, `remaining`), the shell's freeze-frame counter.
+  `flashAlpha`, `FX_ZOOM_MAX` (the punches' product held to 1/4..4, polish Q); `HitPause` (`request`, `hold`, `remaining`), the shell's freeze-frame counter.
 - Parallax (Engine 0.16 T4): `parallaxLayerSchema`, `layoutParallax(skin, cam, size, frameSize)`
   (`ParallaxDraw`s for both backends), `parallaxFactor`, `parallaxOrigin`, `gradientBands`.
 - Screen transitions (Engine 0.16 T5, `transition.ts`): `transitionSpecSchema` (`fade`, `wipe`

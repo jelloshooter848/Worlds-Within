@@ -94,7 +94,9 @@ repeat?, bands?, height?, x?, y?, depth? }`, exactly one of `frame` (a sprite fr
 'camera-shake')`: the same frame always shakes the same way. Whole picture px unless `subPixel`
   (off by default, for pixel art); `shakeScale` (0..1, the player's setting) scales it. A zoom
   punch (`zoomFactor`, `zoomLength`) eases from 1 to `to`, holds, and eases back with the curve
-  played backwards; punches multiply. A flash (`flashAlpha`) fades linearly from its alpha;
+  played backwards; punches multiply, the product held between `1 / FX_ZOOM_MAX` and
+  `FX_ZOOM_MAX` (4; polish Q, Q7: The River Ford's `big-fight`, with every effect on, stacked
+  enough punches on one frame to run the presentation test out of memory). A flash (`flashAlpha`) fades linearly from its alpha;
   `reduceFlashing` drops every flash. `FLASH_DEFAULT_COLOR`, `CameraFxSettings`.
 - `hit-pause.ts` (Engine 0.16 T4): `HitPause`, the browser shell's freeze-frame counter:
   `request(ticks)` (only lengthens: requests never add up), `hold()` (true, using one frame, while

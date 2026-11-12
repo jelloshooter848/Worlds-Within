@@ -398,8 +398,8 @@ describe('the finished skirmish: art, sound and its end (Engine 0.15 T14; the ma
   const { skin } = skirmishLook(content);
   const FALLBACK = skin.sheets?.fallbackColor;
 
-  it('has the guard run files (D8) and the full win and loss (D9)', () => {
-    expect(runs).toEqual(['ai-barracks', 'fog', 'match-lost', 'match-won', 'opening', 'razed']);
+  it('has the guard run files (D8), the full win and loss (D9) and the big fight (polish Q, Q7)', () => {
+    expect(runs).toEqual(['ai-barracks', 'big-fight', 'fog', 'match-lost', 'match-won', 'opening', 'razed']);
   });
 
   it('names no placeholder look: no kind, tag look or tile has its own fallback colour', () => {
