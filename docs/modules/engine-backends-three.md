@@ -187,7 +187,9 @@ screenshot --backend three --render-scale N` (default the skin's) is byte-identi
 
 - A ground-view skin's `scene3d.skirt` lays one flat plane (`skirt`, `groundSkirt`) of its colour
   under the map, reaching `margin` px (default 2048) past each edge, so a view tilted toward the
-  map's corners shows ground, lit and fogged, not the background.
+  map's corners shows ground, lit and fogged, not the background. From Engine 0.16 polish P9 it
+  is drawn with a copy of the floor tile model's material in its colour (`skirtMaterial`; Lambert
+  for block floors), so it darkens and tints with the time of day exactly as the map does.
 - An entity's labels (or a place's name) any of which would cover a shown HUD `panel` or
   `minimap` are left out (`hudPanelBoxes`), and a frame whose status sets `HUD_HIDDEN_STATUS`
   shows no labels (a page's title screen).

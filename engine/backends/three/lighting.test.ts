@@ -7,6 +7,8 @@ import {
   HemisphereLight,
   InstancedMesh,
   Mesh,
+  MeshLambertMaterial,
+  MeshStandardMaterial,
   PerspectiveCamera,
   PointLight,
   type Object3D,
@@ -20,7 +22,11 @@ import {
   type PresentMap,
   type SkinFile,
 } from '@engine/core/present';
+import { clockStatus, worldClock } from '@engine/core/clock';
+import { base64, encodeGlb, lowPolyModel } from '@engine/core/content/gltf';
+import { assetDataUrl } from '@engine/core/content/png';
 import { buildFont, type FontLookup } from '@engine/core/ui';
+import { ModelLibrary } from './models';
 import { POINT_LIGHT_DECAY, ThreeScene } from './scene';
 
 // Engine 0.16 T12: lights, shadows, fog, tone mapping and world-anchored labels in the 3D scene.
@@ -320,5 +326,114 @@ describe('world-anchored labels (Engine 0.16 T12)', () => {
     // No font: no text; no `hp:` tag: no bar.
     expect(scene.labelViews()).toEqual([]);
     expect(skin).toEqual(LIT);
+  });
+});
+
+describe('the skirt lit as the floor (Engine 0.16 polish P9)', () => {
+  /** A grass slab whose material is a rough metal, as the Kenney packs' ground tiles are. */
+  const slab = lowPolyModel([
+    {
+      name: 'grass',
+      shape: 'box',
+      size: { x: 1, y: 0.1, z: 1 },
+      at: { x: 0, y: 0.05, z: 0 },
+      color: '#2cd8b8',
+    },
+  ]);
+  for (const m of slab.json['materials'] as {
+    name: string;
+    pbrMetallicRoughness: { metallicFactor: number };
+  }[]) {
+    m.name = 'grass';
+    m.pbrMetallicRoughness.metallicFactor = 1;
+  }
+  const GRASS = 'assets/pack/grass.glb';
+  const assets = { [GRASS]: assetDataUrl(GRASS, base64(encodeGlb(slab.json, slab.bin))) };
+  const MAP: PresentMap = {
+    id: 'm',
+    version: 0,
+    tileSize: 16,
+    cols: 4,
+    rows: 3,
+    tiles: ['..o.', '....', 'o...'],
+  };
+  const hours = [3.5, 5.5, 8, 15.5, 21];
+  const skin = (floorModel: boolean) =>
+    skinSchema.parse({
+      backend: 'three',
+      kinds: {},
+      camera3d: { view: 'ground', pitch: 60 },
+      tiles: {
+        '.': floorModel
+          ? { mesh: 'box', color: '#58a830', model: GRASS, scale: 16, materials: { grass: '#8cc24a' } }
+          : { mesh: 'box', color: '#58a830' },
+        o: { mesh: 'box', color: '#7c7c7c' },
+      },
+      scene3d: {
+        skirt: { color: '#8cc24a' },
+        fog: { kind: 'linear', color: '#c8c8a8', near: 60, far: 700 },
+        timeOfDay: {
+          keys: hours.map((hour, i) => ({
+            hour,
+            sun: { color: i % 2 ? '#ffd0a8' : '#4058a0', intensity: 0.7 + i * 0.4 },
+            ambient: { color: '#5060a0', intensity: 0.95 - i * 0.1 },
+            hemisphere: { sky: '#384870', ground: '#181820', intensity: 1.1 },
+            fog: { color: '#1c2440' },
+            background: '#1c2440',
+          })),
+        },
+      },
+    }) as SkinFile;
+  const frame = (hour: number) =>
+    freezeFrame<PresentFrame>({
+      frame: 0,
+      size: { width: 320, height: 180 },
+      entities: [],
+      map: MAP,
+      events: [],
+      status: clockStatus(worldClock({ day: 1, hour: Math.floor(hour), minute: (hour % 1) * 60 }, 0)),
+      camera: { x: 32, y: 24 },
+    });
+
+  it("draws the skirt with the floor model's material in its own colour, so every time of day shades both alike", async () => {
+    const models = new ModelLibrary(assets);
+    await models.load(GRASS);
+    const scene = new ThreeScene(skin(true), { models });
+    const suns: number[] = [];
+    for (const hour of hours) {
+      scene.sync(frame(hour));
+      suns.push(scene.sun.intensity);
+      const skirt = scene.map!.getObjectByName('skirt') as Mesh;
+      const floor = scene.map!.getObjectByName('tile:.:model:0') as InstancedMesh;
+      const own = skirt.material as MeshStandardMaterial;
+      const tile = floor.material as MeshStandardMaterial;
+      // The same kind of material, taking light the same way: a rough metal (no ambient or
+      // hemisphere light), fogged and tone-mapped, so at dawn and night it darkens as the floor.
+      expect(own).toBeInstanceOf(MeshStandardMaterial);
+      expect(own).not.toBe(tile);
+      expect([own.type, own.metalness, own.roughness, own.fog, own.toneMapped]).toEqual([
+        tile.type,
+        1,
+        1,
+        true,
+        true,
+      ]);
+      expect(`#${own.color.getHexString()}`).toBe('#8cc24a');
+      expect(`#${tile.color.getHexString()}`).toBe('#8cc24a');
+      expect([own.vertexColors, own.map]).toEqual([false, null]);
+      expect([skirt.receiveShadow, skirt.castShadow]).toEqual([true, false]);
+    }
+    // The light did change with the hour; the skirt and the floor took it alike.
+    expect(new Set(suns).size).toBe(hours.length);
+  });
+
+  it('draws it Lambert, as block floor tiles are, when the floor has no model', () => {
+    const scene = new ThreeScene(skin(false));
+    scene.sync(frame(5.5));
+    const skirt = scene.map!.getObjectByName('skirt') as Mesh;
+    const floor = scene.map!.getObjectByName('tile:.:0') as InstancedMesh;
+    expect(skirt.material).toBeInstanceOf(MeshLambertMaterial);
+    expect(floor.material).toBeInstanceOf(MeshLambertMaterial);
+    expect(`#${(skirt.material as MeshLambertMaterial).color.getHexString()}`).toBe('#8cc24a');
   });
 });

@@ -609,6 +609,11 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         await shoot(page, 'walls-16x9');
         await page.setViewportSize({ width: 640, height: 520 });
         await frames(1);
+        // Let the resize reach the page (two animation frames) before the cell is found on it.
+        await page.evaluate(
+          () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+        );
+        await frames(1);
         const at = await wallsCellClient(page, 11, 1);
         await page.mouse.click(at.x, at.y);
         await frames(1);

@@ -986,6 +986,8 @@ export class ThreeScene {
       ground
         ? new Vector3(col * ts + ts / 2, z, row * ts + ts / 2)
         : new Vector3(col * ts + ts / 2, -(row + 1) * ts, z);
+    /** The base grid's most common tile key: the map's floor, whose material the skirt copies. */
+    let floorKey: string | null = null;
     for (const grid of grids) {
       const cells = new Map<string, [number, number][]>();
       for (let row = 0; row < grid.tiles.length; row++) {
@@ -1001,6 +1003,9 @@ export class ThreeScene {
           list.push([col, row]);
         }
       }
+      if (grid.layer === 'tiles')
+        for (const [key, list] of cells)
+          if (floorKey === null || list.length > cells.get(floorKey)!.length) floorKey = key;
       for (const [key, list] of cells) {
         const entry = tiles[key]!;
         const spec = resolveTileModel(entry);
@@ -1076,7 +1081,18 @@ export class ThreeScene {
       }
     }
     const skirt = ground ? this.skin.scene3d?.skirt : undefined;
-    if (skirt !== undefined) group.add(groundSkirt(map, skirt.color, skirt.margin ?? DEFAULT_SKIRT_MARGIN));
+    if (skirt !== undefined) {
+      const floor = floorKey === null ? undefined : resolveTileModel(tiles[floorKey]!);
+      const loaded = floor && this.opts.models ? this.opts.models.get(floor.model) : null;
+      group.add(
+        groundSkirt(
+          map,
+          skirt.color,
+          skirt.margin ?? DEFAULT_SKIRT_MARGIN,
+          loaded ? modelMaterial(loaded) : null,
+        ),
+      );
+    }
     this.buildDecor(map, group, models, waiting, cellPoint, fixtures);
     const scenery = this.buildScenery(map, group, waiting);
     return { map, group, models, scenery, waiting: [...waiting], fixtures };
@@ -1919,19 +1935,54 @@ function disposeNode(node: EntityNode): void {
  * A ground view's skirt (Engine 0.16 F9, the skin's `scene3d.skirt`): one flat plane of `color`
  * a little under the floor, covering the map and `margin` px past each of its edges, so a view
  * wider than the map (or one tilted toward its corners) shows ground there, lit and fogged as the
- * map is, not the background. Named `skirt`; it takes shadows and casts none.
+ * map is, not the background. Named `skirt`; it takes shadows and casts none. Drawn with
+ * {@link skirtMaterial} of `floor` (the map's floor tile model's material, or null for block tiles).
  */
-export function groundSkirt(map: DeepReadonly<PresentMap>, color: string, margin: number): Mesh {
+export function groundSkirt(
+  map: DeepReadonly<PresentMap>,
+  color: string,
+  margin: number,
+  floor: Material | null = null,
+): Mesh {
   const rows = map.tiles.length;
   const cols = Math.max(0, ...map.tiles.map((line) => line.length));
   const w = cols * map.tileSize + 2 * margin;
   const h = rows * map.tileSize + 2 * margin;
-  const mesh = new Mesh(new PlaneGeometry(w, h), new MeshLambertMaterial({ color }));
+  const mesh = new Mesh(new PlaneGeometry(w, h), skirtMaterial(color, floor));
   mesh.name = 'skirt';
   mesh.rotation.x = -Math.PI / 2;
   mesh.position.set((cols * map.tileSize) / 2, -SKIRT_DEPTH, (rows * map.tileSize) / 2);
   mesh.receiveShadow = true;
   return mesh;
+}
+
+/**
+ * The skirt's material (Engine 0.16 polish P9): a copy of `floor` (the material of the map's most
+ * common tile's model) in `color`, so the skirt shades as the floor does under every light and time
+ * of day: a model's PBR material (a rough metal, as the Kenney packs' are, takes no ambient or
+ * hemisphere light) darkens at dawn and night as the floor does, where a Lambert skirt stayed lit
+ * by them and showed lighter past the map's edge. The copy drops the floor's texture and vertex
+ * colours (the plane has neither; its colour is `color`). Without a floor model (block tiles,
+ * which are Lambert), a Lambert material of `color`. Fogged and tone-mapped as every map material.
+ */
+export function skirtMaterial(color: string, floor: Material | null): Material {
+  if (floor === null) return new MeshLambertMaterial({ color });
+  const m = floor.clone() as Material & { color?: Color; map?: unknown };
+  m.name = 'skirt';
+  m.vertexColors = false;
+  if ('map' in m) m.map = null;
+  if (m.color instanceof Color) m.color.set(color);
+  return m;
+}
+
+/** The material of a loaded model's first mesh (its first, when it has several). */
+function modelMaterial(model: LoadedModel): Material | null {
+  let found: Material | null = null;
+  model.scene.traverse((o) => {
+    if (found === null && o instanceof Mesh)
+      found = Array.isArray(o.material) ? (o.material[0] ?? null) : o.material;
+  });
+  return found;
 }
 
 /** How far under the floor (px) the skirt lies, so it never fights a floor tile. */

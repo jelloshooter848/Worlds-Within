@@ -207,7 +207,8 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   (`HUD_HIDDEN_STATUS`); labels that would cover a HUD panel are left out; the page's controls
   move to the bottom-right corner over a centred screen and the title; `three.json`'s
   `scene3d.skirt` lays grass past the map's edges (the view showed the background at its
-  corners); the night keys are lighter. The run tests present the mini siege as its 3D page does
+  corners; from Engine 0.16 polish P9 it is the grass's own `#8cc24a`, shaded as the grass model
+  is, so it no longer shows lighter at dawn); the night keys are lighter. The run tests present the mini siege as its 3D page does
   (`tests/runs/three-page.ts`). Presentation only: no hash moved.
 - Engine 0.16 F10, **part F written up**: nine full-HD screenshots of the 3D page in
   `docs/reports/screenshots/0.16-F/` (the siege at the mockup's angle beside the mockup, the title,

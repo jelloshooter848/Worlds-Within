@@ -308,6 +308,20 @@ word, plural?)`), used by `lossText` and so by the mission card's foes. No unit 
   The delegated siege's longer line still wraps `Vosk` as before. After shot:
   `after-15-results-losses.png` (P11 retakes it with the rest). No text with the counts is in a
   run file, golden hash or save code.
+- **P-9.** F5: the cause was the material, not the light: the Kenney nature kit's ground tiles
+  (`ground_grass.glb`, `ground_pathOpen.glb`) are glTF rough metals (`metallicFactor` 1, roughness
+  1), which in three.js take no ambient or hemisphere light, only the sun; the skirt was Lambert
+  (all diffuse), so at dawn and night, when the sun is weak and the ambient and hemisphere carry
+  the light, the skirt stayed lit and showed lighter. Fixed in the engine: the skirt copies the
+  material of the map's most common tile's model (`skirtMaterial`; Lambert for block floors) in
+  its own colour, and `three.json`'s skirt colour goes from the Lambert-tuned `#497018` to the
+  grass's `#8cc24a`. No `timeOfDay` skirt colour was needed, so no schema field was added. The
+  models' metalness itself is left as the packs give it (making them non-metal would relight the
+  whole siege, beyond F5). Measured on the page's dawn shot (11, 06:00) just inside and just past
+  the bottom edge (x 1230-1290): map (17, 31, 1) against skirt (24, 44, 2) before, (16, 28, 1)
+  against (17, 30, 1) after; the afternoon (15:10) goes from (93, 128, 30) against (100, 133, 32)
+  to (92, 127, 30) against (95, 129, 30), within the grass's own `vary.tint`. Both looked at full
+  size: no step at the edge. P11 retakes `after-11-dawn-skirt.png` with the rest.
 - Seen in the shots and not in P's scope: the results' losses wrap "Vosk" onto its own line in the
   left column (15); at the dawn an empty black bar floats over a soldier by the hall (11).
 
