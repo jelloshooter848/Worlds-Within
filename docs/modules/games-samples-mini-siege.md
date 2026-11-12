@@ -233,6 +233,9 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   UI kit's bars now drop a border that would leave no inside, `barBorder`), and `canvas2d.json`'s
   `mission-open` flash is the same warm, low-alpha event `flash` as the 3D one (`#fce0a8` at
   0.25 over 18 frames) instead of two full-white ticks. Presentation only: no hash moved.
+- Engine 0.16 polish Q10: `canvas2d.json` draws the hall's walls and wall towers
+  (`building:wall`, `building:wall-tower`) with two new 16x16 frames in `siege.txt`, `wall` and
+  `wall-tower`, where the 2D page showed magenta missing-frame boxes. Presentation only.
 
 ## Imports allowed
 

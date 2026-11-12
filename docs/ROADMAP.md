@@ -1136,17 +1136,25 @@ and its pages are not touched.
 
 **Done when:**
 
-- [ ] D1: The River Ford's map is dressed from data (decor, trees, rocks, ground variation and
-      river banks), with no hash moved.
-- [ ] D2: the selection panel shows display names from data, not ids.
-- [ ] D3: the top resource bar sits on a UI-kit panel, with no sprite showing under its counters.
-- [ ] D4: the big-fight zoomed-out shot shows a real battle, with no rule change.
-- [ ] P1: "Vosk" no longer wraps onto a line of its own in the siege's results.
-- [ ] P2: no empty black bar over a soldier at the dawn.
-- [ ] P3: the page's controls do not cover the key-hint panel on the centred screens.
-- [ ] P4: the 2D skin's mission-open flash after Delegate is a gentle warm wash, as in 3D.
-- [ ] Before and after shots of every item sit side by side in the build log, and the checks
+- [x] D1: The River Ford's map is dressed from data (decor, trees, rocks, ground variation and
+      river banks), with no hash moved. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 01; Q5, Q6, decisions Q-3 and Q-4.)
+- [x] D2: the selection panel shows display names from data, not ids. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 02; Q3,
+      decision Q-1.)
+- [x] D3: the top resource bar sits on a UI-kit panel, with no sprite showing under its counters.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 03; Q4, decision Q-2.)
+- [x] D4: the big-fight zoomed-out shot shows a real battle, with no rule change.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 04 and "D4: the big fight (Q7)"; decisions Q-5 and Q-6.)
+- [x] P1: "Vosk" no longer wraps onto a line of its own in the siege's results.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 05; Q8, decision Q-7.)
+- [x] P2: no empty black bar over a soldier at the dawn. ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 06; Q9,
+      decision Q-9.)
+- [x] P3: the page's controls do not cover the key-hint panel on the centred screens.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shots 07 and 05; Q8, decision Q-8.)
+- [x] P4: the 2D skin's mission-open flash after Delegate is a gentle warm wash, as in 3D.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q), shot 08; Q9, decision Q-10.)
+- [x] Before and after shots of every item sit side by side in the build log, and the checks
       pass: `pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test && pnpm build`.
+      ([Build log](BUILD-LOG.md#engine-016-polish-q): "Before and after shots" and "Finalize pass (checks)".)
 
 **Done when (the release):** parts A to F are done, `pnpm lint && pnpm typecheck && pnpm test &&
 pnpm build` pass, and the owner has playtested every sample and accepts it as at the bar of item 316.

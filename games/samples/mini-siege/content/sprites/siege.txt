@@ -1118,3 +1118,42 @@ kbBBBbk.
 kbBkBbk.
 kbBBBbk.
 kkkkkkk.
+
+; The hall's wall and its wall towers (Engine 0.16 polish Q, Q10: the 2D skin had no look for the
+; buildings `wall` and `wall-tower`, so the 2D page drew them as the sheet's magenta boxes), 16x16
+; in the watchtower's stone.
+frame wall
+................
+................
+................
+kkkkkkkkkkkkkkkk
+kRrrrRRRrrrRRRrk
+krRRRrrrRRRrrrRk
+krRRRrrrRRRrrrRk
+kRrrrRRRrrrRRRrk
+kRrrrRRRrrrRRRrk
+krRRRrrrRRRrrrRk
+krRRRrrrRRRrrrRk
+kRrrrRRRrrrRRRrk
+kkkkkkkkkkkkkkkk
+................
+................
+................
+
+frame wall-tower
+.kkk..kkkk..kkk.
+.kRk..kRRk..kRk.
+kkrkkkkrrkkkkrkk
+kRrrrRRRrrrRRRrk
+krRRRrrrRRRrrrRk
+krRRRrrrRRRrrrRk
+kRrrrRRRrrrRRRrk
+kRrrrRkkkkRRRrrk
+krRRRkDDDDkrrrRk
+krRRRkDDDDkrrrRk
+kRrrrkDDDDkRRRrk
+kRrrrkDDDDkRRRrk
+krRRRkDDDDkrrrRk
+krRRRkDDDDkrrrRk
+kRrrrkDDDDkRRRrk
+kkkkkkkkkkkkkkkk

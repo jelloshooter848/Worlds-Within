@@ -164,7 +164,9 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
     `offer-0`/`offer-1`, HUD icons (`icon-gold`, `icon-units`, `icon-enemy`, `icon-time`,
     `icon-torch`) and `heart`. Since Engine 0.13 T8: the sergeant Mara Venn (`sergeant-<dir>-<0|1>`,
     the soldier with a red sash and a gold plume) and the HUD's captive marker `icon-captive` (a
-    shackle, 8x8). `content/palettes/siege-held.json` is the same palette in cold
+    shackle, 8x8). Since Engine 0.16 polish Q (Q10): the hall's `wall` (a low stone block) and
+    `wall-tower` (crenellated, with a door), 16x16 in the watchtower's stone, for the 2D skin's
+    walls, which until then fell back to magenta boxes. `content/palettes/siege-held.json` is the same palette in cold
     blues: the units and buildings of the frozen event while the mission is open.
   - `content/sprites/camp.txt` (palette `content/palettes/camp.json`, night colours, the same
     letters): the room's `wall` (a palisade) and `floor`, the hero (a villager in a blue hood:
@@ -187,7 +189,9 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
     `.`, `-`, `:`), white with a black drop shadow, for the HUD's numbers and the mission title.
 - Skins: `content/skins/canvas2d.json` (the battle): every kind the RTS kit presents here
   (`unit:<type>` for the six types with `idle`, `walk`, `attack`, `build`, `gather`;
-  `building:hall`, `building:watchtower`, `resource:gold`, `selection-ring`, `health-bar`,
+  `building:hall`, `building:watchtower`, `building:wall` and `building:wall-tower` (polish Q,
+  Q10; `play.test.ts` checks every unit type and building kind has a 2D look), `resource:gold`,
+  `selection-ring`, `health-bar`,
   `progress-bar`, `mission-offer`, `selection-box`), looks by tag (T4): the engines' `damaged`
   (the burnt frames: a catapult or ram the result damaged), the watchtower's `site` (the
   scaffold), and `frozen` on every unit and building (the `siege-held` palette), `damaged` listed

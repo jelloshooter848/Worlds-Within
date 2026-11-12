@@ -498,6 +498,30 @@
         }
       ]
     },
+    "building:wall": {
+      "frames": {
+        "idle": "wall"
+      },
+      "fallbackColor": "#7c7c7c",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "building:wall-tower": {
+      "frames": {
+        "idle": "wall-tower"
+      },
+      "fallbackColor": "#7c7c7c",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
     "resource:gold": {
       "frames": {
         "idle": "gold",
