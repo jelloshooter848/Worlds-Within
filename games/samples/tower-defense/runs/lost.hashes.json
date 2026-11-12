@@ -1,0 +1,105 @@
+{
+  "run": "games/samples/tower-defense/runs/lost.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d02aa6bb19e82982"
+    },
+    {
+      "tick": 20,
+      "hash": "5526c138f5e1371c"
+    },
+    {
+      "tick": 40,
+      "hash": "0c6e65460c896e21"
+    },
+    {
+      "tick": 60,
+      "hash": "73557b2bc47ef099"
+    },
+    {
+      "tick": 80,
+      "hash": "d7a2c02169fb18fb"
+    },
+    {
+      "tick": 100,
+      "hash": "316e16af0005ff93"
+    },
+    {
+      "tick": 120,
+      "hash": "904ead7f2acc29b3"
+    },
+    {
+      "tick": 140,
+      "hash": "44fe5c0ee8692e87"
+    },
+    {
+      "tick": 160,
+      "hash": "4fe9e19718b569c7"
+    },
+    {
+      "tick": 180,
+      "hash": "9c2c5ba57a400be2"
+    },
+    {
+      "tick": 200,
+      "hash": "b3b9ef56111ceda6"
+    },
+    {
+      "tick": 220,
+      "hash": "762acca1e0b59c59"
+    },
+    {
+      "tick": 240,
+      "hash": "8da1ca85ee72827b"
+    },
+    {
+      "tick": 260,
+      "hash": "7ed903ba48fa1b13"
+    },
+    {
+      "tick": 280,
+      "hash": "52f0fb36ecc7a9ed"
+    },
+    {
+      "tick": 300,
+      "hash": "6d96203a94657b41"
+    },
+    {
+      "tick": 320,
+      "hash": "b2b03544f7caa8ca"
+    },
+    {
+      "tick": 340,
+      "hash": "5ce2145910177720"
+    },
+    {
+      "tick": 360,
+      "hash": "d178f80264c37733"
+    },
+    {
+      "tick": 380,
+      "hash": "aff605ca3e37bdcf"
+    },
+    {
+      "tick": 400,
+      "hash": "5e1bd98ec87daa16"
+    },
+    {
+      "tick": 420,
+      "hash": "465c955d87c97b4d"
+    },
+    {
+      "tick": 440,
+      "hash": "04babbe46ea43457"
+    },
+    {
+      "tick": 460,
+      "hash": "2438b6c47c7c670c"
+    },
+    {
+      "tick": 480,
+      "hash": "c8b5c8eeefa80859"
+    }
+  ]
+}

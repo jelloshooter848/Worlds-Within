@@ -473,8 +473,11 @@ describe('text maps: ruler, regions and paste (G10)', () => {
   it('works on a tower-defence map and a platformer level', async () => {
     const td = gameCopy('games/samples/tower-defense');
     const ROAD = 'games/samples/tower-defense/content/maps/road.map.txt';
-    const ruler = await cli(td, 'get', ROAD, 'rows.0-1', '--ruler');
-    expect(ruler.out).toMatchObject({ rows: ['................', 'S#######........'], width: 16 });
+    const ruler = await cli(td, 'get', ROAD, 'rows.2-3', '--ruler');
+    expect(ruler.out).toMatchObject({
+      rows: ['...B..........B...............', 'S#####........................'],
+      width: 30,
+    });
     const build = await cli(td, 'paste', ROAD, 'rows.0.10', 'BB');
     expect(build.out).toMatchObject({ verified: true, changed: true, after: ['BB'] });
     expect((await cli(td, 'validate', 'games/samples/tower-defense')).code).toBe(EXIT.ok);

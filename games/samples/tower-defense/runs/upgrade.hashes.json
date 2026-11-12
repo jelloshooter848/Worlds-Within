@@ -3,39 +3,31 @@
   "hashes": [
     {
       "tick": 0,
-      "hash": "3f3e14aefc1b4bad"
+      "hash": "d02aa6bb19e82982"
     },
     {
       "tick": 20,
-      "hash": "9ff0f51906594472"
+      "hash": "de8e86fe91e83f82"
     },
     {
       "tick": 40,
-      "hash": "de6f87974a7b3178"
+      "hash": "8e49a9e28245342a"
     },
     {
       "tick": 60,
-      "hash": "f4bbe2ec4b70b74c"
+      "hash": "3b03bf36462ed333"
     },
     {
       "tick": 80,
-      "hash": "b95b4a54b78f2d97"
+      "hash": "88f2d9c1f18d71c9"
     },
     {
       "tick": 100,
-      "hash": "fdb4cd2fdbad78c6"
+      "hash": "4478998e2dd04707"
     },
     {
       "tick": 120,
-      "hash": "0349bf1af3bab2a3"
-    },
-    {
-      "tick": 140,
-      "hash": "601acd4e6d847d75"
-    },
-    {
-      "tick": 160,
-      "hash": "da8f8fdbead2cdae"
+      "hash": "cea0ca5b42f7d9e9"
     }
   ]
 }

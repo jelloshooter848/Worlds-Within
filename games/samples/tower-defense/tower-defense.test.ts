@@ -93,16 +93,40 @@ function failing(name: string, snaps: JsonObject[]): Check[] {
 }
 
 describe('the tower-defense content', () => {
-  it('has one map that fills the 256x240 picture, its two tower types and three waves', () => {
+  it('has one 16:9 map (30 x 16 cells across the 480x270 picture, room for the HUD) and its ten waves', () => {
     const round = sampleRound(content);
+    expect(content.manifest.screen).toEqual({ width: 480, height: 270 });
+    // A whole divisor of 1920x1080 (4x).
+    expect([1920 / 480, 1080 / 270]).toEqual([4, 4]);
     expect(round.map.id).toBe('road');
-    expect(round.map.towers).toEqual(['arrow', 'cannon']);
-    expect(round.map.start).toEqual({ gold: 40, lives: 5 });
-    expect(round.map.map.length * TD_TILE_SIZE).toBe(content.manifest.screen.height);
+    expect(round.map.start).toEqual({ gold: 60, lives: 20 });
+    expect(round.map.map).toHaveLength(16);
     for (const row of round.map.map) expect(row.length * TD_TILE_SIZE).toBe(content.manifest.screen.width);
-    expect(Object.keys(round.towers).sort()).toEqual(['arrow', 'cannon']);
+    // The map is 256 px high: the camera centres it, 7 px of grass above and below for the HUD.
+    expect(content.manifest.screen.height - round.map.map.length * TD_TILE_SIZE).toBe(14);
     expect(round.waves.id).toBe(round.map.waves);
-    expect(round.waves.waves).toHaveLength(3);
+    expect(round.waves.timer).toBe(500);
+    expect(round.waves.waves).toHaveLength(10);
+    // Every wave is bigger or tougher than the one two before it, and both kinds come.
+    const kinds = new Set(round.waves.waves.flatMap((w) => w.groups.map((g) => g.kind)));
+    expect([...kinds].sort()).toEqual(['brute', 'runner']);
+    const hp = round.waves.waves.map((w) => Math.max(...w.groups.map((g) => g.hp)));
+    expect(hp.at(-1)).toBeGreaterThan(hp[0]! * 10);
+  });
+
+  it('has three tower types with two upgrades each: the arrow, the splashing cannon, the slowing frost', () => {
+    const round = sampleRound(content);
+    expect(round.map.towers).toEqual(['arrow', 'cannon', 'frost']);
+    expect(Object.keys(round.towers).sort()).toEqual(['arrow', 'cannon', 'frost']);
+    for (const type of Object.values(round.towers)) expect(type.levels).toHaveLength(2);
+    expect(round.towers['cannon']!.splash).toEqual({ radius: 1, damage: 1 });
+    expect(round.towers['cannon']!.levels!.map((l) => l.splash?.damage)).toEqual([2, 4]);
+    expect(round.towers['frost']!.slow).toEqual({ factor: 60, ticks: 20 });
+    expect(round.towers['frost']!.levels!.map((l) => l.slow?.factor)).toEqual([50, 40]);
+  });
+
+  it('rates a win by the lives left: three stars from 18, two from 10', () => {
+    expect(sampleRound(content).map.stars).toEqual({ three: 18, two: 10 });
   });
 });
 
@@ -111,17 +135,18 @@ describe('the tower-defense headless', () => {
     const snap = createGame(content, SEED).snapshot();
     expect(snap['kit']).toMatchObject({
       outcome: 'playing',
-      gold: 40,
-      lives: 5,
+      gold: 60,
+      lives: 20,
       wave: 0,
-      waves: 3,
+      waves: 10,
       towers: 0,
+      stars: 0,
     });
-    expect(snap['controls']).toEqual({ col: 1, row: 2, tower: 'arrow', held: [0, 0, 0, 0] });
+    expect(snap['controls']).toEqual({ col: 3, row: 2, tower: 'arrow', held: [0, 0, 0, 0] });
   });
 
-  it('finds the seven run files', () => {
-    expect(RUNS).toEqual(['build', 'leaked', 'shells', 'tapped', 'target', 'upgrade', 'won']);
+  it('finds the nine run files', () => {
+    expect(RUNS).toEqual(['build', 'leak', 'lost', 'slow', 'splash', 'target', 'timer', 'upgrade', 'won']);
   });
 
   it.each(RUNS)('plays %s to the same snapshots twice and passes its assertions', (name) => {
@@ -130,11 +155,18 @@ describe('the tower-defense headless', () => {
     expect(failing(name, a)).toEqual([]);
   });
 
-  it('wins with every wave held, and loses to a thin defence', () => {
+  it('wins all ten waves with three stars, and loses with no defence', () => {
     const won = play('won').at(-1)!;
-    expect(won['kit']).toMatchObject({ outcome: 'won', lives: 5, leaked: 0, wave: 3, towers: 5 });
-    const leaked = play('leaked').at(-1)!;
-    expect(leaked['kit']).toMatchObject({ outcome: 'lost', lives: 0, leaked: 5, towers: 2 });
+    expect(won['kit']).toMatchObject({
+      outcome: 'won',
+      lives: 20,
+      leaked: 0,
+      wave: 10,
+      towers: 12,
+      stars: 3,
+    });
+    const lost = play('lost').at(-1)!;
+    expect(lost['kit']).toMatchObject({ outcome: 'lost', lives: 0, leaked: 20, towers: 0, stars: 0 });
   });
 
   it('passes the rules switched off to the kit: each run fails without a rule it guards', () => {
@@ -147,15 +179,55 @@ describe('the tower-defense headless', () => {
 
   it("plays the won run file exactly as the kit's bot plays its plan", () => {
     const plan: TdBotStep[] = [
-      { do: 'place', tower: 'arrow', col: 5, row: 4 },
-      { do: 'place', tower: 'arrow', col: 3, row: 2 },
+      { do: 'place', tower: 'arrow', col: 4, row: 4 },
+      { do: 'place', tower: 'arrow', col: 6, row: 10 },
+      { do: 'place', tower: 'cannon', col: 9, row: 10 },
       { do: 'wave' },
       { do: 'clear' },
-      { do: 'place', tower: 'cannon', col: 11, row: 10 },
+      { do: 'place', tower: 'frost', col: 11, row: 5 },
+      { do: 'upgrade', col: 4, row: 4 },
       { do: 'wave' },
       { do: 'clear' },
-      { do: 'place', tower: 'arrow', col: 8, row: 10 },
-      { do: 'place', tower: 'arrow', col: 13, row: 10 },
+      { do: 'place', tower: 'arrow', col: 15, row: 5 },
+      { do: 'upgrade', col: 6, row: 10 },
+      { do: 'wave' },
+      { do: 'clear' },
+      { do: 'upgrade', col: 9, row: 10 },
+      { do: 'place', tower: 'arrow', col: 17, row: 11 },
+      { do: 'wave' },
+      { do: 'clear' },
+      { do: 'upgrade', col: 4, row: 4 },
+      { do: 'upgrade', col: 6, row: 10 },
+      { do: 'place', tower: 'cannon', col: 20, row: 11 },
+      { do: 'wave' },
+      { do: 'clear' },
+      { do: 'upgrade', col: 15, row: 5 },
+      { do: 'upgrade', col: 17, row: 11 },
+      { do: 'upgrade', col: 11, row: 5 },
+      { do: 'wave' },
+      { do: 'clear' },
+      { do: 'upgrade', col: 9, row: 10 },
+      { do: 'upgrade', col: 20, row: 11 },
+      { do: 'place', tower: 'frost', col: 22, row: 7 },
+      { do: 'wave' },
+      { do: 'clear' },
+      { do: 'upgrade', col: 20, row: 11 },
+      { do: 'upgrade', col: 15, row: 5 },
+      { do: 'upgrade', col: 17, row: 11 },
+      { do: 'place', tower: 'cannon', col: 25, row: 7 },
+      { do: 'wave' },
+      { do: 'clear' },
+      { do: 'upgrade', col: 25, row: 7 },
+      { do: 'upgrade', col: 11, row: 5 },
+      { do: 'place', tower: 'arrow', col: 27, row: 9 },
+      { do: 'upgrade', col: 27, row: 9 },
+      { do: 'wave' },
+      { do: 'clear' },
+      { do: 'upgrade', col: 25, row: 7 },
+      { do: 'upgrade', col: 22, row: 7 },
+      { do: 'upgrade', col: 27, row: 9 },
+      { do: 'place', tower: 'arrow', col: 13, row: 8 },
+      { do: 'place', tower: 'arrow', col: 7, row: 8 },
       { do: 'wave' },
       { do: 'clear' },
     ];
@@ -234,7 +306,7 @@ describe('the tower-defense assets (Engine 0.15 T14 audit)', () => {
     expect(new Set([...sounds, ...menus])).toEqual(sfx);
   });
 
-  // Engine 0.16 E7: the three tower types (arrow, cannon and the frost tower E8's map adds) at
+  // Engine 0.16 E7: the map's three tower types (arrow, cannon and, from E8, frost) at
   // every level, the enemies, ghosts, health bars and every event, from the CC0 pack.
   const entity = (kind: string, state: string, tags: string[]): PresentEntity => ({
     id: kind,

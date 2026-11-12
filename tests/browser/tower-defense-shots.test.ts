@@ -9,8 +9,8 @@ import { launchChromium, NoBrowserError } from '../../engine/tools/screenshot';
 
 // The tower-defense sample's screenshots (Engine 0.12 T5): `pnpm cli screenshot` plays its run
 // files through the view module (`view.ts`) in headless Chromium. Before any wave (the build run,
-// tick 40: towers, the cursor and the ghost), a wave being fought (the won run at tick 300) and the
-// round lost (the leaked run at tick 1330). Each picture must match the headless run's state
+// tick 120: towers, the cursor and the ghost), a wave being fought (the won run at tick 1300) and
+// the round lost (the lost run at tick 480; Engine 0.16 E8's 16:9 map). Each picture must match the headless run's state
 // hashes and be byte-identical on a second run, and the three must differ. Skipped where Chromium
 // is not installed (never in CI).
 
@@ -48,16 +48,16 @@ async function shot(run: string, tick: number, n: number): Promise<Record<string
   const result = JSON.parse(stdout) as Record<string, unknown>;
   expect(code, JSON.stringify(result)).toBe(EXIT.ok);
   expect(result.matchesHeadless).toBe(true);
-  expect(result).toMatchObject({ width: 256, height: 240 });
+  expect(result).toMatchObject({ width: 480, height: 270 });
   return result;
 }
 
 describe.skipIf(missing !== null)('the tower-defense sample through pnpm cli screenshot', () => {
   const sha: Record<string, unknown> = {};
   it.each([
-    ['build', 40, 'towers before any wave'],
-    ['won', 300, 'a wave being fought'],
-    ['leaked', 1330, 'the round lost'],
+    ['build', 120, 'towers before any wave'],
+    ['won', 1300, 'a wave being fought'],
+    ['lost', 480, 'the round lost'],
   ] as [string, number, string][])(
     '%s at tick %i (%s) is deterministic',
     async (run, tick) => {

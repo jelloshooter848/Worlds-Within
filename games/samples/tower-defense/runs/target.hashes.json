@@ -3,59 +3,39 @@
   "hashes": [
     {
       "tick": 0,
-      "hash": "3f3e14aefc1b4bad"
+      "hash": "d02aa6bb19e82982"
     },
     {
       "tick": 20,
-      "hash": "7236fae21d3a896c"
+      "hash": "8ffc9ccc83e2c552"
     },
     {
       "tick": 40,
-      "hash": "e263ac7e9fd664b9"
+      "hash": "0ec16d0e8968a247"
     },
     {
       "tick": 60,
-      "hash": "af68bf60f7e4883d"
+      "hash": "d6979bed86ff8268"
     },
     {
       "tick": 80,
-      "hash": "f9d060305c7c7b1d"
+      "hash": "7496921f65180980"
     },
     {
       "tick": 100,
-      "hash": "5adb0d0a44e4d15d"
+      "hash": "ebf4aaa27f6b93fa"
     },
     {
       "tick": 120,
-      "hash": "e7c00152dd273893"
+      "hash": "e3318bbba2c08754"
     },
     {
       "tick": 140,
-      "hash": "f5b265937121ac92"
+      "hash": "917dd848333e25c5"
     },
     {
       "tick": 160,
-      "hash": "18f8d5b59124d984"
-    },
-    {
-      "tick": 180,
-      "hash": "a296d93e2430e43c"
-    },
-    {
-      "tick": 200,
-      "hash": "63a9ea44069423fc"
-    },
-    {
-      "tick": 220,
-      "hash": "4fe10f9d7c157bbc"
-    },
-    {
-      "tick": 240,
-      "hash": "87af51660c1c3e0f"
-    },
-    {
-      "tick": 260,
-      "hash": "c007de2189d310be"
+      "hash": "9b36f98409167fb5"
     }
   ]
 }

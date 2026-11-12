@@ -1,0 +1,21 @@
+{
+  "run": "games/samples/tower-defense/runs/slow.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d02aa6bb19e82982"
+    },
+    {
+      "tick": 20,
+      "hash": "28dc752b5a04496d"
+    },
+    {
+      "tick": 40,
+      "hash": "36177f6a0f85ed47"
+    },
+    {
+      "tick": 60,
+      "hash": "fd706ce773dc9df5"
+    }
+  ]
+}

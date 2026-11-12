@@ -18,10 +18,10 @@ import { STEPS_PER_TICK, TdPlay } from './play';
 
 // The page's glue played headless (Engine 0.12 T5): `TdPlay` stepped as the page's loop steps it
 // (two loop steps a game tick), drawing every step into the null backend. The `won` run file's
-// input, typed one loop step at a time, wins the same round with the same state hash as the run's
-// last golden one; a key pressed for a single loop step between ticks still counts; taps (frame
-// input, gap D1) move the cursor, place and sell, and the `tapped` run's taps play to its golden
-// hash; page buttons press their action on the next tick. The scene runs on a `SceneStack`, which
+// input, typed one loop step at a time, wins the same round (all ten waves, Engine 0.16 E8) with
+// the same state hash as the run's last golden one; a key pressed for a single loop step between
+// ticks still counts; taps (frame input, gap D1) move the cursor, place, upgrade and sell; page
+// buttons press their action on the next tick. The scene runs on a `SceneStack`, which
 // paces it at its `tickRate` as the shell does (gap D2).
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
@@ -42,14 +42,15 @@ const wonInput = () =>
 
 /**
  * A frame holding nothing and tapping at `taps`, for one loop step: each cell's centre on the
- * picture by the kit's `screenAtCell` (gap D13; the 16x15 map fills the 256x240 picture).
+ * picture by the kit's `screenAtCell` (gap D13; the 30x16 map across the 480x270 picture, centred
+ * 7 px down).
  */
 function tapFrame(...taps: { col: number; row: number; button?: 'primary' | 'secondary' }[]): ScriptedInput {
   const input = new ScriptedInput({
     steps: [],
     taps: taps.map((t) => ({
       frame: 0,
-      ...screenAtCell(t, { size: content.manifest.screen }, { cols: 16, rows: 15 }),
+      ...screenAtCell(t, { size: content.manifest.screen }, { cols: 30, rows: 16 }),
       ...(t.button && { button: t.button }),
     })),
   });
@@ -86,13 +87,13 @@ describe('the tower-defense page, headless', () => {
     const input = new ScriptedInput({
       steps: script.steps.map((s) => ({ frame: s.frame * STEPS_PER_TICK, hold: s.hold })),
     });
-    while (p.play.tick < 700) p.step(input);
-    expect(p.kit()).toMatchObject({ outcome: 'won', lives: 5, killed: 21, gold: 33 });
-    expect(hash(p.play.game.snapshot())).toBe(goldenAt('won', 700));
+    while (p.play.tick < 3100) p.step(input);
+    expect(p.kit()).toMatchObject({ outcome: 'won', lives: 20, killed: 140, gold: 158, stars: 3 });
+    expect(hash(p.play.game.snapshot())).toBe(goldenAt('won', 3100));
     const events = p.frames.flatMap((f) => f.events.map((e) => e.type));
     for (const type of ['td-place', 'td-wave-start', 'td-shot', 'td-kill', 'td-wave-clear', 'td-end'])
       expect(events, type).toContain(type);
-    expect(p.frames.at(-1)!.status).toMatchObject({ outcome: 'won', wave: '3/3' });
+    expect(p.frames.at(-1)!.status).toMatchObject({ outcome: 'won', wave: '10/10', stars: 3 });
   });
 
   it("steps one game tick every STEPS_PER_TICK loop steps (the scene's tickRate)", () => {
@@ -117,40 +118,29 @@ describe('the tower-defense page, headless', () => {
     expect(p.play.game.controls.view().col).toBe(start.col + 2);
   });
 
-  it('places with a second tap on the cursor cell, sells with a secondary tap (taps are frame input)', () => {
+  it('places with a second tap on the cursor cell, upgrades with two more, sells with a secondary tap', () => {
     const p = page();
-    p.step(tapFrame({ col: 5, row: 4 })); // a tap on a tick's first loop step reaches the tick
+    p.step(tapFrame({ col: 4, row: 4 })); // a tap on a tick's first loop step reaches the tick
     p.step();
-    expect(p.play.game.controls.view()).toMatchObject({ col: 5, row: 4 });
+    expect(p.play.game.controls.view()).toMatchObject({ col: 4, row: 4 });
     expect(p.kit()['towers']).toBe(0);
     expect(p.frames.at(-1)!.entities.find((e) => e.id === 'ghost')?.tags).toEqual(['ok', 'range:2']);
     p.step();
-    p.step(tapFrame({ col: 5, row: 4 }));
-    expect(p.kit()).toMatchObject({ towers: 1, gold: 30 });
+    p.step(tapFrame({ col: 4, row: 4 }));
+    expect(p.kit()).toMatchObject({ towers: 1, gold: 50 });
     expect(p.frames.at(-1)!.entities.find((e) => e.id === 'ghost')?.tags).toEqual([
       'blocked',
       'why:occupied',
       'selected',
       'range:2',
     ]);
-    p.step(tapFrame({ col: 5, row: 4, button: 'secondary' }));
+    // A tap on the selected tower upgrades it (8 gold for the arrow's level 2).
+    p.step(tapFrame({ col: 4, row: 4 }));
     p.step();
-    expect(p.kit()).toMatchObject({ towers: 0, gold: 35 });
-  });
-
-  it("plays the tapped run file's input, tapped one tick at a time, to its golden hash", () => {
-    const p = page();
-    const run = JSON.parse(readFileSync(new URL('./runs/tapped.run.json', import.meta.url), 'utf8')) as {
-      ticks: number;
-      input: InputScript;
-    };
-    // Each tick's input on that tick's first loop step.
-    const input = new ScriptedInput({
-      steps: run.input.steps.map((s) => ({ frame: s.frame * STEPS_PER_TICK, hold: s.hold })),
-      taps: (run.input.taps ?? []).map((t) => ({ ...t, frame: t.frame * STEPS_PER_TICK })),
-    });
-    while (p.play.tick < run.ticks) p.step(input);
-    expect(hash(p.play.game.snapshot())).toBe(goldenAt('tapped', run.ticks));
+    expect(p.kit()).toMatchObject({ towers: 1, gold: 42 });
+    p.step(tapFrame({ col: 4, row: 4, button: 'secondary' }));
+    p.step();
+    expect(p.kit()).toMatchObject({ towers: 0, gold: 51 });
   });
 
   it("presses page buttons (the shell's InputManager.press) on the next tick", () => {

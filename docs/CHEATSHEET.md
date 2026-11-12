@@ -62,7 +62,7 @@ seed, disabledRules })` (`@kits/towerdefense`): `tdRound` picks the `td-map`, it
   frame's camera (`cameraHint`), and `tdFrames(size, cursor)` gives the frames. From 0.15 taps are
   frame input: pass `size: content.manifest.screen` to `tdGame` and a run file's `input.taps`
   (`[{ frame, x, y, button? }]`, game screen pixels) play the round by tapping
-  (`games/samples/tower-defense/runs/tapped.run.json`); `screenAtCell(cell, frame, grid)` is
+  (`games/td-classic/runs/tapped.run.json`); `screenAtCell(cell, frame, grid)` is
   `cellAtScreen`'s inverse. See `games/samples/tower-defense/headless.ts` and `play.ts`.
 - Mini games (`engine/core/minigame.ts`, pure): a `MiniGameDef { id, title, create(ctx, seed) }`
   makes a `MiniGame { step, snapshot, result, present? }` that ends `pass`, `fail` or `quit`. The

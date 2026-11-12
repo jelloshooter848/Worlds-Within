@@ -1,26 +1,77 @@
 {
   "game": "..",
-  "ticks": 160,
+  "ticks": 120,
   "input": {
     "steps": [
-      { "frame": 0, "hold": ["jump"] },
-      { "frame": 1, "hold": [] },
-      { "frame": 2, "hold": ["jump"] },
-      { "frame": 3, "hold": [] },
-      { "frame": 4, "hold": ["jump"] },
-      { "frame": 5, "hold": [] },
-      { "frame": 6, "hold": ["jump"] },
-      { "frame": 7, "hold": [] },
-      { "frame": 8, "hold": ["start"] },
-      { "frame": 9, "hold": [] },
-      { "frame": 150, "hold": ["special"] },
-      { "frame": 151, "hold": [] }
+      {
+        "frame": 0,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 1,
+        "hold": []
+      },
+      {
+        "frame": 2,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 3,
+        "hold": []
+      },
+      {
+        "frame": 4,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 5,
+        "hold": []
+      },
+      {
+        "frame": 6,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 7,
+        "hold": []
+      },
+      {
+        "frame": 8,
+        "hold": ["start"]
+      },
+      {
+        "frame": 9,
+        "hold": []
+      },
+      {
+        "frame": 112,
+        "hold": ["special"]
+      },
+      {
+        "frame": 113,
+        "hold": []
+      }
     ]
   },
   "assertions": [
-    { "tick": 1, "path": "kit.gold", "op": "eq", "value": 30 },
-    { "tick": 3, "path": "kit.gold", "op": "eq", "value": 22 },
-    { "tick": 3, "path": "round.towers.0.level", "op": "eq", "value": 2 },
+    {
+      "tick": 1,
+      "path": "kit.gold",
+      "op": "eq",
+      "value": 50
+    },
+    {
+      "tick": 3,
+      "path": "kit.gold",
+      "op": "eq",
+      "value": 42
+    },
+    {
+      "tick": 3,
+      "path": "round.towers.0.level",
+      "op": "eq",
+      "value": 2
+    },
     {
       "tick": 3,
       "path": "round.events",
@@ -29,40 +80,88 @@
         "type": "upgraded",
         "tower": 1,
         "towerType": "arrow",
-        "col": 1,
+        "col": 3,
         "row": 2,
         "level": 2,
         "cost": 8
       }
     },
-    { "tick": 5, "path": "kit.gold", "op": "eq", "value": 10 },
-    { "tick": 5, "path": "kit.spent", "op": "eq", "value": 30 },
-    { "tick": 5, "path": "round.towers.0.level", "op": "eq", "value": 3 },
+    {
+      "tick": 5,
+      "path": "kit.gold",
+      "op": "eq",
+      "value": 30
+    },
+    {
+      "tick": 5,
+      "path": "kit.spent",
+      "op": "eq",
+      "value": 30
+    },
+    {
+      "tick": 5,
+      "path": "round.towers.0.level",
+      "op": "eq",
+      "value": 3
+    },
     {
       "tick": 7,
       "path": "round.events",
       "op": "contains",
-      "value": { "type": "refused", "command": "upgrade", "code": "max_level" }
+      "value": {
+        "type": "refused",
+        "command": "upgrade",
+        "code": "max_level"
+      }
     },
-    { "tick": 120, "path": "kit.killed", "op": "eq", "value": 6 },
-    { "tick": 120, "path": "kit.gold", "op": "eq", "value": 22 },
     {
-      "tick": 151,
+      "tick": 112,
+      "path": "kit.killed",
+      "op": "eq",
+      "value": 8
+    },
+    {
+      "tick": 112,
+      "path": "kit.gold",
+      "op": "eq",
+      "value": 46
+    },
+    {
+      "tick": 113,
       "path": "round.events",
       "op": "contains",
-      "value": { "type": "sold", "tower": 1, "towerType": "arrow", "col": 1, "row": 2, "refund": 15 }
+      "value": {
+        "type": "sold",
+        "tower": 1,
+        "towerType": "arrow",
+        "col": 3,
+        "row": 2,
+        "refund": 15
+      }
     },
-    { "tick": 151, "path": "kit.gold", "op": "eq", "value": 37 },
-    { "tick": 160, "path": "kit.towers", "op": "eq", "value": 0 }
-  ],
-  "invariants": [
-    { "path": "kit.lives", "op": "eq", "value": 5 },
-    { "path": "kit.leaked", "op": "eq", "value": 0 }
+    {
+      "tick": 113,
+      "path": "kit.gold",
+      "op": "eq",
+      "value": 61
+    },
+    {
+      "tick": 120,
+      "path": "kit.towers",
+      "op": "eq",
+      "value": 0
+    }
   ],
   "hashEvery": 20,
   "guards": ["upgrade-costs-gold", "upgrade-improves"],
   "hashes": [
-    { "tick": 0, "hash": "3f3e14aefc1b4bad" },
-    { "tick": 160, "hash": "da8f8fdbead2cdae" }
+    {
+      "tick": 0,
+      "hash": "d02aa6bb19e82982"
+    },
+    {
+      "tick": 120,
+      "hash": "cea0ca5b42f7d9e9"
+    }
   ]
 }

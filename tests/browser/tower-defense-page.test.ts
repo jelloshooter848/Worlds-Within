@@ -15,9 +15,9 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 //
 // - by taps: two clicks on a build cell place an arrow tower, the bar's Wave button starts wave 1,
 //   and the tower shoots and kills runners;
-// - by keys: the `won` run file's input typed on the keyboard, one game tick at a time, places
-//   four arrows and a cannon, starts every wave with Enter and wins the round at tick 673 with all
-//   5 lives, as `pnpm cli run` says.
+// - by keys: the `won` run file's input typed on the keyboard at its ticks, builds and upgrades
+//   twelve towers, starts all ten waves with Enter and wins the round at tick 3090 with all 20
+//   lives and three stars, as `pnpm cli run` says (Engine 0.16 E8, the 16:9 map).
 //
 // The page runs in manual-loop mode (`?debug=step`, one loop step per `window.__ww.step(1)`), so the
 // game is the same every time. It runs on its default backend, PixiJS (Engine 0.16 T13b-8). No page
@@ -118,12 +118,12 @@ describe.skipIf(missing !== null)('the tower-defense page (headless Chromium)', 
         const { page, ticks } = await open(browser, server.url, errors, true);
         await ticks(1);
         expect(await hook(page, 'tick')).toBe(1);
-        // The cell's centre (the kit's `screenAtCell` on the 256x240 picture over the 16x15 map),
+        // The cell's centre (the kit's `screenAtCell` on the 480x270 picture over the 30x16 map),
         // on the page through the display's `toClient` (gap D13).
         const cell = screenAtCell(
-          { col: 5, row: 4 },
-          { size: { width: 256, height: 240 } },
-          { cols: 16, rows: 15 },
+          { col: 4, row: 4 },
+          { size: { width: 480, height: 270 } },
+          { cols: 30, rows: 16 },
         );
         const at = (await page.evaluate(([x, y]) => (window as DebugWindow).__ww!.toClient(x, y), [
           cell.x,
@@ -131,48 +131,57 @@ describe.skipIf(missing !== null)('the tower-defense page (headless Chromium)', 
         ] as const))!;
         await page.mouse.click(at.x, at.y);
         await ticks(1);
-        expect(await hook(page, 'cursor')).toEqual({ col: 5, row: 4, tower: 'arrow' });
+        expect(await hook(page, 'cursor')).toEqual({ col: 4, row: 4, tower: 'arrow' });
         await page.mouse.click(at.x, at.y);
         await ticks(1);
-        expect(await hook(page, 'kit')).toMatchObject({ towers: 1, gold: 30, wave: 0 });
+        expect(await hook(page, 'kit')).toMatchObject({ towers: 1, gold: 50, wave: 0 });
         await page.click('#wave');
         await ticks(1);
         expect(await hook(page, 'kit')).toMatchObject({ wave: 1 });
         for (let i = 0; i < 200 && (await hook(page, 'kit')).killed === 0; i++) await ticks(5);
         const kit = await hook(page, 'kit');
         expect(kit.killed).toBeGreaterThan(0);
-        expect(kit.gold).toBeGreaterThan(30);
+        expect(kit.gold).toBeGreaterThan(50);
         expect(await page.locator('#status').textContent()).toMatch(/^tick \d+/);
         await page.close();
       }
 
-      // By keys: the won run's input, typed one tick at a time.
+      // By keys: the won run's input, each step's keys pressed or released at its tick (the
+      // ticks between steps in one call).
       {
         const { page, ticks } = await open(browser, server.url, errors);
         const steps = wonInput().steps;
         let held: string[] = [];
-        let next = 0;
-        for (let tick = 0; tick < 700; tick++) {
-          while (next < steps.length && steps[next]!.frame <= tick) {
-            const hold = steps[next]!.hold.map((a) => KEYS[a]!);
-            for (const k of held) if (!hold.includes(k)) await page.keyboard.up(k);
-            for (const k of hold) if (!held.includes(k)) await page.keyboard.down(k);
-            held = hold;
-            next++;
+        let tick = 0;
+        const to = async (t: number) => {
+          if (t > tick) await ticks(t - tick);
+          tick = Math.max(tick, t);
+        };
+        for (const step of steps) {
+          await to(step.frame);
+          const hold = step.hold.map((a) => KEYS[a]!);
+          for (const k of held) if (!hold.includes(k)) await page.keyboard.up(k);
+          for (const k of hold) if (!held.includes(k)) await page.keyboard.down(k);
+          held = hold;
+          if (step.frame === 37) {
+            await to(38);
+            expect(await hook(page, 'kit')).toMatchObject({ towers: 3, wave: 1 });
           }
-          await ticks(1);
-          if (tick === 24) expect(await hook(page, 'kit')).toMatchObject({ towers: 2, wave: 1 });
-          if (tick === 672) expect((await hook(page, 'kit')).outcome).toBe('won');
-          if (tick === 671) expect((await hook(page, 'kit')).outcome).toBe('playing');
         }
+        await to(3089);
+        expect((await hook(page, 'kit')).outcome).toBe('playing');
+        await to(3090);
+        expect((await hook(page, 'kit')).outcome).toBe('won');
+        await to(3100);
         for (const k of held) await page.keyboard.up(k);
-        expect(await hook(page, 'tick')).toBe(700);
+        expect(await hook(page, 'tick')).toBe(3100);
         expect(await hook(page, 'kit')).toMatchObject({
           outcome: 'won',
-          lives: 5,
+          lives: 20,
           leaked: 0,
-          killed: 21,
-          gold: 33,
+          killed: 140,
+          gold: 158,
+          stars: 3,
         });
         expect(await page.locator('#status').textContent()).toContain('the road is held!');
         await page.close();

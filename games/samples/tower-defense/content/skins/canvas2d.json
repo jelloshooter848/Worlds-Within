@@ -1055,14 +1055,14 @@
       "status": "tower",
       "as": "text",
       "x": 4,
-      "y": 228,
+      "y": 256,
       "font": "td-font"
     },
     {
       "status": "towerCost",
       "as": "icon",
       "x": 60,
-      "y": 228,
+      "y": 256,
       "frame": "icon-gold",
       "sheet": "td"
     },
@@ -1070,7 +1070,7 @@
       "status": "towerCost",
       "as": "number",
       "x": 70,
-      "y": 228,
+      "y": 256,
       "font": "td-font"
     }
   ]

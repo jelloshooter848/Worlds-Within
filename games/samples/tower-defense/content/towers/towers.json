@@ -12,13 +12,24 @@
     },
     "cannon": {
       "cost": 25,
-      "range": 3,
-      "damage": 4,
+      "range": 2,
+      "damage": 3,
       "cooldown": 20,
-      "sell": 15,
+      "splash": { "radius": 1, "damage": 1 },
       "levels": [
-        { "cost": 20, "range": 4, "damage": 6, "sell": 30, "splash": { "radius": 1, "damage": 2 } },
-        { "cost": 15, "slow": { "factor": 50, "ticks": 24 } }
+        { "cost": 20, "damage": 5, "splash": { "radius": 1, "damage": 2 } },
+        { "cost": 30, "range": 3, "damage": 8, "splash": { "radius": 1, "damage": 4 } }
+      ]
+    },
+    "frost": {
+      "cost": 15,
+      "range": 2,
+      "damage": 1,
+      "cooldown": 10,
+      "slow": { "factor": 60, "ticks": 20 },
+      "levels": [
+        { "cost": 12, "slow": { "factor": 50, "ticks": 30 } },
+        { "cost": 18, "range": 3, "damage": 2, "slow": { "factor": 40, "ticks": 40 } }
       ]
     }
   }

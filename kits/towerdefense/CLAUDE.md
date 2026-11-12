@@ -170,7 +170,7 @@ primary tap moves the cursor there (on a tower: selects it), or on the cursor's 
 (or, on an upgradable tower, upgrades it); a secondary one moves
 there and sells; off the map nothing. From Engine 0.15 (lesson D1) taps are frame input
 (`InputFrame.taps`, game screen pixels): `TdGame.step` reads them, so a run file's `input.taps`
-replays a round played by tapping (`games/samples/tower-defense/runs/tapped.run.json`), and a
+replays a round played by tapping (`games/td-classic/runs/tapped.run.json`), and a
 hosted `TdDefenceRound` gets the host frame's taps through `RoundInput` (lesson D12).
 `screenAtCell(cell, frame, grid)` is the cell's centre as a picture point, the exact inverse of
 `cellAtScreen` for the frame's camera (a page script or browser test maps it on with the
@@ -337,8 +337,10 @@ held the same way by `tests/runs/td-classic-mutants.test.ts`; a rule added after
 its road cannot reach is listed there by name, not guarded by a re-recorded run (E3:
 `upgrade-costs-gold` and `upgrade-improves`, guarded in the sample by `runs/upgrade.run.json`,
 over the sample's `towers.json`, which gained `levels` without moving its earlier runs; E4:
-`splash-damage` and `slow-enemies`, guarded by the sample's `runs/shells.run.json`, its cannon's
-levels 2 (splash) and 3 (slow), which no earlier run reaches).
+`splash-damage` and `slow-enemies`, guarded then by the sample's `runs/shells.run.json`, its
+cannon's levels 2 (splash) and 3 (slow), which no earlier run reaches). From E8 the sample is the
+16:9 map with ten waves (arrow, cannon with splash, frost with slow) and its guard runs are
+`build`, `upgrade`, `splash`, `slow`, `target`, `timer`, `leak`, `lost` and `won`.
 
 ## Rules
 

@@ -1,18 +1,165 @@
 {
   "id": "road",
-  "timer": 400,
+  "timer": 500,
   "waves": [
-    { "groups": [{ "kind": "runner", "count": 6, "spacing": 16, "hp": 3, "speed": 4, "bounty": 2 }] },
     {
       "groups": [
-        { "kind": "brute", "count": 1, "spacing": 0, "hp": 12, "speed": 2, "bounty": 6 },
-        { "kind": "runner", "count": 4, "spacing": 10, "hp": 3, "speed": 6, "bounty": 2, "jitter": 4 }
+        {
+          "kind": "runner",
+          "count": 8,
+          "spacing": 14,
+          "hp": 3,
+          "speed": 4,
+          "bounty": 2
+        }
       ]
     },
     {
       "groups": [
-        { "kind": "runner", "count": 8, "spacing": 8, "hp": 4, "speed": 5, "bounty": 2, "jitter": 3 },
-        { "kind": "brute", "count": 2, "spacing": 24, "hp": 14, "speed": 3, "bounty": 8 }
+        {
+          "kind": "runner",
+          "count": 10,
+          "spacing": 12,
+          "hp": 4,
+          "speed": 4,
+          "bounty": 2,
+          "jitter": 3
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "kind": "brute",
+          "count": 2,
+          "spacing": 30,
+          "hp": 14,
+          "speed": 2,
+          "bounty": 6
+        },
+        {
+          "kind": "runner",
+          "count": 6,
+          "spacing": 10,
+          "hp": 4,
+          "speed": 6,
+          "bounty": 2,
+          "jitter": 4
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "kind": "runner",
+          "count": 14,
+          "spacing": 8,
+          "hp": 7,
+          "speed": 5,
+          "bounty": 2,
+          "jitter": 3
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "kind": "brute",
+          "count": 4,
+          "spacing": 24,
+          "hp": 28,
+          "speed": 2,
+          "bounty": 7
+        },
+        {
+          "kind": "runner",
+          "count": 8,
+          "spacing": 10,
+          "hp": 7,
+          "speed": 6,
+          "bounty": 2,
+          "jitter": 4
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "kind": "runner",
+          "count": 18,
+          "spacing": 7,
+          "hp": 9,
+          "speed": 5,
+          "bounty": 2,
+          "jitter": 3
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "kind": "brute",
+          "count": 6,
+          "spacing": 20,
+          "hp": 40,
+          "speed": 3,
+          "bounty": 8
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "kind": "runner",
+          "count": 12,
+          "spacing": 8,
+          "hp": 10,
+          "speed": 6,
+          "bounty": 3,
+          "jitter": 3
+        },
+        {
+          "kind": "brute",
+          "count": 4,
+          "spacing": 22,
+          "hp": 45,
+          "speed": 3,
+          "bounty": 9
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "kind": "runner",
+          "count": 24,
+          "spacing": 6,
+          "hp": 12,
+          "speed": 5,
+          "bounty": 3,
+          "jitter": 2
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "kind": "brute",
+          "count": 8,
+          "spacing": 18,
+          "hp": 55,
+          "speed": 3,
+          "bounty": 10
+        },
+        {
+          "kind": "runner",
+          "count": 16,
+          "spacing": 6,
+          "hp": 13,
+          "speed": 6,
+          "bounty": 3,
+          "jitter": 3
+        }
       ]
     }
   ]

@@ -1,6 +1,6 @@
 {
   "id": "tower-defense",
-  "title": "Tower defense: hold the winding road against three waves",
+  "title": "Tower defense: hold the winding road against ten waves",
   "kit": "towerdefense",
   "content": {
     "td-map": ["content/maps/*.json"],
@@ -14,7 +14,7 @@
     "font": ["content/fonts/*.txt"]
   },
   "start": { "seed": 12 },
-  "screen": { "width": 256, "height": 240 },
+  "screen": { "width": 480, "height": 270 },
   "menus": {
     "font": "road-small",
     "titleFont": "road-title",
@@ -39,8 +39,8 @@
       "name": "The Winding Road",
       "subtitle": "Build on the stones, keep the gate shut",
       "art": [
-        { "sheet": "road", "frame": "arrow-3", "scale": 2, "anchor": "left", "x": 36, "y": -4 },
-        { "sheet": "road", "frame": "cannon-3", "scale": 2, "anchor": "right", "x": 36, "y": -4 }
+        { "sheet": "road", "frame": "arrow-3", "scale": 2, "anchor": "left", "x": 96, "y": -4 },
+        { "sheet": "road", "frame": "cannon-3", "scale": 2, "anchor": "right", "x": 96, "y": -4 }
       ],
       "music": "road",
       "footer": "An original game made with the Worlds Within engine",
@@ -51,10 +51,13 @@
     "controls": [
       { "actions": ["left", "right", "up", "down"], "tap": "a tap", "label": "Move" },
       { "actions": ["jump"], "tap": "tap again", "label": "Build" },
+      { "actions": ["jump"], "tap": "tap a tower twice", "label": "Upgrade" },
       { "actions": ["attack"], "label": "Next tower" },
       { "actions": ["special"], "tap": "right click", "label": "Sell" },
-      { "actions": ["start"], "label": "Send the wave" }
-    ]
+      { "actions": ["start"], "label": "Send the wave" },
+      { "tap": "F or the speed button", "label": "Speed" }
+    ],
+    "speeds": [1, 2, 3]
   },
   "headless": "headless.ts",
   "view": "view.ts"

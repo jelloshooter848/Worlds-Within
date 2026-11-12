@@ -62,10 +62,10 @@ describe('game page discovery', () => {
     expect(td).toEqual({
       dir: 'games/samples/tower-defense',
       name: 'games-samples-tower-defense',
-      title: 'Tower defense: The Winding Road, hold it against three waves',
+      title: 'Tower defense: The Winding Road, hold it against ten waves',
     });
     expect(gameListHtml(td ? [td] : [])).toContain(
-      '<a href="games/samples/tower-defense/">games/samples/tower-defense</a> <span>Tower defense: The Winding Road, hold it against three waves</span>',
+      '<a href="games/samples/tower-defense/">games/samples/tower-defense</a> <span>Tower defense: The Winding Road, hold it against ten waves</span>',
     );
     expect(pageInputs(repoRoot)['games-samples-tower-defense']).toBe(
       join(repoRoot, 'games/samples/tower-defense/index.html'),

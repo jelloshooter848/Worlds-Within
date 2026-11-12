@@ -1,0 +1,145 @@
+{
+  "game": "..",
+  "ticks": 480,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["start"]
+      },
+      {
+        "frame": 1,
+        "hold": []
+      },
+      {
+        "frame": 2,
+        "hold": ["start"]
+      },
+      {
+        "frame": 3,
+        "hold": []
+      },
+      {
+        "frame": 4,
+        "hold": ["start"]
+      },
+      {
+        "frame": 5,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 5,
+      "path": "kit.wave",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 248,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "leak",
+        "enemy": 1,
+        "kind": "runner",
+        "lives": 19
+      }
+    },
+    {
+      "tick": 300,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 16
+    },
+    {
+      "tick": 477,
+      "path": "kit.outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 478,
+      "path": "round.events",
+      "op": "contains",
+      "value": {
+        "type": "lost"
+      }
+    },
+    {
+      "tick": 480,
+      "path": "kit.outcome",
+      "op": "eq",
+      "value": "lost"
+    },
+    {
+      "tick": 480,
+      "path": "kit.lives",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 480,
+      "path": "kit.stars",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "hashEvery": 20,
+  "guards": ["spawn-spacing", "enemies-walk", "leak-costs-life", "lose-at-zero-lives"],
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d02aa6bb19e82982"
+    },
+    {
+      "tick": 260,
+      "hash": "7ed903ba48fa1b13"
+    },
+    {
+      "tick": 280,
+      "hash": "52f0fb36ecc7a9ed"
+    },
+    {
+      "tick": 300,
+      "hash": "6d96203a94657b41"
+    },
+    {
+      "tick": 320,
+      "hash": "b2b03544f7caa8ca"
+    },
+    {
+      "tick": 340,
+      "hash": "5ce2145910177720"
+    },
+    {
+      "tick": 360,
+      "hash": "d178f80264c37733"
+    },
+    {
+      "tick": 380,
+      "hash": "aff605ca3e37bdcf"
+    },
+    {
+      "tick": 400,
+      "hash": "5e1bd98ec87daa16"
+    },
+    {
+      "tick": 420,
+      "hash": "465c955d87c97b4d"
+    },
+    {
+      "tick": 440,
+      "hash": "04babbe46ea43457"
+    },
+    {
+      "tick": 460,
+      "hash": "2438b6c47c7c670c"
+    },
+    {
+      "tick": 480,
+      "hash": "c8b5c8eeefa80859"
+    }
+  ]
+}
