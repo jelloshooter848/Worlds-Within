@@ -28,17 +28,24 @@ and the camera's edge scroll and zoom.
 ## Public API entry points
 
 - `game.json`: kit `rts`, 480x270, seed 9, `headless.ts`, `view.ts`; content kinds `rts-map`,
-  `rts-types`, `rts-enemy`, `rts-end` (D8), `rts-names` (polish Q, D2), `palette`, `sprite`, `skin`, `sfx`, `song`, `font`;
+  `rts-types`, `rts-enemy`, `rts-end` (D8), `rts-names` (polish Q, D2), `rts-decor` (polish Q, Q6), `palette`, `sprite`, `skin`, `sfx`, `song`, `font`;
   the title "The River Ford" ("Take the far bank of the river") and the controls screen's rows
   (with Jump: the minimap).
 - `assets/kenney-medieval-rts/` (D7): the pack's sheet and atlas, `license.txt`, and
-  `ford-tiles.png` made by `tools/ford-tiles.ts`; `assets/CREDITS.md`.
+  `ford-tiles.png` made by `tools/ford-tiles.ts` (polish Q, Q6: with the scenery's frames, the
+  pack's trees, bushes, stumps, logs and rocks, pebbles, dirt, round grass patches, tufts,
+  flowers, mushrooms and bank reeds); `assets/CREDITS.md`.
 - `content/`: `maps/ford.world.json` (`rts-map`, D8), `types/skirmish.json` (`rts-types`:
   worker, soldier, archer, hero; town centre, barracks; buildings with `sight`),
   `enemy/blue.json` (`rts-enemy`, knowledge `fog`), `end/ford.json` (`rts-end`),
   `names/skirmish.json` (`rts-names`, polish Q, D2: the HUD's display names, "Town Centre",
   "Worker" and the rest, `skirmishNames`, presentation only; the panel's `selectedName` and the
-  training line's `trainingName`),
+  training line's `trainingName`), `maps/ford.decor.txt` (`rts-decor`, polish Q, Q6: the map's
+  scenery, 64x40, trees, pines, bushes, stumps, rocks, boulders, pebbles, flowers, mushrooms,
+  tufts, dirt, darker and lighter grass and bank reeds; `skirmishDecor`, passed to
+  `presentWorld` as `decor`, drawn by the skin's `tiles`; presentation only, never on the
+  minimap; roads, fords, gold, buildings, building sites and starting cells kept clear,
+  `decor.test.ts`),
   `sprites/skirmish.txt` and `skirmish-font.txt`, `palettes/skirmish.json`, `skins/canvas2d.json`
   (images `rts` and `ford`; every kind the kit presents, archers too; `fog`; `events` with the
   barks `bark:unitType=<type>`; the HUD: counters, a 128x80 minimap with fog and team dots, the
@@ -83,7 +90,7 @@ kit, sides, ui }`, the kit part with the AI's memory `seen`; `view()`, `result()
 
 `pnpm test games/samples/rts-skirmish` (`skirmish.test.ts`: the map, the AI and end rule, the art,
 sound, barks and the end, and every run's golden hashes with the page's fog drawn on and off;
-`play.test.ts`: the page's scene; `assets.test.ts`), `pnpm -s cli validate
+`play.test.ts`: the page's scene; `decor.test.ts`: the scenery's rules; `assets.test.ts`), `pnpm -s cli validate
 games/samples/rts-skirmish --json`, `pnpm -s cli run games/samples/rts-skirmish/runs/fog.run.json
 --json` (any run file), `pnpm -s cli mutants games/samples/rts-skirmish --json` (no rule
 unguarded, no run weak), `pnpm test tests/runs` (golden hashes, backend parity, fog on and off),

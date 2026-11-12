@@ -111,6 +111,11 @@ export interface SkirmishFrameOptions {
    * panel's `selectedName` and the training line's `trainingName`. Left out, the kit's ids.
    */
   names?: RtsNames;
+  /**
+   * The map's decoration grid (`skirmishDecor`, `content/maps/ford.decor.txt`; polish Q, Q6),
+   * drawn over the terrain under everything else. Left out, the map is bare terrain.
+   */
+  decor?: readonly string[] | undefined;
 }
 
 /** One stream's state: the kit's presentation state, its event tracker, the end seen so far and the last bark. */
@@ -152,6 +157,7 @@ export function skirmishSource(
         state: state.present,
         fog: opts.fog ?? true,
         ...(opts.names && { names: opts.names }),
+        ...(opts.decor && { decor: opts.decor }),
       });
       frame.events = heardEvents(frame);
       if (result !== null) frame.status[result] = true;

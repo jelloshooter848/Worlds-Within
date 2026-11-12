@@ -1,9 +1,10 @@
-import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
+import { contentNamed, contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
 import { kitContentKinds, manifestOptions } from '@engine/core/content/game-content';
 import type { ContentResult } from '@engine/core/content/validate';
 import type { RtsTypes } from '@engine/core/rts-types';
 import { mustSkinSet, type SkinFile } from '@engine/core/present';
 import {
+  rtsDecorKind,
   rtsEndKind,
   rtsEnemyKind,
   rtsMapKind,
@@ -71,6 +72,17 @@ export function skirmishEnd(content: ContentBundle): RtsEnd {
  */
 export function skirmishNames(content: ContentBundle): RtsNames {
   return only(contentOf(content, rtsNamesKind()), 'names file (content/names/*.json)');
+}
+
+/**
+ * The map's decoration (`content/maps/ford.decor.txt`, the kit's `rts-decor`; polish Q, Q6): the
+ * grid of trees, rocks, bushes, ground marks and bank reeds the skin draws over the terrain, the
+ * entry of the map's own name. Presentation only: the world never reads it, so no hash depends
+ * on it. Undefined when the map has none.
+ */
+export function skirmishDecor(content: ContentBundle): readonly string[] | undefined {
+  const map = contentOf(content, rtsMapKind())[0];
+  return map === undefined ? undefined : contentNamed(content, rtsDecorKind(), map.name)?.value.rows;
 }
 
 /**

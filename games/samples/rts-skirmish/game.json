@@ -8,6 +8,7 @@
     "rts-enemy": ["content/enemy/*.json"],
     "rts-end": ["content/end/*.json"],
     "rts-names": ["content/names/*.json"],
+    "rts-decor": ["content/maps/*.decor.txt"],
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],

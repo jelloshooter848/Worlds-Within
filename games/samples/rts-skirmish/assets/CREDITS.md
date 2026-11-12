@@ -18,15 +18,16 @@ owner decision is cited (docs/DESIGN.md, item 322). Fetched for Engine 0.16 part
   for the AI's side; the town centre
   (the stone keep with a banner) and the barracks (the green-roofed hall, its roof in the team
   colour); the ground, roads, river, rocks, trees and gold; the building sites (the pack's crates
-  and plank floors) and the placing ghost.
-- Files (4 files, 180 KB):
+  and plank floors) and the placing ghost; and (Engine 0.16 polish Q, Q6) the map's scenery:
+  trees, pines, bushes, stumps, logs, rocks, pebbles, dirt and grass patches.
+- Files (4 files, 320 KB):
   - `medieval-rts-sheet.png` (`Spritesheet/medievalRTS_spritesheet.png`, 550 x 550): every sprite
     of the pack at its default size in one sheet; the skin's `images.rts` names the units and
     buildings in it.
   - `medieval-rts-sheet-atlas.txt` (`Spritesheet/medievalRTS_spritesheet.xml`, renamed so it
     travels as text): the pack's own atlas, each sprite's rectangle in the sheet;
     `assets.test.ts` checks the skin's `rts` frames against it.
-  - `ford-tiles.png` (256 x 96): made from `medieval-rts-sheet.png` by
+  - `ford-tiles.png` (256 x 232): made from `medieval-rts-sheet.png` by
     `games/samples/rts-skirmish/tools/ford-tiles.ts` (below).
   - `license.txt` (`License.txt`, line ends made Unix).
 - Changed: nothing in the sheet itself. `ford-tiles.png` is the pack's art cut and scaled for the
@@ -35,4 +36,9 @@ owner decision is cited (docs/DESIGN.md, item 322). Fetched for Engine 0.16 part
   colours over its grass and water; rocks, trees and the gold rock (`medievalEnvironment_*`) at
   half size on the grass; the building sites from the crate and plank-floor tiles
   (`medievalTile_53` to `56`) with their grass made clear; the placing ghost is the barracks at
-  half alpha. `assets.test.ts` checks the committed file against the script.
+  half alpha; the scenery (polish Q, Q6): the trees (`medievalEnvironment_01` to `04`) at their
+  own size, the stump, log, rocks, bushes (`05` to `09`, `13` to `15`, `20`) at half size, each
+  over a soft shadow, pebbles from the small rocks at a quarter, a dirt patch from the dirt tile
+  (`medievalTile_13`), round darker and lighter grass patches tinted from the grass tile, and
+  grass tufts, flowers, mushrooms and bank reeds laid in the pack's leaf, trunk, berry and gold
+  colours. `assets.test.ts` checks the committed file against the script.
