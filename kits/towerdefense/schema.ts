@@ -8,7 +8,9 @@ import { CELL_KINDS, cellKinds, LEGEND, tracePath, type CellKind } from './map';
  *
  * - `td-map`: a JSON header plus its `map` in a sibling `.map.txt` text grid (as the platformer's
  *   `level`): the cells (`map.ts`: path from one entry to one exit, build cells, blocked ground),
- *   the starting gold and lives, the tower types the map allows and the wave list it plays.
+ *   the starting gold and lives, the tower types the map allows and the wave list it plays, and
+ *   from Engine 0.16 E4 an optional star rating (`stars`: `{ three, two }`, lives left at least;
+ *   `bad_stars` when two needs more than three or three more than the starting lives).
  *
  *     maps/meadow.json      { "id": "meadow", "start": { "gold": 50, "lives": 5 },
  *                             "towers": ["arrow"], "waves": "meadow" }
@@ -17,7 +19,7 @@ import { CELL_KINDS, cellKinds, LEGEND, tracePath, type CellKind } from './map';
  *                           ..#X
  *
  * - `td-towers`: one file holding a table of tower types (`cost`, `range`, `damage`, `cooldown`,
- *   `sell?`, and from Engine 0.16 E3 `levels?`, the upgrades), like `rts-types`. A game may split the table over several files; a type given twice
+ *   `sell?`, from Engine 0.16 E3 `levels?`, the upgrades, and from E4 `splash?` and `slow?`), like `rts-types`. A game may split the table over several files; a type given twice
  *   is `duplicate_tower`.
  * - `td-waves`: one wave list per file (its `id` is the file name a map's `waves` gives), each wave
  *   a list of enemy groups `{ kind, count, spacing, hp, speed, bounty, jitter? }` in file order,
@@ -67,6 +69,15 @@ export const tdMapSchema = z
       .describe(
         "the wave list a standalone round plays: a `td-waves` file name; left out only on a map used by `td-defence` missions alone, whose wave is the world's units (Engine 0.15)",
       ),
+    stars: z
+      .strictObject({
+        three: z.number().int().min(1).describe('the lives left at least, on a win, for three stars'),
+        two: z.number().int().min(1).describe('the lives left at least, on a win, for two stars'),
+      })
+      .exactOptional()
+      .describe(
+        'Engine 0.16 E4: the star rating at the end: a win with at least `three` lives left is three stars, with at least `two` two, any other win one, a loss none; left out, the round has no rating',
+      ),
     map: z
       .array(z.string())
       .describe('the grid, top row first, of legend characters; usually in the `.map.txt` file'),
@@ -84,6 +95,20 @@ export const tdMapSchema = z
           `"${key}" is a kit legend character (${LEGEND[key]!.meaning})`,
         );
     }
+    if (def.stars !== undefined) {
+      if (def.stars.two > def.stars.three)
+        issue(
+          ['stars', 'two'],
+          'bad_stars',
+          `two stars (${def.stars.two} lives) needs more than three (${def.stars.three})`,
+        );
+      if (def.stars.three > def.start.lives)
+        issue(
+          ['stars', 'three'],
+          'bad_stars',
+          `three stars needs ${def.stars.three} lives left, more than the ${def.start.lives} the round starts with`,
+        );
+    }
     const dupes = def.towers.filter((t, i) => def.towers.indexOf(t) !== i);
     for (const t of new Set(dupes)) issue(['towers'], 'duplicate_tower', `tower type "${t}" is listed twice`);
     const chars = new Set([...Object.keys(LEGEND), ...Object.keys(def.legend)]);
@@ -96,6 +121,37 @@ export const tdMapSchema = z
   });
 
 export type TdMap = z.output<typeof tdMapSchema>;
+
+/**
+ * A splash tower's shot (Engine 0.16 E4): besides its target, every other enemy whose cell is
+ * within `radius` cells of the target's (squared, whole cells) takes `damage`.
+ */
+export const towerSplashSchema = z.strictObject({
+  radius: z
+    .number()
+    .int()
+    .min(1)
+    .describe("how far from the target's cell the splash reaches, in cells (squared, whole cells)"),
+  damage: z.number().int().min(1).describe('the hit points the splash takes from each other enemy in reach'),
+});
+export type TowerSplash = z.output<typeof towerSplashSchema>;
+
+/**
+ * A slow tower's shot (Engine 0.16 E4): a target it hits and does not kill walks at `factor`
+ * percent of its speed (rounded down, at least 1 sub-cell unit a tick) for `ticks` ticks.
+ */
+export const towerSlowSchema = z.strictObject({
+  factor: z
+    .number()
+    .int()
+    .min(1)
+    .max(99)
+    .describe(
+      'the percent of its speed a slowed enemy keeps (1-99; rounded down, at least 1 sub-cell unit a tick)',
+    ),
+  ticks: z.number().int().min(1).describe('how many ticks of walking the slow lasts'),
+});
+export type TowerSlow = z.output<typeof towerSlowSchema>;
 
 /**
  * One upgrade level of a tower type (Engine 0.16 E3): the gold the upgrade to it costs, and the
@@ -129,6 +185,12 @@ export const towerLevelSchema = z.strictObject({
     .describe(
       "the gold selling a tower of this level gives back; left out, the level below's sell value plus half this level's cost (rounded down)",
     ),
+  splash: towerSplashSchema
+    .exactOptional()
+    .describe("the splash at this level (Engine 0.16 E4); the level below's when left out"),
+  slow: towerSlowSchema
+    .exactOptional()
+    .describe("the slow at this level (Engine 0.16 E4); the level below's when left out"),
 });
 export type TowerLevel = z.output<typeof towerLevelSchema>;
 
@@ -149,6 +211,16 @@ export const towerTypeSchema = z.strictObject({
     .min(0)
     .exactOptional()
     .describe('the gold selling one gives back; half its cost (rounded down) when left out'),
+  splash: towerSplashSchema
+    .exactOptional()
+    .describe(
+      "Engine 0.16 E4: a shot also hurts the other enemies near its target (`radius` cells from the target's cell, `damage` each); left out, it hits its target only",
+    ),
+  slow: towerSlowSchema
+    .exactOptional()
+    .describe(
+      'Engine 0.16 E4: a shot slows the target it hits to `factor` percent of its speed for `ticks` ticks; left out, it does not slow',
+    ),
   levels: z
     .array(towerLevelSchema)
     .min(1)
@@ -262,7 +334,7 @@ export function tdMapKind(): ContentKind<typeof tdMapSchema> {
   return {
     name: 'td-map',
     description:
-      'A tower-defense map: starting gold and lives, the tower types and wave list it plays, with its grid (path from entry to exit, build cells, blocked ground) in a text grid',
+      'A tower-defense map: starting gold and lives, the tower types and wave list it plays, an optional star rating, with its grid (path from entry to exit, build cells, blocked ground) in a text grid',
     schema: tdMapSchema,
     gridParts: { map: '.map.txt' },
     checkAll: (entries, others) => entries.flatMap((e) => mapReferenceIssues(e.name, e.value, others)),
@@ -274,7 +346,7 @@ export function tdTowersKind(): ContentKind<typeof tdTowersSchema> {
   return {
     name: 'td-towers',
     description:
-      'Tower-defense tower types: cost, range in cells, damage, cooldown in ticks, sell value and upgrade levels',
+      'Tower-defense tower types: cost, range in cells, damage, cooldown in ticks, sell value, splash, slow and upgrade levels',
     schema: tdTowersSchema,
     checkAll(entries) {
       const first = new Map<string, string>();

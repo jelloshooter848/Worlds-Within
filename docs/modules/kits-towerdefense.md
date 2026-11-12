@@ -7,8 +7,8 @@ Folder: `kits/towerdefense`. Detailed rules: [`kits/towerdefense/CLAUDE.md`](../
 The tower-defense kit (Engine 0.12, the platform test: a new genre with no change to `engine/sim`).
 It reads three content kinds, `td-map` (a JSON header plus a `.map.txt` grid: one path from an
 entry to an exit, build cells and blocked ground; the starting gold and lives, the tower types and
-the wave list), `td-towers` (cost, range, damage, cooldown, sell value and, from Engine 0.16 E3,
-upgrade `levels`) and `td-waves` (waves of
+the wave list, and from Engine 0.16 E4 an optional star rating), `td-towers` (cost, range, damage,
+cooldown, sell value and, from Engine 0.16 E3, upgrade `levels`, from E4 `splash` and `slow`) and `td-waves` (waves of
 enemy groups with spacing, hp, speed and bounty, and an optional timer), and plays a round headless
 and deterministically: towers placed on free build cells and paid for, upgraded a level at a time for gold, sold for a
 refund that counts the upgrades, waves
@@ -26,7 +26,7 @@ report to a declared outcome. It holds no world rules, never draws and never imp
 `schema` (`tdMapSchema`, `tdTowersSchema`, `tdWavesSchema`, the `td-map`, `td-towers` and
 `td-waves` kinds, `towerTable`, `CELL_SUB`), `rules` (`TOWERDEFENSE_RULES`) and `world`
 (`TdWorld` with `command`/`place`/`sell`/`upgrade`/`startWave`, `step()`, `placeRefusal`,
-`upgradeRefusal`, `statsOf`, `targetOf` and `snapshot()`; `TdEvent`, `TdSnapshot`, `towerStats`,
+`upgradeRefusal`, `statsOf`, `targetOf`, `speedOf`, `stars`, `nextWave` and `snapshot()`; `TdEvent`, `TdSnapshot`, `towerStats`,
 `sellValue`, `upgradeCost`, `maxLevel`), `present` (`presentWorld`, `describeWorld`, `tdFrames`,
 `TdPresentState`, `presentStatus`, `TD_EVENT_TYPES`: frames with the map, towers, enemies, shots,
 the cursor and a placement ghost tagged `ok` or `blocked`, the HUD and `td-*` events for skin
@@ -46,6 +46,18 @@ name `towerdefense` (from Engine 0.14 T9 with `roundBots()`: `TdBot` for a `td-d
 `pnpm cli record --bot`); it opts in to strict mutant checks (since Engine 0.12 T4, when the run files of
 `games/samples/tower-defense` came to guard every rule).
 
+- Engine 0.16 E4 (splash and slow towers, the wave preview, health-bar and range data, stars): a
+  `td-towers` type's (or level's) optional `splash` (`{ radius, damage }`: the other enemies
+  within `radius` cells of the target's cell take `damage`, in id order) and `slow`
+  (`{ factor, ticks }`: a target hit and not killed walks at `factor` percent of its speed for
+  `ticks` ticks; the lower factor wins), the rules `splash-damage` and `slow-enemies`, the events
+  `splash` and `slowed` (presented as `td-splash` and `td-slow`; `td-shot` gains `splash`, the
+  hits), an enemy's `slow`/`slowFactor` in the snapshot only while slowed, a `td-map`'s optional
+  `stars` (`{ three, two }`, lives left at least; `bad_stars`) read by `TdWorld.stars()`,
+  `kit.stars` and the status `stars` only on a map with a rating, `TdWorld.nextWave()` and the
+  status `nextWaveKinds`/`nextWaveGroups`, enemy tags `maxhp:<n>` and `slow`, ghost tags
+  `range:<cells>`. No existing hash moved; the sample's cannon gained a splash (level 2) and a
+  slow (level 3), guarded by `runs/shells.run.json`.
 - Engine 0.16 E3 (tower upgrades): a `td-towers` type's optional `levels` (`{ cost, range?,
 damage?, cooldown?, sell? }`, level 2 on, each over the level below), the `upgrade` command
   (refusals `no_tower`, `max_level`, `too_poor`, `round_over`), a tower's `level` in the snapshot

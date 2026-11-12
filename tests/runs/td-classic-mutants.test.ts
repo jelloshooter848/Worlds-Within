@@ -12,7 +12,7 @@ import { main } from '../../engine/tools/main';
 // guard them without moving its frozen hashes; the sample's new runs and the kit's tests guard
 // them. List each such rule in UNGUARDED (as rts-classic's test does, item 520) rather than
 // re-record a run here.
-const UNGUARDED: string[] = ['upgrade-costs-gold', 'upgrade-improves'];
+const UNGUARDED: string[] = ['upgrade-costs-gold', 'upgrade-improves', 'splash-damage', 'slow-enemies'];
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 

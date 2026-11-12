@@ -64,6 +64,8 @@ describe('presentWorld', () => {
       enemies: 0,
       outcome: 'playing',
       nextWave: 40,
+      nextWaveKinds: 'runner',
+      nextWaveGroups: 'runner:2',
       tower: 'arrow',
       towerCost: 10,
     });
@@ -79,7 +81,7 @@ describe('presentWorld', () => {
       kind: 'ghost:arrow',
       x: 16,
       y: 16,
-      tags: ['ok'],
+      tags: ['ok', 'range:1'],
       anim: { state: 'ok' },
     });
     expect(frame.camera).toEqual({ x: 48, y: 32, bounds: { x: 0, y: 0, w: 96, h: 64 } });
@@ -90,12 +92,12 @@ describe('presentWorld', () => {
     const w = world();
     const ghost = (c: { col: number; row: number; tower: string }) =>
       byId(presentWorld(w, { size: SIZE, cursor: c }), 'ghost')?.tags;
-    expect(ghost(cursor(2, 0))).toEqual(['blocked', 'why:not_build_cell']);
+    expect(ghost(cursor(2, 0))).toEqual(['blocked', 'why:not_build_cell', 'range:1']);
     w.place('arrow', 1, 1);
     w.step();
-    expect(ghost(cursor(1, 1))).toEqual(['blocked', 'why:occupied']);
-    expect(ghost(cursor(3, 1, 'cannon'))).toEqual(['blocked', 'why:too_poor']);
-    expect(ghost(cursor(3, 1))).toEqual(['ok']);
+    expect(ghost(cursor(1, 1))).toEqual(['blocked', 'why:occupied', 'range:1']);
+    expect(ghost(cursor(3, 1, 'cannon'))).toEqual(['blocked', 'why:too_poor', 'range:2']);
+    expect(ghost(cursor(3, 1))).toEqual(['ok', 'range:1']);
   });
 
   it('leaves the cursor, ghost and tower status out without a cursor, and the ghost once the round is over', () => {
@@ -312,5 +314,82 @@ describe('upgrades (Engine 0.16 E3)', () => {
     const empty = presentWorld(w, { size: SIZE, cursor: cursor(2, 3) }).status;
     expect(empty.selected).toBeUndefined();
     expect(empty.sellValue).toBeUndefined();
+  });
+});
+
+describe('splash, slow, health bars, the wave preview and stars (Engine 0.16 E4)', () => {
+  /** The fixture round with a splashing, slowing cannon and a star rating. */
+  const shells = (stars = true) => {
+    const r = fixtureRound();
+    const cannon = { ...r.towers.cannon!, splash: { radius: 1, damage: 1 }, slow: { factor: 50, ticks: 6 } };
+    const map = stars ? { ...r.map, stars: { three: 3, two: 2 } } : r.map;
+    return new TdWorld({ ...r, map, towers: { ...r.towers, cannon } }, { seed: 3 });
+  };
+
+  it('tags enemies with their max hp and while slowed, and gives splash and slow events', () => {
+    const w = shells();
+    w.gold = 100;
+    w.place('cannon', 3, 1);
+    w.startWave();
+    const stream = new FrameStream(tdFrames(SIZE, () => cursor(1, 1)));
+    const frames: DeepReadonly<PresentFrame>[] = [stream.next(w, [])];
+    while (w.outcome === 'playing' && w.tick < 1000) frames.push(stream.next(w, w.step()));
+    for (const f of frames) valid(f);
+    const enemies = frames.flatMap((f) => f.entities.filter((e) => e.id.startsWith('enemy-')));
+    expect(enemies.length).toBeGreaterThan(0);
+    for (const e of enemies) expect(e.tags).toContain(e.kind === 'enemy:brute' ? 'maxhp:6' : 'maxhp:2');
+    expect(enemies.some((e) => e.tags.includes('slow'))).toBe(true);
+    const tower = frames.at(-1)!.entities.find((e) => e.id === 'tower-1')!;
+    expect(tower.tags).toEqual(expect.arrayContaining(['range:2', 'splash:1', 'slows']));
+    const events = frames.flatMap((f) => f.events);
+    const splash = events.find((e) => e.type === 'td-splash');
+    expect(splash).toMatchObject({ from: 'tower-1', tower: 'cannon', damage: 1 });
+    expect(splash).toHaveProperty('fromX');
+    expect(events.find((e) => e.type === 'td-slow')).toMatchObject({ from: 'tower-1', factor: 50, ticks: 6 });
+    const shots = events.filter((e) => e.type === 'td-shot');
+    expect(shots.every((e) => typeof e.splash === 'number')).toBe(true);
+    expect(shots.some((e) => (e.splash as number) > 0)).toBe(true);
+    expect(TD_EVENT_TYPES).toEqual(expect.arrayContaining(['td-splash', 'td-slow']));
+    expect(w.outcome).toBe('won');
+    expect(frames.at(-1)!.status.stars).toBe(3);
+    expect(frames[0]!.status.stars).toBe(0);
+  });
+
+  it('previews the next wave in the status until every wave has started', () => {
+    const w = shells(false);
+    let status = presentWorld(w, { size: SIZE }).status;
+    expect(status).toMatchObject({ nextWaveKinds: 'runner', nextWaveGroups: 'runner:2' });
+    expect(status.stars).toBeUndefined();
+    w.startWave();
+    w.step();
+    status = presentWorld(w, { size: SIZE }).status;
+    expect(status).toMatchObject({
+      waveNumber: 1,
+      nextWaveKinds: 'brute,runner',
+      nextWaveGroups: 'brute:1,runner:2',
+    });
+    w.startWave();
+    w.step();
+    status = presentWorld(w, { size: SIZE }).status;
+    expect(status.nextWaveKinds).toBeUndefined();
+    expect(status.nextWaveGroups).toBeUndefined();
+  });
+
+  it('changes nothing in a round with splash and slow: hashes are the same presented or not', () => {
+    const run = (present: boolean) => {
+      const w = shells();
+      w.gold = 100;
+      w.place('cannon', 3, 1);
+      w.startWave();
+      const hashes: string[] = [];
+      for (let i = 0; i < 200; i++) {
+        if (i === 40) w.startWave();
+        w.step();
+        if (present) presentWorld(w, { size: SIZE, cursor: cursor(3, 1) });
+        hashes.push(canonicalJson(w.snapshot()));
+      }
+      return hashes;
+    };
+    expect(run(true)).toEqual(run(false));
   });
 });

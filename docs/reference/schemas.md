@@ -2631,23 +2631,26 @@ With `docs/reference/examples/room.decor.txt`:
 
 ### `td-map`
 
-A tower-defense map: starting gold and lives, the tower types and wave list it plays, with its grid (path from entry to exit, build cells, blocked ground) in a text grid.
+A tower-defense map: starting gold and lives, the tower types and wave list it plays, an optional star rating, with its grid (path from entry to exit, build cells, blocked ground) in a text grid.
 
 - Defined by: kit towerdefense
 - Where: `content/`, claimed in `game.json` under `content.td-map`
 - Read from: `.json` + `.map.txt`
 
-| Field         | Type                                                             | Required | Default | Limits                                                 | Description                                                                                                                                                               |
-| ------------- | ---------------------------------------------------------------- | -------- | ------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`          | `string`                                                         | yes      |         | not empty                                              | the map id: its file name                                                                                                                                                 |
-| `title`       | `string`                                                         | no       |         | not empty                                              | one line naming the map, for a page or HUD                                                                                                                                |
-| `legend`      | `{ <key>: "blocked" \| "path" \| "build" \| "entry" \| "exit" }` | no       | `{}`    |                                                        | the map's own grid characters (one character each, not a kit legend one) by the cell kind they mean: blocked, path, build, entry or exit                                  |
-| `start`       | `object`                                                         | yes      |         |                                                        | what the round starts with                                                                                                                                                |
-| `start.gold`  | `integer`                                                        | yes      |         | >= 0                                                   | the gold the round starts with, to pay for towers                                                                                                                         |
-| `start.lives` | `integer`                                                        | yes      |         | >= 1                                                   | the lives the round starts with; a leak costs one                                                                                                                         |
-| `towers`      | `string[]`                                                       | yes      |         | at least 1 item; items: matches `^[a-z0-9][a-z0-9-]*$` | the tower types that can be placed on this map, by `td-towers` id, in button order                                                                                        |
-| `waves`       | `string`                                                         | no       |         | not empty                                              | the wave list a standalone round plays: a `td-waves` file name; left out only on a map used by `td-defence` missions alone, whose wave is the world's units (Engine 0.15) |
-| `map`         | `string[]`                                                       | yes      |         |                                                        | the grid, top row first, of legend characters; usually in the `.map.txt` file                                                                                             |
+| Field         | Type                                                             | Required | Default | Limits                                                 | Description                                                                                                                                                                                   |
+| ------------- | ---------------------------------------------------------------- | -------- | ------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | `string`                                                         | yes      |         | not empty                                              | the map id: its file name                                                                                                                                                                     |
+| `title`       | `string`                                                         | no       |         | not empty                                              | one line naming the map, for a page or HUD                                                                                                                                                    |
+| `legend`      | `{ <key>: "blocked" \| "path" \| "build" \| "entry" \| "exit" }` | no       | `{}`    |                                                        | the map's own grid characters (one character each, not a kit legend one) by the cell kind they mean: blocked, path, build, entry or exit                                                      |
+| `start`       | `object`                                                         | yes      |         |                                                        | what the round starts with                                                                                                                                                                    |
+| `start.gold`  | `integer`                                                        | yes      |         | >= 0                                                   | the gold the round starts with, to pay for towers                                                                                                                                             |
+| `start.lives` | `integer`                                                        | yes      |         | >= 1                                                   | the lives the round starts with; a leak costs one                                                                                                                                             |
+| `towers`      | `string[]`                                                       | yes      |         | at least 1 item; items: matches `^[a-z0-9][a-z0-9-]*$` | the tower types that can be placed on this map, by `td-towers` id, in button order                                                                                                            |
+| `waves`       | `string`                                                         | no       |         | not empty                                              | the wave list a standalone round plays: a `td-waves` file name; left out only on a map used by `td-defence` missions alone, whose wave is the world's units (Engine 0.15)                     |
+| `stars`       | `object`                                                         | no       |         |                                                        | Engine 0.16 E4: the star rating at the end: a win with at least `three` lives left is three stars, with at least `two` two, any other win one, a loss none; left out, the round has no rating |
+| `stars.three` | `integer`                                                        | yes      |         | >= 1                                                   | the lives left at least, on a win, for three stars                                                                                                                                            |
+| `stars.two`   | `integer`                                                        | yes      |         | >= 1                                                   | the lives left at least, on a win, for two stars                                                                                                                                              |
+| `map`         | `string[]`                                                       | yes      |         |                                                        | the grid, top row first, of legend characters; usually in the `.map.txt` file                                                                                                                 |
 
 Example (`docs/reference/examples/td-map.json`):
 
@@ -2655,8 +2658,17 @@ Example (`docs/reference/examples/td-map.json`):
 {
   "id": "meadow",
   "title": "The meadow road",
-  "legend": { "W": "build" },
-  "start": { "gold": 50, "lives": 5 },
+  "legend": {
+    "W": "build"
+  },
+  "start": {
+    "gold": 50,
+    "lives": 5
+  },
+  "stars": {
+    "three": 5,
+    "two": 3
+  },
   "towers": ["arrow", "cannon"],
   "waves": "meadow"
 }
@@ -2674,26 +2686,38 @@ S#####B.
 
 ### `td-towers`
 
-Tower-defense tower types: cost, range in cells, damage, cooldown in ticks, sell value and upgrade levels.
+Tower-defense tower types: cost, range in cells, damage, cooldown in ticks, sell value, splash, slow and upgrade levels.
 
 - Defined by: kit towerdefense
 - Where: `content/`, claimed in `game.json` under `content.td-towers`
 - Read from: `.json`
 
-| Field                            | Type                | Required | Default | Limits                               | Description                                                                                                                                                    |
-| -------------------------------- | ------------------- | -------- | ------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `towers`                         | `{ <key>: object }` | yes      |         | keys: matches `^[a-z0-9][a-z0-9-]*$` | tower types by id                                                                                                                                              |
-| `towers.<key>.cost`              | `integer`           | yes      |         | >= 0                                 | the gold placing one costs                                                                                                                                     |
-| `towers.<key>.range`             | `integer`           | yes      |         | >= 0                                 | how far it reaches, in cells: an enemy whose cell is within this distance (squared, whole cells)                                                               |
-| `towers.<key>.damage`            | `integer`           | yes      |         | >= 1                                 | the hit points one shot takes                                                                                                                                  |
-| `towers.<key>.cooldown`          | `integer`           | yes      |         | >= 1                                 | ticks from one shot to the next (1: every tick)                                                                                                                |
-| `towers.<key>.sell`              | `integer`           | no       |         | >= 0                                 | the gold selling one gives back; half its cost (rounded down) when left out                                                                                    |
-| `towers.<key>.levels`            | `object[]`          | no       |         | at least 1 item                      | the upgrades, in order: the first is level 2 (the type itself is level 1), each overriding the stats of the level below; left out, the type cannot be upgraded |
-| `towers.<key>.levels[].cost`     | `integer`           | yes      |         | >= 0                                 | the gold upgrading a tower to this level costs                                                                                                                 |
-| `towers.<key>.levels[].range`    | `integer`           | no       |         | >= 0                                 | the range at this level, in cells; the level below's when left out                                                                                             |
-| `towers.<key>.levels[].damage`   | `integer`           | no       |         | >= 1                                 | the hit points one shot takes at this level; the level below's when left out                                                                                   |
-| `towers.<key>.levels[].cooldown` | `integer`           | no       |         | >= 1                                 | ticks from one shot to the next at this level; the level below's when left out                                                                                 |
-| `towers.<key>.levels[].sell`     | `integer`           | no       |         | >= 0                                 | the gold selling a tower of this level gives back; left out, the level below's sell value plus half this level's cost (rounded down)                           |
+| Field                                 | Type                | Required | Default | Limits                               | Description                                                                                                                                                    |
+| ------------------------------------- | ------------------- | -------- | ------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `towers`                              | `{ <key>: object }` | yes      |         | keys: matches `^[a-z0-9][a-z0-9-]*$` | tower types by id                                                                                                                                              |
+| `towers.<key>.cost`                   | `integer`           | yes      |         | >= 0                                 | the gold placing one costs                                                                                                                                     |
+| `towers.<key>.range`                  | `integer`           | yes      |         | >= 0                                 | how far it reaches, in cells: an enemy whose cell is within this distance (squared, whole cells)                                                               |
+| `towers.<key>.damage`                 | `integer`           | yes      |         | >= 1                                 | the hit points one shot takes                                                                                                                                  |
+| `towers.<key>.cooldown`               | `integer`           | yes      |         | >= 1                                 | ticks from one shot to the next (1: every tick)                                                                                                                |
+| `towers.<key>.sell`                   | `integer`           | no       |         | >= 0                                 | the gold selling one gives back; half its cost (rounded down) when left out                                                                                    |
+| `towers.<key>.splash`                 | `object`            | no       |         |                                      | Engine 0.16 E4: a shot also hurts the other enemies near its target (`radius` cells from the target's cell, `damage` each); left out, it hits its target only  |
+| `towers.<key>.splash.radius`          | `integer`           | yes      |         | >= 1                                 | how far from the target's cell the splash reaches, in cells (squared, whole cells)                                                                             |
+| `towers.<key>.splash.damage`          | `integer`           | yes      |         | >= 1                                 | the hit points the splash takes from each other enemy in reach                                                                                                 |
+| `towers.<key>.slow`                   | `object`            | no       |         |                                      | Engine 0.16 E4: a shot slows the target it hits to `factor` percent of its speed for `ticks` ticks; left out, it does not slow                                 |
+| `towers.<key>.slow.factor`            | `integer`           | yes      |         | 1 to 99                              | the percent of its speed a slowed enemy keeps (1-99; rounded down, at least 1 sub-cell unit a tick)                                                            |
+| `towers.<key>.slow.ticks`             | `integer`           | yes      |         | >= 1                                 | how many ticks of walking the slow lasts                                                                                                                       |
+| `towers.<key>.levels`                 | `object[]`          | no       |         | at least 1 item                      | the upgrades, in order: the first is level 2 (the type itself is level 1), each overriding the stats of the level below; left out, the type cannot be upgraded |
+| `towers.<key>.levels[].cost`          | `integer`           | yes      |         | >= 0                                 | the gold upgrading a tower to this level costs                                                                                                                 |
+| `towers.<key>.levels[].range`         | `integer`           | no       |         | >= 0                                 | the range at this level, in cells; the level below's when left out                                                                                             |
+| `towers.<key>.levels[].damage`        | `integer`           | no       |         | >= 1                                 | the hit points one shot takes at this level; the level below's when left out                                                                                   |
+| `towers.<key>.levels[].cooldown`      | `integer`           | no       |         | >= 1                                 | ticks from one shot to the next at this level; the level below's when left out                                                                                 |
+| `towers.<key>.levels[].sell`          | `integer`           | no       |         | >= 0                                 | the gold selling a tower of this level gives back; left out, the level below's sell value plus half this level's cost (rounded down)                           |
+| `towers.<key>.levels[].splash`        | `object`            | no       |         |                                      | the splash at this level (Engine 0.16 E4); the level below's when left out                                                                                     |
+| `towers.<key>.levels[].splash.radius` | `integer`           | yes      |         | >= 1                                 | how far from the target's cell the splash reaches, in cells (squared, whole cells)                                                                             |
+| `towers.<key>.levels[].splash.damage` | `integer`           | yes      |         | >= 1                                 | the hit points the splash takes from each other enemy in reach                                                                                                 |
+| `towers.<key>.levels[].slow`          | `object`            | no       |         |                                      | the slow at this level (Engine 0.16 E4); the level below's when left out                                                                                       |
+| `towers.<key>.levels[].slow.factor`   | `integer`           | yes      |         | 1 to 99                              | the percent of its speed a slowed enemy keeps (1-99; rounded down, at least 1 sub-cell unit a tick)                                                            |
+| `towers.<key>.levels[].slow.ticks`    | `integer`           | yes      |         | >= 1                                 | how many ticks of walking the slow lasts                                                                                                                       |
 
 Example (`docs/reference/examples/td-towers.json`):
 
@@ -2710,7 +2734,15 @@ Example (`docs/reference/examples/td-towers.json`):
         { "cost": 12, "range": 3, "cooldown": 4 }
       ]
     },
-    "cannon": { "cost": 30, "range": 3, "damage": 4, "cooldown": 20, "sell": 20 }
+    "cannon": {
+      "cost": 30,
+      "range": 3,
+      "damage": 4,
+      "cooldown": 20,
+      "sell": 20,
+      "splash": { "radius": 1, "damage": 2 }
+    },
+    "frost": { "cost": 20, "range": 2, "damage": 1, "cooldown": 10, "slow": { "factor": 50, "ticks": 30 } }
   }
 }
 ```

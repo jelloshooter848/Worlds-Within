@@ -1,0 +1,48 @@
+{
+  "game": "..",
+  "ticks": 300,
+  "input": {
+    "steps": [
+      { "frame": 0, "hold": ["attack"] },
+      { "frame": 1, "hold": [] },
+      { "frame": 2, "hold": ["jump"] },
+      { "frame": 3, "hold": [] },
+      { "frame": 4, "hold": ["start"] },
+      { "frame": 5, "hold": [] },
+      { "frame": 90, "hold": ["jump"] },
+      { "frame": 91, "hold": [] },
+      { "frame": 92, "hold": ["start"] },
+      { "frame": 93, "hold": [] },
+      { "frame": 180, "hold": ["jump"] },
+      { "frame": 181, "hold": [] },
+      { "frame": 182, "hold": ["start"] },
+      { "frame": 183, "hold": [] }
+    ]
+  },
+  "assertions": [
+    { "tick": 3, "path": "kit.gold", "op": "eq", "value": 15 },
+    { "tick": 91, "path": "round.towers.0.level", "op": "eq", "value": 2 },
+    { "tick": 91, "path": "kit.gold", "op": "eq", "value": 5 },
+    {
+      "tick": 125,
+      "path": "round.events",
+      "op": "contains",
+      "value": { "type": "splash", "tower": 1, "enemy": 9, "target": 7, "damage": 2, "hp": 1 }
+    },
+    { "tick": 181, "path": "round.towers.0.level", "op": "eq", "value": 3 },
+    { "tick": 181, "path": "kit.gold", "op": "eq", "value": 0 },
+    {
+      "tick": 270,
+      "path": "round.events",
+      "op": "contains",
+      "value": { "type": "slowed", "tower": 1, "enemy": 20, "factor": 50, "ticks": 24 }
+    },
+    { "tick": 300, "path": "kit.killed", "op": "eq", "value": 12 }
+  ],
+  "hashEvery": 20,
+  "guards": ["splash-damage", "slow-enemies"],
+  "hashes": [
+    { "tick": 0, "hash": "3f3e14aefc1b4bad" },
+    { "tick": 300, "hash": "376468edf365a2e4" }
+  ]
+}

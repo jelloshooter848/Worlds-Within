@@ -16,7 +16,10 @@
       "damage": 4,
       "cooldown": 20,
       "sell": 15,
-      "levels": [{ "cost": 20, "range": 4, "damage": 6, "sell": 30 }]
+      "levels": [
+        { "cost": 20, "range": 4, "damage": 6, "sell": 30, "splash": { "radius": 1, "damage": 2 } },
+        { "cost": 15, "slow": { "factor": 50, "ticks": 24 } }
+      ]
     }
   }
 }

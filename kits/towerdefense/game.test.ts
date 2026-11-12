@@ -57,6 +57,26 @@ describe('tdGame', () => {
     expect(canonicalJson(snap)).toBe(canonicalJson(g.snapshot()));
   });
 
+  it('gives kit.stars only when the map has a rating: 0 until won, then by the lives left (Engine 0.16 E4)', () => {
+    expect(tdGame({ ...fixtureRound(), seed: 1 }).snapshot().kit).not.toHaveProperty('stars');
+    const r = fixtureRound();
+    const rated = (three: number, two: number) => {
+      const game = tdGame({ ...r, map: { ...r.map, stars: { three, two } }, seed: 3 });
+      expect((game.snapshot().kit as { stars?: number }).stars).toBe(0);
+      const bot = new TdBot(WIN);
+      const input = new ScriptedInput({ steps: [] });
+      while (game.world.outcome === 'playing' && game.world.tick < 600) {
+        input.setHeld(bot.next(game));
+        input.next();
+        game.step(input);
+      }
+      expect(game.world.outcome).toBe('won');
+      return (game.snapshot().kit as { stars?: number }).stars;
+    };
+    expect(rated(3, 2)).toBe(3);
+    expect(rated(3, 1)).toBe(3);
+  });
+
   it('plays the bot to a won round and gives the same hashes on two runs from one seed', () => {
     const a = play(WIN);
     const b = play(WIN);

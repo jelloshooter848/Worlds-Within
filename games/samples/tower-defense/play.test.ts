@@ -123,13 +123,14 @@ describe('the tower-defense page, headless', () => {
     p.step();
     expect(p.play.game.controls.view()).toMatchObject({ col: 5, row: 4 });
     expect(p.kit()['towers']).toBe(0);
-    expect(p.frames.at(-1)!.entities.find((e) => e.id === 'ghost')?.tags).toEqual(['ok']);
+    expect(p.frames.at(-1)!.entities.find((e) => e.id === 'ghost')?.tags).toEqual(['ok', 'range:2']);
     p.step();
     p.step(tapFrame({ col: 5, row: 4 }));
     expect(p.kit()).toMatchObject({ towers: 1, gold: 30 });
     expect(p.frames.at(-1)!.entities.find((e) => e.id === 'ghost')?.tags).toEqual([
       'blocked',
       'why:occupied',
+      'range:2',
     ]);
     p.step(tapFrame({ col: 5, row: 4, button: 'secondary' }));
     p.step();

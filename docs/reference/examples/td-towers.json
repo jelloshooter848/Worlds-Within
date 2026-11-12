@@ -10,6 +10,14 @@
         { "cost": 12, "range": 3, "cooldown": 4 }
       ]
     },
-    "cannon": { "cost": 30, "range": 3, "damage": 4, "cooldown": 20, "sell": 20 }
+    "cannon": {
+      "cost": 30,
+      "range": 3,
+      "damage": 4,
+      "cooldown": 20,
+      "sell": 20,
+      "splash": { "radius": 1, "damage": 2 }
+    },
+    "frost": { "cost": 20, "range": 2, "damage": 1, "cooldown": 10, "slow": { "factor": 50, "ticks": 30 } }
   }
 }

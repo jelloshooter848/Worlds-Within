@@ -29,7 +29,7 @@ describe('tower-defense mutants', () => {
     expect(code).toBe(0);
     expect(result.strict).toBe(true);
     expect(result.unguarded).toEqual([]);
-    expect(result.rules).toHaveLength(16);
+    expect(result.rules).toHaveLength(18);
     for (const r of result.runs) {
       expect(r.baseline.passed, r.run).toBe(true);
       expect(r.weak, r.run).toEqual([]);

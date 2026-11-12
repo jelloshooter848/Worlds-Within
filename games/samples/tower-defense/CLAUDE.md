@@ -83,7 +83,9 @@ which the shell paces since Engine 0.15, gap D2); the tools play the same ticks,
   `cannon` (25 gold, range 3, 4 damage, cooldown 20, sells for 15). Engine 0.16 E3 gave them
   `levels` (no earlier run upgrades, so none moved): arrow level 2 (8 gold: 2 damage, sells for 9)
   and 3 (12 gold: range 3, cooldown 4, sells for 15); cannon level 2 (20 gold: range 4, 6 damage,
-  sells for 30).
+  sells for 30). Engine 0.16 E4 gave the cannon's level 2 a splash (radius 1, 2 damage) and a
+  level 3 (15 gold) that also slows (50% for 24 ticks); no earlier run upgrades a cannon, so none
+  moved. The map has no `stars` yet (E8 adds them), so `kit.stars` is not in its snapshots.
 - `content/waves/road.json`: a timer of 400 ticks and three waves: six runners; a slow brute with
   four fast runners behind it (they overtake it near the entry, with jitter); eight runners and two
   brutes.
@@ -145,7 +147,7 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
   the bot's plan. Engine 0.15 T14 (the asset audit): no look, tag look or tile with its own
   fallback colour; every tick of every run drawn through `view.ts`'s Canvas2D picture without a
   fallback box; the one song's channels the same length; the skin's sounds exactly the sfx files.
-- `runs/`: six run files, each with sync `hashes` and a golden `<name>.hashes.json`:
+- `runs/`: seven run files, each with sync `hashes` and a golden `<name>.hashes.json`:
   - `build.run.json` (40 ticks): an arrow on the path is refused (`not_build_cell`), a cannon
     bought, a second refused (`too_poor`), the first sold for 15, an arrow bought. Guards
     `build-on-build-cells`, `build-costs-gold`, `sell-refunds`.
@@ -168,6 +170,10 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
     upgraded twice with Z (8 then 12 gold), a third upgrade refused (`max_level`); the level 3
     arrow holds wave 1 alone (6 killed, nothing leaked) and is sold for 15 (5 + 4 + 6). Guards
     `upgrade-costs-gold`, `upgrade-improves`; its sync hashes are ticks 0 and 160 only.
+  - `shells.run.json` (300 ticks, Engine 0.16 E4): a cannon on (1, 2) holds wave 1, is upgraded
+    to level 2 (splash) at tick 91 and in wave 2 its kill of the brute splashes a runner (tick
+    125); upgraded to level 3 (slow) at tick 181, it slows the first brute of wave 3 (tick 270).
+    Guards `splash-damage`, `slow-enemies`; its sync hashes are ticks 0 and 300 only.
 
 ## Rules
 
@@ -197,8 +203,8 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 
 `pnpm test games/samples/tower-defense`; `pnpm -s cli validate games/samples/tower-defense`;
 `pnpm -s cli run games/samples/tower-defense/runs/won.run.json` (and `build`, `target`, `leaked`,
-`tapped`, `upgrade`);
-`pnpm -s cli mutants games/samples/tower-defense` (exit 0, strict, 16 rules guarded);
+`tapped`, `upgrade`, `shells`);
+`pnpm -s cli mutants games/samples/tower-defense` (exit 0, strict, 18 rules guarded);
 `pnpm test tests/runs` (golden hashes, the mutants test and backend parity through `view.ts`).
 
 The art and the page: `pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick
